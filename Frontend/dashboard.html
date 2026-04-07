@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parqueadero SENA — Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="api.js"></script>
+</head>
+
+<body>
+
+  <div class="background">
+    <div class="blob blob1"></div>
+    <div class="blob blob2"></div>
+    <div class="blob blob3"></div>
+  </div>
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="/Frontend/img/logo -Photoroom.png" alt="Logo" class="nav-logo-img">
+      <span>Parksmart</span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showSection('dashboard',this)">
+        <i class="bi bi-grid-1x2-fill"></i><span>Inicio</span>
+      </button>
+      <button class="nav-item" onclick="showSection('perfil',this)">
+        <i class="bi bi-person-circle"></i><span>Perfil</span>
+      </button>
+      <button class="nav-item" onclick="showSection('vehiculo',this)">
+        <i class="bi bi-car-front-fill"></i><span>Mi Vehículo</span>
+      </button>
+      <button class="nav-item" onclick="showSection('historial',this)">
+        <i class="bi bi-clock-history"></i><span>Historial</span>
+      </button>
+    </nav>
+<button class="nav-item logout" onclick="handleLogout()">
+      <i class="bi bi-box-arrow-left"></i><span>Cerrar sesión</span>
+    </button>
+  </aside>
+
+  <!-- Topbar móvil -->
+  <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <div class="topbar-logo-wrap">
+      <img src="img/logo.png" alt="Logo" class="nav-logo-img">
+      <span class="topbar-title">Parksmart</span>
+    </div>
+    <div class="topbar-avatar" id="topbar-av">U</div>
+  </div>
+
+  <!-- ═══ MAIN ═══ -->
+  <main class="main">
+
+    <!-- ─── DASHBOARD ─── -->
+    <section id="section-dashboard" class="section active">
+      <div class="section-header">
+        <div>
+          <h1>Bienvenido, <span class="name-highlight" id="dash-name">Usuario</span> 👋</h1>
+          <p class="section-sub">Sistema de gestion para el parqueadero del Sena(CIGEC).</p>
+        </div>
+      </div>
+
+      <div class="cards-row">
+        <div class="stat-card available">
+          <div class="stat-icon"><i class="bi bi-car-front"></i></div>
+          <div class="stat-info"><span class="stat-number">18</span><span class="stat-label">Cupos disponibles</span>
+          </div>
+          <div class="stat-badge green">Abierto</div>
+        </div>
+        <div class="stat-card occupied">
+          <div class="stat-icon"><i class="bi bi-slash-circle"></i></div>
+          <div class="stat-info"><span class="stat-number">32</span><span class="stat-label">Cupos ocupados</span></div>
+          <div class="stat-badge red">64%</div>
+        </div>
+        <div class="stat-card total">
+          <div class="stat-icon"><i class="bi bi-grid-3x3-gap"></i></div>
+          <div class="stat-info"><span class="stat-number">50</span><span class="stat-label">Cupos totales</span></div>
+          <div class="stat-badge blue">Total</div>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Ocupación en tiempo real</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" style="width:64%"><span>64%</span></div>
+        </div>
+        <div class="progress-labels"><span>0</span><span>25</span><span>50</span></div>
+      </div>
+
+      <div class="glass-panel qr-panel">
+        <div class="panel-title"><i class="bi bi-qr-code"></i> Mi Código QR Personal</div>
+        <div class="qr-layout">
+          <div class="qr-box-wrap">
+            <div class="qr-box" id="qr-box-click" onclick="openQRFullscreen()" title="Toca para ampliar">
+              <canvas id="qrCanvas"></canvas>
+              <div class="qr-box-hint"><i class="bi bi-fullscreen"></i> Toca para ampliar</div>
+            </div>
+          </div>
+          <div class="qr-info">
+            <p>Este código QR es tu identificación personal en el parqueadero. Preséntalo al ingresar o salir.</p>
+            <div class="qr-tip"><i class="bi bi-lightbulb-fill"></i> Sube el brillo de pantalla al máximo para facilitar
+              el escaneo.</div>
+            <div class="qr-id"><i class="bi bi-fingerprint"></i> ID: <strong id="qr-id-label">—</strong></div>
+            <div class="qr-btns-row">
+              <button class="btn-download" onclick="openQRFullscreen()"><i class="bi bi-fullscreen"></i> Pantalla
+                completa</button>
+              <button class="btn-download btn-dl-sec" onclick="downloadQR()"><i class="bi bi-download"></i>
+                Descargar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-clock-history"></i> Registro de Uso</div>
+        <div class="table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Entrada</th>
+                <th>Salida</th>
+                <th>Duración</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>19 Mar 2026</td>
+                <td>07:45 AM</td>
+                <td>12:30 PM</td>
+                <td>4h 45m</td>
+                <td><span class="badge-status done">Completado</span></td>
+              </tr>
+              <tr>
+                <td>18 Mar 2026</td>
+                <td>08:00 AM</td>
+                <td>05:10 PM</td>
+                <td>9h 10m</td>
+                <td><span class="badge-status done">Completado</span></td>
+              </tr>
+              <tr>
+                <td>17 Mar 2026</td>
+                <td>09:15 AM</td>
+                <td>01:00 PM</td>
+                <td>3h 45m</td>
+                <td><span class="badge-status done">Completado</span></td>
+              </tr>
+              <tr>
+                <td>19 Mar 2026</td>
+                <td>01:00 PM</td>
+                <td>—</td>
+                <td>—</td>
+                <td><span class="badge-status active">En curso</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PERFIL ─── -->
+    <section id="section-perfil" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Mi <span class="name-highlight">Perfil</span></h1>
+          <p class="section-sub">Administra tu información personal</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <!-- Cabecera avatar -->
+        <div class="profile-avatar-area">
+          <div class="avatar-circle" id="profile-avatar-initials">U</div>
+          <div>
+            <div class="profile-name" id="profile-display-name">Usuario</div>
+            <div class="profile-role-badge" id="profile-role-badge">Sin rol asignado</div>
+          </div>
+        </div>
+
+        <!-- Campos -->
+        <div class="profile-form-grid">
+
+          <div class="form-group full-width">
+            <label><i class="bi bi-person-fill"></i> Nombre completo</label>
+            <input type="text" id="p-nombre" placeholder="Ej: Juan David Pérez" oninput="liveUpdateHeader()" />
+          </div>
+
+          <div class="form-group">
+            <label><i class="bi bi-card-text"></i> Tipo de identificación</label>
+            <select id="p-tipo-id">
+              <option value="">Selecciona...</option>
+              <option value="TI">Tarjeta de Identidad</option>
+              <option value="CC">Cédula de Ciudadanía</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label><i class="bi bi-123"></i> Número de identificación</label>
+            <input type="text" id="p-id-num" placeholder="Ej: 1001234567" />
+          </div>
+
+          <div class="form-group">
+            <label><i class="bi bi-geo-alt-fill"></i> Región</label>
+            <select id="p-region" onchange="filterCentros()">
+              <option value="">Selecciona una región</option>
+              <option value="andina">Andina</option>
+              <option value="caribe">Caribe</option>
+              <option value="pacifico">Pacífico</option>
+              <option value="orinoquia">Orinoquía</option>
+              <option value="amazonia">Amazonía</option>
+              <option value="insular">Insular</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label><i class="bi bi-building"></i> Centro de Formación SENA</label>
+            <select id="p-centro">
+              <option value="">Selecciona primero una región</option>
+            </select>
+          </div>
+
+          <div class="form-group full-width">
+            <label><i class="bi bi-person-badge-fill"></i> Rol</label>
+            <select id="p-rol" onchange="onRolChange()">
+              <option value="">Selecciona tu rol</option>
+              <option value="aprendiz">Aprendiz</option>
+              <option value="funcionario">Funcionario</option>
+              <option value="instructor">Instructor</option>
+            </select>
+          </div>
+
+          <div id="rol-info-box" class="rol-info-box" style="display:none"></div>
+
+        </div>
+
+        <button class="btn-save" onclick="saveProfile()"><i class="bi bi-check2-circle"></i> Guardar cambios</button>
+      </div>
+
+      <!-- Vehículos registrados -->
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-truck"></i> Mis Vehículos Registrados</div>
+        <div id="perfil-vehicles-list"></div>
+      </div>
+    </section>
+
+    <!-- ─── MI VEHÍCULO ─── -->
+    <section id="section-vehiculo" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Mi <span class="name-highlight">Vehículo</span></h1>
+          <p class="section-sub" id="vehiculo-sub">Registra tus vehículos</p>
+        </div>
+      </div>
+
+      <div id="vehiculo-rol-alert" class="rol-alert" style="display:none">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>Primero configura tu <button class="link-btn" onclick="showSection('perfil',null)">perfil y selecciona tu
+            rol</button> para registrar vehículos.</span>
+      </div>
+
+      <div id="vehiculo-form-area">
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-plus-circle-fill"></i> Registrar nuevo vehículo</div>
+
+          <div class="vehicle-tabs" id="vtabs-container">
+            <button class="vtab" id="vtab-bicicleta" onclick="setVehicle('bicicleta',this)">
+              <i class="bi bi-bicycle"></i> Bicicleta
+            </button>
+            <button class="vtab" id="vtab-carro" onclick="setVehicle('carro',this)" style="display:none">
+              <i class="bi bi-car-front-fill"></i> Carro
+            </button>
+            <button class="vtab" id="vtab-moto" onclick="setVehicle('moto',this)" style="display:none">
+              <i class="bi bi-scooter"></i> Moto
+            </button>
+          </div>
+
+          <!-- Bicicleta -->
+          <div id="form-bicicleta" class="vehicle-form">
+            <div class="rol-info-box info">
+              <i class="bi bi-info-circle-fill"></i>
+              Las bicicletas pueden ingresar solo al<strong>Lado A</strong>.
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="bi bi-bicycle"></i> Modelo</label>
+                <input type="text" id="bici-modelo" placeholder="Ej: Trek FX3, Giant Escape..." />
+              </div>
+              <div class="form-group">
+                <label><i class="bi bi-palette"></i> Color</label>
+                <input type="text" id="bici-color" placeholder="Ej: Verde, Plateado..." />
+              </div>
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-camera"></i> Foto
+                <span class="optional recommended"><i class="bi bi-star-fill"></i> opcional — muy recomendada</span>
+              </label>
+              <div class="file-drop" onclick="document.getElementById('foto-bici').click()">
+                <i class="bi bi-cloud-arrow-up"></i><span>Haz clic para subir una foto</span>
+                <input type="file" id="foto-bici" accept="image/*" hidden
+                  onchange="previewImage(this,'preview-bici')" />
+              </div>
+              <img id="preview-bici" class="img-preview" src="" alt="" style="display:none" />
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-card-text"></i> Descripción</label>
+              <textarea id="bici-desc" placeholder="Ej: Bicicleta de montaña, rin 29, con canasta..."
+                rows="3"></textarea>
+            </div>
+            <button class="btn-save" onclick="saveVehicle('bicicleta')"><i class="bi bi-floppy"></i> Guardar
+              vehículo</button>
+          </div>
+
+          <!-- Carro -->
+          <div id="form-carro" class="vehicle-form" style="display:none">
+            <div class="rol-info-box warning">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              Carros de funcionarios e instructores: <strong>Lado A</strong> (general) y <strong>Lado B</strong>
+              (exclusivo).
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="bi bi-123"></i> Placa</label>
+                <input type="text" id="carro-placa" placeholder="Ej: ABC-123" maxlength="8" />
+              </div>
+              <div class="form-group">
+                <label><i class="bi bi-palette"></i> Color</label>
+                <input type="text" id="carro-color" placeholder="Ej: Rojo, Negro..." />
+              </div>
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-camera"></i> Foto <span class="optional">(opcional)</span></label>
+              <div class="file-drop" onclick="document.getElementById('foto-carro').click()">
+                <i class="bi bi-cloud-arrow-up"></i><span>Haz clic para subir una foto</span>
+                <input type="file" id="foto-carro" accept="image/*" hidden
+                  onchange="previewImage(this,'preview-carro')" />
+              </div>
+              <img id="preview-carro" class="img-preview" src="" alt="" style="display:none" />
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-card-text"></i> Descripción</label>
+              <textarea id="carro-desc" placeholder="Ej: Sedan 4 puertas, modelo 2020..." rows="3"></textarea>
+            </div>
+            <button class="btn-save" onclick="saveVehicle('carro')"><i class="bi bi-floppy"></i> Guardar
+              vehículo</button>
+          </div>
+
+          <!-- Moto -->
+          <div id="form-moto" class="vehicle-form" style="display:none">
+            <div class="rol-info-box warning">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              Las motos de funcionarios e instructores solo ingresan por el <strong>Lado A</strong>.
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="bi bi-123"></i> Placa</label>
+                <input type="text" id="moto-placa" placeholder="Ej: XYZ-45B" maxlength="8" />
+              </div>
+              <div class="form-group">
+                <label><i class="bi bi-palette"></i> Color</label>
+                <input type="text" id="moto-color" placeholder="Ej: Azul, Blanco..." />
+              </div>
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-camera"></i> Foto <span class="optional">(opcional)</span></label>
+              <div class="file-drop" onclick="document.getElementById('foto-moto').click()">
+                <i class="bi bi-cloud-arrow-up"></i><span>Haz clic para subir una foto</span>
+                <input type="file" id="foto-moto" accept="image/*" hidden
+                  onchange="previewImage(this,'preview-moto')" />
+              </div>
+              <img id="preview-moto" class="img-preview" src="" alt="" style="display:none" />
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-card-text"></i> Descripción</label>
+              <textarea id="moto-desc" placeholder="Ej: Moto deportiva, cilindrada 200cc..." rows="3"></textarea>
+            </div>
+            <button class="btn-save" onclick="saveVehicle('moto')"><i class="bi bi-floppy"></i> Guardar
+              vehículo</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── HISTORIAL ─── -->
+    <section id="section-historial" class="section">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h1><i class="bi bi-clock-history" style="color:var(--brand-color);margin-right:8px;"></i>Historial de Uso</h1>
+            <p class="section-sub">Consulta todos tus registros de entrada y salida del parqueadero</p>
+          </div>
+          <button class="btn-download" onclick="exportarHistorial()">
+            <i class="bi bi-download"></i> Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Stat cards resumen -->
+      <div class="cards-row" id="hist-cards-row">
+        <div class="stat-card available">
+          <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="hist-total">—</span>
+            <span class="stat-label">Visitas totales</span>
+          </div>
+          <div class="stat-badge green">Total</div>
+        </div>
+        <div class="stat-card occupied">
+          <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="hist-promedio">—</span>
+            <span class="stat-label">Promedio por visita</span>
+          </div>
+          <div class="stat-badge red">Horas</div>
+        </div>
+        <div class="stat-card total">
+          <div class="stat-icon"><i class="bi bi-activity"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="hist-activos">—</span>
+            <span class="stat-label">En curso ahora</span>
+          </div>
+          <div class="stat-badge blue">Activo</div>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-funnel-fill"></i> Filtros</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:end;">
+          <div class="form-group" style="margin:0;">
+            <label><i class="bi bi-calendar-event"></i> Fecha inicio</label>
+            <input type="date" id="hist-fecha-ini" onchange="aplicarFiltros()">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label><i class="bi bi-calendar-check"></i> Fecha fin</label>
+            <input type="date" id="hist-fecha-fin" onchange="aplicarFiltros()">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label><i class="bi bi-car-front"></i> Tipo de vehículo</label>
+            <select id="hist-tipo" onchange="aplicarFiltros()">
+              <option value="">Todos</option>
+              <option value="Carro">Carro</option>
+              <option value="Moto">Moto</option>
+              <option value="Bicicleta">Bicicleta</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label><i class="bi bi-tag"></i> Estado</label>
+            <select id="hist-estado" onchange="aplicarFiltros()">
+              <option value="">Todos</option>
+              <option value="completado">Completado</option>
+              <option value="activo">En curso</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-save" style="padding:10px 18px;font-size:13px;" onclick="aplicarFiltros()">
+              <i class="bi bi-search"></i> Buscar
+            </button>
+            <button class="btn-download btn-dl-sec" onclick="limpiarFiltros()">
+              <i class="bi bi-x-circle"></i> Limpiar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla historial completa -->
+      <div class="glass-panel">
+        <div class="panel-title" style="justify-content:space-between;">
+          <span><i class="bi bi-table"></i> Registros de visita</span>
+          <span id="hist-count-label" style="font-size:12px;font-weight:400;color:rgba(255,255,255,0.45);"></span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th><i class="bi bi-calendar3" style="margin-right:4px;"></i>Fecha entrada</th>
+                <th><i class="bi bi-car-front" style="margin-right:4px;"></i>Vehículo</th>
+                <th><i class="bi bi-geo-alt" style="margin-right:4px;"></i>Lado</th>
+                <th><i class="bi bi-box-arrow-right" style="margin-right:4px;"></i>Salida</th>
+                <th><i class="bi bi-stopwatch" style="margin-right:4px;"></i>Duración</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="hist-tbody">
+              <tr><td colspan="7" style="text-align:center;padding:40px;opacity:.45;">
+                <i class="bi bi-hourglass" style="font-size:24px;display:block;margin-bottom:10px;"></i>
+                Cargando registros...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        <div id="hist-pagination" style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:12px;">
+          <span id="hist-page-info" style="font-size:12px;color:rgba(255,255,255,0.45);"></span>
+          <div style="display:flex;gap:8px;" id="hist-page-btns"></div>
+        </div>
+      </div>
+
+      <!-- Detalle de registro (panel expandible) -->
+      <div class="glass-panel" id="hist-detail-panel" style="display:none;">
+        <div class="panel-title"><i class="bi bi-info-circle-fill"></i> Detalle del registro</div>
+        <div id="hist-detail-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Modal QR pantalla completa -->
+  <div id="qr-fullscreen-modal" class="qr-fs-modal" style="display:none" onclick="closeQRFullscreen()">
+    <div class="qr-fs-inner" onclick="event.stopPropagation()">
+      <div class="qr-fs-header">
+        <span class="qr-fs-name" id="qr-fs-name"></span>
+        <button class="qr-fs-close" onclick="closeQRFullscreen()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="qr-fs-box">
+        <canvas id="qrCanvasFS"></canvas>
+      </div>
+      <div class="qr-fs-id" id="qr-fs-id"></div>
+      <p class="qr-fs-tip"><i class="bi bi-lightbulb-fill"></i> Muestra este código al administrador del parqueadero</p>
+    </div>
+  </div>
+
+  <!-- Modal eliminar -->
+  <div id="delete-modal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <div class="modal-icon"><i class="bi bi-trash3-fill"></i></div>
+      <h3>¿Eliminar vehículo?</h3>
+      <p id="delete-modal-desc">Esta acción no se puede deshacer.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeDeleteModal()">Cancelar</button>
+        <button class="btn-confirm-delete" onclick="confirmDelete()">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ════════ GUARD: si no está logueado, al login ════════
+    if (!Auth.isLogged()) window.location.href = 'login.html';
+
+    // ════════ ESTADO GLOBAL ════════
+    let vehiculos = [];
+    let deleteIndex = -1;
+    let userProfile = null;
+
+    const ROL_LABELS = { aprendiz: 'Aprendiz', funcionario: 'Funcionario', instructor: 'Instructor', admin: 'Admin' };
+    const ROL_COLORS = { aprendiz: '#1565c0', funcionario: '#2e7d32', instructor: '#6a1b9a', admin: '#b71c1c' };
+    const TIPO_ICONS = { bicicleta: 'bi-bicycle', carro: 'bi-car-front-fill', moto: 'bi-scooter' };
+    const TIPO_LABELS = { bicicleta: 'Bicicleta', carro: 'Carro', moto: 'Moto' };
+
+    // ════════ INIT ════════
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Cargar datos del usuario guardados en localStorage
+      const user = Auth.getUser();
+      if (user) applyUserToUI(user);
+
+      // Cargar cupos e historial en paralelo (no bloquean la UI principal)
+      loadCupos();
+      loadHistorial();
+
+      // Perfil y vehículos deben cargarse antes de renderizar
+      await loadPerfil();
+      await loadVehiculos();
+
+      // Renderizar vehículos y sección de rol
+      renderVehicleList();
+      applyRolToVehicleSection();
+
+      // QR — al final, cuando ya tenemos usuario y vehículos cargados
+      await generateUserQR();
+    });
+
+    // ════════ GENERAR QR CON DATOS COMPLETOS ════════
+    async function generateUserQR() {
+      const user = Auth.getUser();
+      if (!user) return;
+
+      // Usar la variable global 'vehiculos' que ya cargó loadVehiculos()
+      // Si aún está vacía (primer load), intentar cargarla
+      if (!vehiculos.length) {
+        try {
+          const res = await apiGet('/vehiculos');
+          if (res.ok) {
+            const mapTipo = { 1: 'bicicleta', 2: 'carro', 3: 'moto' };
+            vehiculos = res.data.map(v => ({ ...v, tipo: v.tipo || mapTipo[v.id_tipo] || '' }));
+          }
+        } catch (e) { }
+      }
+
+      const qrPayload = user.qr_code || user.numero_id || 'SIN-DATOS';
+
+      // Canvas principal (panel)
+      const canvas = document.getElementById('qrCanvas');
+      if (canvas) {
+        try {
+          // Removemos la propiedad 'color' personalizada que estaba causando problemas de renderizado (se veía en blanco)
+          await QRCode.toCanvas(canvas, qrPayload, {
+            width: 240, margin: 2
+          });
+        } catch (e) { console.warn('QR error:', e); }
+      }
+      // Label ID
+      const label = document.getElementById('qr-id-label');
+      if (label) label.textContent = user.qr_code || 'SIN-QR';
+
+      // Guardar payload globalmente para el modal fullscreen
+      window._qrPayload = qrPayload;
+      window._qrUserName = user.nombre_completo || '';
+      window._qrCode = user.qr_code || '';
+    }
+
+    // ════════ QR PANTALLA COMPLETA ════════
+    async function openQRFullscreen() {
+      const modal = document.getElementById('qr-fullscreen-modal');
+      if (!modal) return;
+
+      // Nombre e ID
+      const nameEl = document.getElementById('qr-fs-name');
+      const idEl = document.getElementById('qr-fs-id');
+      if (nameEl) nameEl.textContent = window._qrUserName || '';
+      if (idEl) idEl.textContent = window._qrCode || '';
+
+      // Renderizar QR grande
+      const canvasFS = document.getElementById('qrCanvasFS');
+      if (canvasFS && window._qrPayload) {
+        try {
+          await QRCode.toCanvas(canvasFS, window._qrPayload, {
+            width: Math.min(window.innerWidth - 80, 320),
+            margin: 2,
+          });
+        } catch (e) { console.warn('QR FS error:', e); }
+      }
+
+      modal.style.display = 'flex';
+      // Solicitar pantalla completa del navegador si está disponible
+      try { modal.requestFullscreen && modal.requestFullscreen(); } catch (e) { }
+    }
+
+    function closeQRFullscreen() {
+      const modal = document.getElementById('qr-fullscreen-modal');
+      if (modal) modal.style.display = 'none';
+      try { document.exitFullscreen && document.exitFullscreen(); } catch (e) { }
+    }
+
+    // ════════ APLICAR DATOS DE USUARIO A LA UI ════════
+    function applyUserToUI(user) {
+      const nombre = user.nombre_completo || 'Usuario';
+      const parts = nombre.trim().split(' ').filter(Boolean);
+      const initials = parts.length >= 2
+        ? (parts[0][0] + parts[1][0]).toUpperCase()
+        : (parts[0]?.[0]?.toUpperCase() || 'U');
+
+      document.getElementById('dash-name').textContent = parts[0] || 'Usuario';
+      document.getElementById('topbar-av').textContent = initials;
+      document.getElementById('profile-avatar-initials').textContent = initials;
+      document.getElementById('profile-display-name').textContent = nombre;
+
+      if (user.rol) {
+        const badge = document.getElementById('profile-role-badge');
+        badge.textContent = ROL_LABELS[user.rol] || user.rol;
+        badge.style.background = (ROL_COLORS[user.rol] || '#555') + '44';
+        badge.style.color = '#fff';
+      }
+    }
+
+    // ════════ CUPOS ════════
+    async function loadCupos() {
+      try {
+        const data = await apiGet('/parqueadero/cupos');
+        if (!data.ok) return;
+
+        let totalCap = 0, totalOcup = 0;
+        data.data.forEach(lado => {
+          totalCap += lado.capacidad;
+          totalOcup += lado.ocupados;
+        });
+        const disponibles = totalCap - totalOcup;
+        const pct = totalCap > 0 ? Math.round(totalOcup * 100 / totalCap) : 0;
+
+        document.querySelector('.stat-card.available .stat-number').textContent = disponibles;
+        document.querySelector('.stat-card.occupied  .stat-number').textContent = totalOcup;
+        document.querySelector('.stat-card.total     .stat-number').textContent = totalCap;
+        document.querySelector('.stat-badge.red').textContent = pct + '%';
+        document.querySelector('.progress-bar-fill').style.width = pct + '%';
+        document.querySelector('.progress-bar-fill span').textContent = pct + '%';
+        document.querySelector('.progress-labels span:last-child').textContent = totalCap;
+      } catch (e) { console.warn('loadCupos:', e); }
+    }
+
+    // ════════ HISTORIAL (sección completa) ════════
+    let histPage = 1;
+    let histTodosLosRegistros = [];
+
+    async function loadHistorial(page = 1) {
+      histPage = page;
+      try {
+        // Cargamos hasta 200 para poder filtrar/paginar en cliente
+        const data = await apiGet(`/parqueadero/historial?page=1&limit=200`);
+        if (!data.ok) return;
+        histTodosLosRegistros = data.data || [];
+        calcularResumen(histTodosLosRegistros);
+        aplicarFiltros();
+      } catch (e) { console.warn('loadHistorial:', e); }
+
+      // También actualiza la mini-tabla del dashboard
+      try {
+        const data = await apiGet(`/parqueadero/historial?page=1&limit=4`);
+        if (!data.ok) return;
+        const tbody = document.querySelector('#section-dashboard .history-table tbody');
+        if (!tbody) return;
+        if (!data.data.length) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;opacity:.5;padding:20px">Sin registros aún</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = data.data.map(r => {
+          const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+          const salida = r.fecha_salida ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : '—';
+          const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : '—';
+          const badge = r.estado === 'completado'
+            ? `<span class="badge-status done">Completado</span>`
+            : `<span class="badge-status active">En curso</span>`;
+          return `<tr><td>${entrada}</td><td>${r.tipo_vehiculo} · ${r.identificador}</td><td>${salida}</td><td>${duracion}</td><td>${badge}</td></tr>`;
+        }).join('');
+      } catch (e) { console.warn('loadHistorialDash:', e); }
+    }
+
+    function calcularResumen(registros) {
+      const total = registros.length;
+      const activos = registros.filter(r => r.estado !== 'completado').length;
+      const completados = registros.filter(r => r.duracion_min != null);
+      const promMin = completados.length
+        ? Math.round(completados.reduce((s, r) => s + r.duracion_min, 0) / completados.length)
+        : 0;
+      const promH = Math.floor(promMin / 60);
+      const promM = promMin % 60;
+
+      const elTotal = document.getElementById('hist-total');
+      const elProm  = document.getElementById('hist-promedio');
+      const elAct   = document.getElementById('hist-activos');
+      if (elTotal) elTotal.textContent = total;
+      if (elProm)  elProm.textContent  = promH > 0 ? `${promH}h ${promM}m` : `${promM}m`;
+      if (elAct)   elAct.textContent   = activos;
+    }
+
+    function aplicarFiltros() {
+      const ini    = document.getElementById('hist-fecha-ini')?.value;
+      const fin    = document.getElementById('hist-fecha-fin')?.value;
+      const tipo   = document.getElementById('hist-tipo')?.value;
+      const estado = document.getElementById('hist-estado')?.value;
+
+      let filtrados = [...histTodosLosRegistros];
+      if (ini)    filtrados = filtrados.filter(r => new Date(r.fecha_entrada) >= new Date(ini));
+      if (fin)    filtrados = filtrados.filter(r => new Date(r.fecha_entrada) <= new Date(fin + 'T23:59:59'));
+      if (tipo)   filtrados = filtrados.filter(r => r.tipo_vehiculo?.toLowerCase().includes(tipo.toLowerCase()));
+      if (estado) filtrados = filtrados.filter(r => estado === 'activo' ? r.estado !== 'completado' : r.estado === estado);
+
+      renderTablaHistorial(filtrados);
+    }
+
+    function limpiarFiltros() {
+      const ids = ['hist-fecha-ini','hist-fecha-fin','hist-tipo','hist-estado'];
+      ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      aplicarFiltros();
+    }
+
+    function renderTablaHistorial(registros) {
+      const LIMIT = 10;
+      const totalPags = Math.max(1, Math.ceil(registros.length / LIMIT));
+      if (histPage > totalPags) histPage = 1;
+      const inicio = (histPage - 1) * LIMIT;
+      const pagina = registros.slice(inicio, inicio + LIMIT);
+
+      const tbody = document.getElementById('hist-tbody');
+      if (!tbody) return;
+
+      const label = document.getElementById('hist-count-label');
+      if (label) label.textContent = `${registros.length} registro${registros.length !== 1 ? 's' : ''}`;
+
+      if (!registros.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;opacity:.45;">
+          <i class="bi bi-search" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+          No se encontraron registros con esos filtros</td></tr>`;
+        renderPaginacion(0, 1);
+        return;
+      }
+
+      tbody.innerHTML = pagina.map((r, i) => {
+        const num     = inicio + i + 1;
+        const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+        const salida  = r.fecha_salida ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : '—';
+        const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : '—';
+
+        const tipoIcon = r.tipo_vehiculo === 'Carro' ? 'bi-car-front-fill'
+                       : r.tipo_vehiculo === 'Moto'  ? 'bi-bicycle'
+                       : 'bi-bicycle';
+
+        const badge = r.estado === 'completado'
+          ? `<span class="badge-status done"><i class="bi bi-check-circle" style="margin-right:3px;"></i>Completado</span>`
+          : `<span class="badge-status active"><i class="bi bi-circle-fill" style="font-size:7px;margin-right:4px;"></i>En curso</span>`;
+
+        return `<tr style="cursor:pointer;" onclick="verDetalle(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+          <td style="color:rgba(255,255,255,0.35);font-size:12px;">${num}</td>
+          <td>${entrada}</td>
+          <td><i class="bi ${tipoIcon}" style="color:var(--brand-color);margin-right:5px;"></i>${r.tipo_vehiculo} · <strong>${r.identificador}</strong>${r.color ? ` <span style="font-size:11px;opacity:.6;">· ${r.color}</span>` : ''}</td>
+          <td><i class="bi bi-geo-alt" style="color:var(--brand-color);margin-right:3px;"></i>${r.lado || '—'}</td>
+          <td>${salida}</td>
+          <td>${duracion}</td>
+          <td>${badge}</td>
+        </tr>`;
+      }).join('');
+
+      renderPaginacion(registros.length, totalPags);
+
+      const info = document.getElementById('hist-page-info');
+      if (info) info.textContent = `Página ${histPage} de ${totalPags} · ${registros.length} registros`;
+    }
+
+    function renderPaginacion(total, totalPags) {
+      const cont = document.getElementById('hist-page-btns');
+      if (!cont) return;
+      cont.innerHTML = '';
+
+      if (totalPags <= 1) return;
+
+      const mkBtn = (label, page, disabled, active) => {
+        const b = document.createElement('button');
+        b.innerHTML = label;
+        b.style.cssText = `padding:6px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,${active?'0.4':'0.15'});
+          background:${active ? 'var(--brand-color)' : 'rgba(255,255,255,0.06)'};
+          color:${disabled ? 'rgba(255,255,255,0.25)' : '#fff'};
+          font-family:'Poppins',sans-serif;font-size:13px;font-weight:${active?'600':'400'};
+          cursor:${disabled ? 'default' : 'pointer'};`;
+        if (!disabled) b.onclick = () => { histPage = page; aplicarFiltros(); };
+        return b;
+      };
+
+      cont.appendChild(mkBtn('<i class="bi bi-chevron-left"></i>', histPage - 1, histPage === 1, false));
+      for (let p = 1; p <= totalPags; p++) {
+        if (totalPags > 7 && p > 2 && p < totalPags - 1 && Math.abs(p - histPage) > 1) {
+          if (p === 3 || p === totalPags - 2) { const d = document.createElement('span'); d.textContent='…'; d.style.cssText='padding:0 4px;color:rgba(255,255,255,0.3);'; cont.appendChild(d); }
+          continue;
+        }
+        cont.appendChild(mkBtn(p, p, false, p === histPage));
+      }
+      cont.appendChild(mkBtn('<i class="bi bi-chevron-right"></i>', histPage + 1, histPage === totalPags, false));
+    }
+
+    function verDetalle(r) {
+      const panel = document.getElementById('hist-detail-panel');
+      const body  = document.getElementById('hist-detail-body');
+      if (!panel || !body) return;
+
+      const entrada  = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' });
+      const salida   = r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' }) : 'Aún en el parqueadero';
+      const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : 'En progreso';
+
+      const campo = (icon, label, val) => `
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 16px;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:6px;display:flex;align-items:center;gap:5px;">
+            <i class="bi ${icon}" style="color:var(--brand-color);"></i>${label}
+          </div>
+          <div style="font-size:14px;font-weight:500;">${val}</div>
+        </div>`;
+
+      body.innerHTML =
+        campo('bi-hash',           'ID registro',   `#${r.id_registro}`) +
+        campo('bi-car-front-fill', 'Vehículo',      `${r.tipo_vehiculo} · ${r.identificador}`) +
+        campo('bi-palette2',       'Color',          r.color || '—') +
+        campo('bi-geo-alt-fill',   'Lado',          r.lado || '—') +
+        campo('bi-box-arrow-in-right', 'Entrada',   entrada) +
+        campo('bi-box-arrow-right','Salida',         salida) +
+        campo('bi-stopwatch-fill', 'Duración',      duracion) +
+        campo('bi-check2-circle',  'Estado',        r.estado === 'completado' ? 'Completado' : 'En curso');
+
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function exportarHistorial() {
+      if (!histTodosLosRegistros.length) { showToast('No hay registros para exportar', 'error'); return; }
+      const cabecera = ['ID','Fecha entrada','Vehículo','Identificador','Color','Lado','Fecha salida','Duración (min)','Estado'];
+      const filas = histTodosLosRegistros.map(r => [
+        r.id_registro,
+        new Date(r.fecha_entrada).toLocaleString('es-CO'),
+        r.tipo_vehiculo, r.identificador, r.color || '', r.lado || '',
+        r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO') : '',
+        r.duracion_min ?? '', r.estado
+      ]);
+      const csv = [cabecera, ...filas].map(f => f.map(v => `"${v}"`).join(',')).join('\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = `historial_parqueadero_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click(); URL.revokeObjectURL(url);
+      showToast('CSV exportado correctamente', 'success');
+    }
+
+    // ════════ PERFIL ════════
+    async function loadPerfil() {
+      try {
+        const data = await apiGet('/usuarios/perfil');
+        if (!data.ok) return;
+        userProfile = data.data;
+
+        // Rellenar campos del formulario
+        setValue('p-nombre', data.data.nombre_completo);
+        setValue('p-tipo-id', data.data.tipo_id);
+        setValue('p-id-num', data.data.numero_id);
+        setValue('p-rol', data.data.rol);
+
+        // Si tiene región, cargar centros y seleccionar
+        if (data.data.id_region) {
+          setValue('p-region', data.data.id_region);
+          await loadCentros(data.data.id_region);
+          setValue('p-centro', data.data.id_centro);
+        }
+
+        applyUserToUI(data.data);
+        onRolChange();
+
+        // Cargar regiones desde la API (reemplaza el hardcode)
+        loadRegiones();
+      } catch (e) { console.warn('loadPerfil:', e); }
+    }
+
+    async function loadRegiones() {
+      try {
+        const data = await apiGet('/catalogos/regiones');
+        if (!data.ok) return;
+        const sel = document.getElementById('p-region');
+        const cur = sel.value;
+        sel.innerHTML = '<option value="">Selecciona una región</option>';
+        data.data.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.id_region; opt.textContent = r.nombre;
+          sel.appendChild(opt);
+        });
+        if (cur) sel.value = cur;
+      } catch (e) { }
+    }
+
+    async function loadCentros(idRegion) {
+      try {
+        const data = await apiGet(`/catalogos/centros?region=${idRegion}`);
+        if (!data.ok) return;
+        const sel = document.getElementById('p-centro');
+        sel.innerHTML = '<option value="">Selecciona un centro</option>';
+        data.data.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id_centro; opt.textContent = c.nombre;
+          sel.appendChild(opt);
+        });
+      } catch (e) { }
+    }
+
+    function filterCentros() {
+      const region = document.getElementById('p-region').value;
+      if (region) loadCentros(region);
+    }
+
+    function setValue(id, val) {
+      const el = document.getElementById(id);
+      if (el && val != null) el.value = val;
+    }
+
+    function liveUpdateHeader() {
+      const nombre = document.getElementById('p-nombre').value.trim();
+      const parts = nombre.split(' ').filter(Boolean);
+      const initials = parts.length >= 2
+        ? (parts[0][0] + parts[1][0]).toUpperCase()
+        : (parts[0]?.[0]?.toUpperCase() || 'U');
+      document.getElementById('profile-avatar-initials').textContent = initials;
+      document.getElementById('profile-display-name').textContent = nombre || 'Usuario';
+      document.getElementById('dash-name').textContent = parts[0] || 'Usuario';
+      document.getElementById('topbar-av').textContent = initials;
+    }
+
+    function onRolChange() {
+      const rol = document.getElementById('p-rol').value;
+      const box = document.getElementById('rol-info-box');
+      const badge = document.getElementById('profile-role-badge');
+      if (!rol) { box.style.display = 'none'; badge.textContent = 'Sin rol asignado'; return; }
+      badge.textContent = ROL_LABELS[rol];
+      badge.style.background = ROL_COLORS[rol] + '44';
+      badge.style.color = '#fff';
+      box.style.display = 'flex';
+      const msgs = {
+        aprendiz: `<i class="bi bi-bicycle"></i> Como <strong>Aprendiz</strong> solo puedes registrar <strong>bicicletas</strong>. Acceso al Lado A.`,
+        funcionario: `<i class="bi bi-car-front-fill"></i> Como <strong>Funcionario</strong> puedes registrar <strong>carros y motos</strong>. Carros: Lado A y B · Motos: solo Lado A.`,
+        instructor: `<i class="bi bi-car-front-fill"></i> Como <strong>Instructor</strong> puedes registrar <strong>carros y motos</strong>. Carros: Lado A y B · Motos: solo Lado A.`,
+      };
+      box.className = 'rol-info-box full-width ' + (rol === 'aprendiz' ? 'info' : 'warning');
+      box.innerHTML = msgs[rol] || '';
+    }
+
+    async function saveProfile() {
+      const nombre = document.getElementById('p-nombre').value.trim();
+      const tipo_id = document.getElementById('p-tipo-id').value;
+      const num_id = document.getElementById('p-id-num').value.trim();
+      const centro = document.getElementById('p-centro').value;
+      const rol = document.getElementById('p-rol').value;
+
+      if (!nombre) { showToast('Ingresa tu nombre completo.', 'error'); return; }
+      if (!tipo_id) { showToast('Selecciona tu tipo de identificación.', 'error'); return; }
+      if (!num_id) { showToast('Ingresa tu número de identificación.', 'error'); return; }
+      if (!rol) { showToast('Debes seleccionar un rol.', 'error'); return; }
+      if (!centro) { showToast('Debes seleccionar tu centro de formación.', 'error'); return; }
+
+      try {
+        const data = await apiPut('/usuarios/perfil', {
+          nombre_completo: nombre,
+          tipo_id,
+          numero_id: num_id,
+          id_centro: centro || null,
+          rol: rol || null,
+        });
+        if (!data.ok) { showToast(data.message || 'Error al guardar.', 'error'); return; }
+
+        saveProfile();
+
+        // Actualizar user en localStorage
+        const user = Auth.getUser();
+        Auth.save({
+          access_token: Auth.getToken(),
+          refresh_token: Auth.getRefreshToken(),
+          user: { ...user, nombre_completo: nombre, tipo_id, numero_id: num_id, rol: rol || null, id_centro: centro || null },
+        });
+
+        liveUpdateHeader();
+        applyRolToVehicleSection();
+        showToast('¡Perfil guardado!', 'success');
+      } catch { showToast('Error de conexión.', 'error'); }
+    }
+
+    // ════════ VEHÍCULOS ════════
+    async function loadVehiculos() {
+      try {
+        const data = await apiGet('/vehiculos');
+        if (!data.ok) return;
+        // Convertir id_tipo numérico a nombre
+        const mapTipo = { 1: 'bicicleta', 2: 'carro', 3: 'moto' };
+        vehiculos = data.data.map(v => ({
+          ...v,
+          tipo: v.tipo || mapTipo[v.id_tipo] || 'carro',
+        }));
+      } catch (e) { console.warn('loadVehiculos:', e); }
+    }
+
+    function getCurrentRol() { return document.getElementById('p-rol').value; }
+
+    function applyRolToVehicleSection() {
+      const rol = getCurrentRol();
+      const alert = document.getElementById('vehiculo-rol-alert');
+      const area = document.getElementById('vehiculo-form-area');
+      const sub = document.getElementById('vehiculo-sub');
+      if (!rol) { alert.style.display = 'flex'; area.style.display = 'none'; return; }
+      alert.style.display = 'none'; area.style.display = 'block';
+      const tabBici = document.getElementById('vtab-bicicleta');
+      const tabCarro = document.getElementById('vtab-carro');
+      const tabMoto = document.getElementById('vtab-moto');
+      if (rol === 'aprendiz') {
+        tabBici.style.display = 'inline-flex'; tabCarro.style.display = 'none'; tabMoto.style.display = 'none';
+        sub.textContent = 'Aprendiz · Solo bicicletas';
+        setVehicle('bicicleta', tabBici); tabBici.classList.add('active');
+      } else {
+        tabBici.style.display = 'none'; tabCarro.style.display = 'inline-flex'; tabMoto.style.display = 'inline-flex';
+        sub.textContent = (ROL_LABELS[rol] || rol) + ' · Carros y motos';
+        setVehicle('carro', tabCarro); tabCarro.classList.add('active');
+      }
+    }
+
+    function setVehicle(type, btn) {
+      document.querySelectorAll('.vtab').forEach(t => t.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      ['carro', 'moto', 'bicicleta'].forEach(t => {
+        const el = document.getElementById('form-' + t); if (el) el.style.display = 'none';
+      });
+      const form = document.getElementById('form-' + type); if (form) form.style.display = 'block';
+    }
+
+    function previewImage(input, previewId) {
+      const preview = document.getElementById(previewId);
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    async function saveVehicle(tipo) {
+      const rol = getCurrentRol();
+      if (!rol) { showToast('Configura tu rol en el perfil primero.', 'error'); return; }
+
+      const formData = new FormData();
+      const mapTipo = { bicicleta: '1', carro: '2', moto: '3' };
+      formData.append('id_tipo', mapTipo[tipo]);
+
+      if (tipo === 'bicicleta') {
+        const modelo = document.getElementById('bici-modelo').value.trim();
+        const color = document.getElementById('bici-color').value.trim();
+        const desc = document.getElementById('bici-desc').value.trim();
+        if (!modelo || !color) { showToast('Completa modelo y color.', 'error'); return; }
+        formData.append('modelo', modelo);
+        formData.append('color', color);
+        if (desc) formData.append('descripcion', desc);
+        const foto = document.getElementById('foto-bici').files[0];
+        if (foto) formData.append('foto', foto);
+      } else {
+        const placa = document.getElementById(tipo + '-placa').value.trim();
+        const color = document.getElementById(tipo + '-color').value.trim();
+        const desc = document.getElementById(tipo + '-desc').value.trim();
+        if (!placa || !color) { showToast('Completa placa y color.', 'error'); return; }
+        formData.append('placa', placa);
+        formData.append('color', color);
+        if (desc) formData.append('descripcion', desc);
+        const foto = document.getElementById('foto-' + tipo)?.files[0];
+        if (foto) formData.append('foto', foto);
+      }
+
+      try {
+        const data = await apiPostForm('/vehiculos', formData);
+        if (!data.ok) { showToast(data.message || 'Error al guardar.', 'error'); return; }
+
+        // Recargar lista desde la API
+        await loadVehiculos();
+        renderVehicleList();
+        clearVehicleForm(tipo);
+        await generateUserQR();
+        showToast('¡Vehículo registrado!', 'success');
+      } catch { showToast('Error de conexión.', 'error'); }
+    }
+
+    function clearVehicleForm(tipo) {
+      const ids = tipo === 'bicicleta' ? ['bici-modelo', 'bici-color', 'bici-desc'] : [tipo + '-placa', tipo + '-color', tipo + '-desc'];
+      ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      const p = document.getElementById(tipo === 'bicicleta' ? 'preview-bici' : 'preview-' + tipo);
+      if (p) { p.src = ''; p.style.display = 'none'; }
+      const f = document.getElementById(tipo === 'bicicleta' ? 'foto-bici' : 'foto-' + tipo);
+      if (f) f.value = '';
+    }
+
+    // ════════ LISTA VEHÍCULOS ════════
+    function renderVehicleList() {
+      const container = document.getElementById('perfil-vehicles-list');
+      if (!vehiculos.length) {
+        container.innerHTML = `<div class="pvc-empty"><i class="bi bi-exclamation-circle"></i><span>Aún no has registrado ningún vehículo. <button class="link-btn" onclick="showSection('vehiculo',null)">Regístralo aquí</button></span></div>`;
+        return;
+      }
+      container.innerHTML = vehiculos.map((v, i) => `
+    <div class="vehicle-card">
+      <div class="vc-left">
+        ${v.foto_url
+          ? `<img class="vc-thumb" src="http://localhost:3000${v.foto_url}" alt="foto"/>`
+          : `<div class="vc-icon-box tipo-${v.tipo}"><i class="bi ${TIPO_ICONS[v.tipo] || 'bi-car-front-fill'}"></i></div>`
+        }
+      </div>
+      <div class="vc-body">
+        <div class="vc-header">
+          <span class="vc-type-badge tipo-${v.tipo}"><i class="bi ${TIPO_ICONS[v.tipo] || 'bi-car-front-fill'}"></i> ${TIPO_LABELS[v.tipo] || v.tipo}</span>
+          <button class="vc-delete-btn" onclick="openDeleteModal(${i})"><i class="bi bi-trash3"></i> Eliminar</button>
+        </div>
+        <div class="vc-details">
+          ${v.placa ? `<span><i class="bi bi-123"></i> <strong>Placa:</strong> ${v.placa}</span>` : ''}
+          ${v.modelo ? `<span><i class="bi bi-bicycle"></i> <strong>Modelo:</strong> ${v.modelo}</span>` : ''}
+          ${v.color ? `<span><i class="bi bi-palette"></i> <strong>Color:</strong> ${v.color}</span>` : ''}
+          ${v.descripcion ? `<span class="vc-desc"><i class="bi bi-card-text"></i> ${v.descripcion}</span>` : ''}
+        </div>
+        <div class="vc-access">
+          ${(v.tipo === 'moto' || v.tipo === 'bicicleta')
+          ? `<i class="bi bi-info-circle-fill" style="color:#ffb74d"></i> Acceso: Solo Lado A`
+          : `<i class="bi bi-check-circle-fill" style="color:#81c784"></i> Acceso: Lado A y Lado B`}
+        </div>
+      </div>
+    </div>`).join('');
+    }
+
+    // ════════ ELIMINAR VEHÍCULO ════════
+    function openDeleteModal(index) {
+      deleteIndex = index;
+      const v = vehiculos[index];
+      const label = v.placa ? `${TIPO_LABELS[v.tipo]} · Placa ${v.placa}` : `${TIPO_LABELS[v.tipo]} · ${v.modelo || v.color}`;
+      document.getElementById('delete-modal-desc').textContent = `Vas a eliminar: ${label}`;
+      document.getElementById('delete-modal').style.display = 'flex';
+    }
+    function closeDeleteModal() { document.getElementById('delete-modal').style.display = 'none'; deleteIndex = -1; }
+
+    async function confirmDelete() {
+      if (deleteIndex < 0) return;
+      const v = vehiculos[deleteIndex];
+      try {
+        const data = await apiDelete(`/vehiculos/${v.id_vehiculo}`);
+        if (!data.ok) { showToast(data.message || 'Error al eliminar.', 'error'); closeDeleteModal(); return; }
+        vehiculos.splice(deleteIndex, 1);
+        renderVehicleList();
+        closeDeleteModal();
+        showToast('Vehículo eliminado.', 'info');
+      } catch { showToast('Error de conexión.', 'error'); closeDeleteModal(); }
+    }
+
+    // ════════ LOGOUT ════════
+    async function handleLogout() {
+      try {
+        await apiPost('/auth/logout', { refresh_token: Auth.getRefreshToken() });
+      } catch { }
+      Auth.clear();
+      window.location.href = 'login.html';
+    }
+
+    // ════════ NAVEGACIÓN ════════
+    function showSection(name, btn) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('section-' + name).classList.add('active');
+      if (btn) { btn.classList.add('active'); }
+      else { const nb = document.querySelector(`.nav-item[onclick*="'${name}'"]`); if (nb) nb.classList.add('active'); }
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('overlay').classList.remove('show');
+      if (name === 'vehiculo') applyRolToVehicleSection();
+      if (name === 'historial') { histPage = 1; loadHistorial(); }
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('overlay').classList.toggle('show');
+    }
+
+    function downloadQR() {
+      const canvas = document.getElementById('qrCanvas');
+      if (!canvas) return;
+      const link = document.createElement('a');
+      link.download = 'mi-qr-parqueadero.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // ════════ TOAST ════════
+    function showToast(msg, type = 'success') {
+      let toast = document.getElementById('toast');
+      if (!toast) { toast = document.createElement('div'); toast.id = 'toast'; document.body.appendChild(toast); }
+      const icons = { success: 'bi-check-circle-fill', error: 'bi-x-circle-fill', info: 'bi-info-circle-fill' };
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `<i class="bi ${icons[type]}"></i> ${msg}`;
+      toast.style.opacity = '1'; toast.style.transform = 'translateY(0)';
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; }, 3200);
+    }
+  </script>
+</body>
+
+</html>

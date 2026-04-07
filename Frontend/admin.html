@@ -1,0 +1,2440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — Parqueadero</title>
+  <link rel="stylesheet" href="/Frontend/admin.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- QR Scanner -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="api.js"></script>
+</head>
+<body>
+
+  <div class="background">
+    <div class="blob blob1"></div>
+    <div class="blob blob2"></div>
+    <div class="blob blob3"></div>
+  </div>
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="/Frontend/img/logo -Photoroom.png" alt="Logo" class="nav-logo-img">
+      <span>Parksmart - Admin</span>
+    </div>
+    <div class="sidebar-role-badge">Administrador</div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showSection('dashboard', this)">
+        <i class="bi bi-speedometer2"></i><span>Inicio</span>
+      </button>
+      <button class="nav-item" onclick="showSection('scanner', this)">
+        <i class="bi bi-qr-code-scan"></i><span>Escanear QR</span>
+      </button>
+      <button class="nav-item" onclick="showSection('cupos', this)">
+        <i class="bi bi-grid-3x3-gap-fill"></i><span>Gestión de Cupos</span>
+      </button>
+      <button class="nav-item" onclick="showSection('usuarios', this)">
+        <i class="bi bi-people-fill"></i><span>Usuarios</span>
+      </button>
+      <button class="nav-item" onclick="showSection('historia', this)">
+        <i class="bi bi-clock-history"></i><span>Historial</span>
+      </button>
+      <button class="nav-item" onclick="showSection('registrar', this)">
+        <i class="bi bi-person-plus-fill"></i><span>Registrar Usuario</span>
+      </button>
+      <div class="nav-divider"></div>
+      <button class="nav-item" onclick="showSection('perfil', this)">
+        <i class="bi bi-person-circle"></i><span>Mi Perfil</span>
+      </button>
+      <button class="nav-item" onclick="showSection('vehiculo', this)">
+        <i class="bi bi-car-front-fill"></i><span>Mi Vehículo</span>
+      </button>
+    </nav>
+    
+    <button class="nav-item logout" onclick="handleLogout()">
+      <i class="bi bi-box-arrow-left"></i><span>Cerrar sesión</span>
+    </button>
+  </aside>
+
+  <!-- Topbar móvil -->
+  <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <div class="topbar-logo-wrap">
+      <img src="img/logo.png" alt="Logo" class="nav-logo-img">
+      <span class="topbar-title">Parksmart - Admin</span>
+    </div>
+    <div class="topbar-avatar admin-av">AD</div>
+  </div>
+
+  <!-- ═══ MAIN ═══ -->
+  <main class="main">
+
+    <!-- ══ DASHBOARD ══ -->
+    <section id="section-dashboard" class="section active">
+      <div class="section-header">
+        <div>
+          <h1>Panel de <span class="hl">Control</span></h1>
+          <p class="section-sub">Resumen en tiempo real - Parqueadero del Sena(CIGEC).</p>
+        </div>
+        <div class="header-time" id="live-time"></div>
+      </div>
+
+      <!-- Tabs Lado A / Lado B -->
+      <div class="dash-lado-tabs">
+        <button class="dash-lado-tab active" id="dash-tab-global" onclick="switchDashLado('global', this)">
+          <i class="bi bi-grid-fill"></i> Vista General
+        </button>
+        <button class="dash-lado-tab" id="dash-tab-a" onclick="switchDashLado('A', this)">
+          <i class="bi bi-sign-turn-right-fill"></i> Lado A <span class="side-tab-sub">Espacio abierto</span>
+        </button>
+        <button class="dash-lado-tab" id="dash-tab-b" onclick="switchDashLado('B', this)">
+          <i class="bi bi-buildings-fill"></i> Lado B <span class="side-tab-sub">Espacios controlados</span>
+        </button>
+      </div>
+
+      <!-- ══ PANEL GLOBAL ══ -->
+      <div id="dash-panel-global" class="dash-side-panel">
+        <div class="cards-row four">
+          <div class="stat-card green">
+            <div class="stat-icon"><i class="bi bi-car-front"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="stat-disponibles">0</span>
+              <span class="stat-label">Cupos disponibles</span>
+            </div>
+            <div class="stat-badge green-b">Libre</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon"><i class="bi bi-slash-circle"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="stat-ocupados">0</span>
+              <span class="stat-label">Cupos ocupados</span>
+            </div>
+            <div class="stat-badge red-b" id="stat-pct">0%</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon"><i class="bi bi-arrow-down-circle-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="stat-entradas">0</span>
+              <span class="stat-label">Entradas hoy</span>
+            </div>
+            <div class="stat-badge blue-b">Hoy</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-icon"><i class="bi bi-arrow-up-circle-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="stat-salidas">0</span>
+              <span class="stat-label">Salidas hoy</span>
+            </div>
+            <div class="stat-badge yellow-b">Hoy</div>
+          </div>
+        </div>
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Ocupación total actual</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="occ-bar" style="width:0%"><span>0%</span></div>
+          </div>
+          <div class="progress-labels"><span>0</span><span>25</span><span>50</span></div>
+        </div>
+        <div class="charts-row">
+          <div class="glass-panel chart-panel">
+            <div class="panel-title"><i class="bi bi-graph-up-arrow"></i> Flujo por hora (hoy)</div>
+            <canvas id="chartHora" height="200"></canvas>
+          </div>
+          <div class="glass-panel chart-panel">
+            <div class="panel-title"><i class="bi bi-calendar3"></i> Ingresos últimos 7 días</div>
+            <canvas id="chartSemana" height="200"></canvas>
+          </div>
+        </div>
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-activity"></i> Actividad reciente</div>
+          <div class="table-wrap">
+            <table class="history-table" id="recent-table">
+              <thead>
+                <tr><th>Usuario</th><th>ID</th><th>Vehículo</th><th>Hora</th><th>Lado</th><th>Evento</th></tr>
+              </thead>
+              <tbody id="recent-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PANEL LADO A ══ -->
+      <div id="dash-panel-A" class="dash-side-panel" style="display:none">
+        <div class="lado-banner lado-a-banner">
+          <i class="bi bi-sign-turn-right-fill"></i>
+          <div>
+            <strong>Lado A — Espacio Abierto</strong>
+            <span>Carros, motos y bicicletas · Acceso general</span>
+          </div>
+        </div>
+        <div class="cards-row four">
+          <div class="stat-card blue">
+            <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="dA-carros-dentro">0</span>
+              <span class="stat-label">Carros dentro</span>
+            </div>
+            <div class="stat-badge blue-b" id="dA-carros-hoy">12 hoy</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="dA-motos-dentro">0</span>
+              <span class="stat-label">Motos dentro</span>
+            </div>
+            <div class="stat-badge yellow-b" id="dA-motos-hoy">8 hoy</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="dA-bicis-dentro">0</span>
+              <span class="stat-label">Bicicletas dentro</span>
+            </div>
+            <div class="stat-badge green-b" id="dA-bicis-hoy">21 hoy</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="dA-total-dentro">0</span>
+              <span class="stat-label">Total dentro</span>
+            </div>
+            <div class="stat-badge red-b" id="dA-total-hoy">41 hoy</div>
+          </div>
+        </div>
+        <div class="charts-row">
+          <div class="glass-panel chart-panel">
+            <div class="panel-title"><i class="bi bi-graph-up-arrow"></i> Flujo Lado A por hora (hoy)</div>
+            <canvas id="chartHoraA" height="200"></canvas>
+          </div>
+          <div class="glass-panel chart-panel">
+            <div class="panel-title"><i class="bi bi-pie-chart-fill"></i> Distribución por tipo — Lado A</div>
+            <canvas id="chartTipoA" height="200"></canvas>
+          </div>
+        </div>
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-activity"></i> Actividad reciente — Lado A</div>
+          <div class="table-wrap">
+            <table class="history-table">
+              <thead><tr><th>Usuario</th><th>Vehículo</th><th>Hora</th><th>Evento</th></tr></thead>
+              <tbody id="recent-tbody-A">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PANEL LADO B ══ -->
+      <div id="dash-panel-B" class="dash-side-panel" style="display:none">
+        <div class="lado-banner lado-b-banner">
+          <i class="bi bi-buildings-fill"></i>
+          <div>
+            <strong>Lado B — Espacios Controlados</strong>
+            <span>Solo carros · Exclusivo funcionarios e instructores</span>
+          </div>
+        </div>
+        <div class="cards-row four">
+          <div class="stat-card green">
+            <div class="stat-icon"><i class="bi bi-p-circle-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="dB-disponibles">30</span>
+              <span class="stat-label">Cupos disponibles</span>
+            </div>
+            <div class="stat-badge green-b">Libre</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="dB-ocupados">0</span>
+              <span class="stat-label">Carros dentro</span>
+            </div>
+            <div class="stat-badge red-b" id="dB-pct">0%</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon"><i class="bi bi-arrow-down-circle-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="dB-entradas">0</span>
+              <span class="stat-label">Entradas hoy</span>
+            </div>
+            <div class="stat-badge blue-b">Hoy</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-icon"><i class="bi bi-arrow-up-circle-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="dB-salidas">0</span>
+              <span class="stat-label">Salidas hoy</span>
+            </div>
+            <div class="stat-badge yellow-b">Hoy</div>
+          </div>
+        </div>
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Ocupación Lado B</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="occ-bar-B" style="width:0%"><span>0%</span></div>
+          </div>
+          <div class="progress-labels"><span>0</span><span>15</span><span>30</span></div>
+        </div>
+        <div class="charts-row">
+          <div class="glass-panel chart-panel">
+            <div class="panel-title"><i class="bi bi-graph-up-arrow"></i> Flujo Lado B por hora (hoy)</div>
+            <canvas id="chartHoraB" height="200"></canvas>
+          </div>
+          <div class="glass-panel chart-panel">
+            <div class="panel-title"><i class="bi bi-calendar3"></i> Ingresos Lado B — últimos 7 días</div>
+            <canvas id="chartSemanaB" height="200"></canvas>
+          </div>
+        </div>
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-activity"></i> Actividad reciente — Lado B</div>
+          <div class="table-wrap">
+            <table class="history-table">
+              <thead><tr><th>Usuario</th><th>Rol</th><th>Hora</th><th>Evento</th></tr></thead>
+              <tbody id="recent-tbody-B">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ ESCÁNER QR ══ -->
+    <section id="section-scanner" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Escanear <span class="hl">QR</span></h1>
+          <p class="section-sub">Registra entrada o salida de un usuario</p>
+        </div>
+      </div>
+
+      <div class="scanner-layout">
+
+        <!-- Cámara -->
+        <div class="glass-panel scanner-card">
+          <div class="panel-title"><i class="bi bi-camera-video-fill"></i> Escáner de Cámara</div>
+
+          <!-- Viewport con animación de escaneo -->
+          <div class="qr-viewport-wrap">
+            <div id="qr-reader" class="qr-viewport"></div>
+            <div class="qr-scan-overlay" id="qr-overlay" style="display:none">
+              <div class="qr-scan-frame">
+                <span class="corner tl"></span><span class="corner tr"></span>
+                <span class="corner bl"></span><span class="corner br"></span>
+                <div class="scan-line"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Estado de cámara -->
+          <div class="scan-status" id="scan-status">
+            <i class="bi bi-camera-video-off"></i> Cámara inactiva
+          </div>
+
+          <!-- Controles de cámara -->
+          <div class="scanner-controls">
+            <button class="btn-scan-start" id="btn-start-scan" onclick="startScan()">
+              <i class="bi bi-play-fill"></i> Iniciar cámara
+            </button>
+            <button class="btn-scan-stop" id="btn-stop-scan" onclick="stopScan()" style="display:none">
+              <i class="bi bi-stop-fill"></i> Detener
+            </button>
+            <button class="btn-flip-cam" id="btn-flip-cam" onclick="flipCamera()" style="display:none" title="Cambiar cámara">
+              <i class="bi bi-arrow-repeat"></i>
+            </button>
+          </div>
+
+          <!-- Subir imagen QR -->
+          <div class="scan-divider"><span>o</span></div>
+          <div class="scan-upload-area" onclick="document.getElementById('qr-file-input').click()">
+            <i class="bi bi-image"></i>
+            <span>Sube una imagen del QR</span>
+            <input type="file" id="qr-file-input" accept="image/*" style="display:none" onchange="scanFromFile(this)"/>
+          </div>
+
+          <!-- Manual fallback -->
+          <div class="manual-input">
+            <div class="manual-label"><i class="bi bi-keyboard"></i> O ingresa el código manualmente</div>
+            <div class="manual-row">
+              <input type="text" id="manual-id" placeholder="Código QR del usuario..." onkeydown="if(event.key==='Enter')processManual()"/>
+              <button class="btn-manual" onclick="processManual()"><i class="bi bi-search"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resultado -->
+        <div class="glass-panel result-card" id="scan-result-card">
+          <div class="panel-title"><i class="bi bi-person-check-fill"></i> Resultado del Escaneo</div>
+          <div id="scan-result-content" class="result-empty">
+            <div class="result-idle-icon">
+              <i class="bi bi-qr-code-scan"></i>
+            </div>
+            <p>Apunta la cámara al código QR del usuario<br>o súbelo como imagen</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══ GESTIÓN DE CUPOS ══ -->
+    <section id="section-cupos" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Gestión de <span class="hl">Parqueadero</span></h1>
+          <p class="section-sub">Control de cupos · Lado A y Lado B</p>
+        </div>
+      </div>
+
+      <!-- Tabs Lado A / Lado B -->
+      <div class="side-tabs">
+        <button class="side-tab active" id="tab-a" onclick="switchSide('A')">
+          <i class="bi bi-sign-no-parking"></i> Lado A
+          <span class="side-tab-sub">Espacio abierto</span>
+        </button>
+        <button class="side-tab" id="tab-b" onclick="switchSide('B')">
+          <i class="bi bi-map-fill"></i> Lado B
+          <span class="side-tab-sub">Espacios controlados</span>
+        </button>
+      </div>
+
+      <!-- ─── LADO A ─── -->
+      <div id="panel-A" class="side-panel">
+
+        <div class="side-a-note glass-panel">
+          <i class="bi bi-info-circle-fill"></i>
+          <div>
+            <strong>Espacio abierto sin distribución fija.</strong>
+            Solo se lleva conteo por tipo de vehículo. Los vehículos entran y salen libremente, no hay asignación de espacios específicos.
+          </div>
+        </div>
+
+        <!-- Contadores por tipo -->
+        <div class="cards-row four">
+          <div class="stat-card blue">
+            <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="a-carros-dentro">5</span>
+              <span class="stat-label">Carros dentro</span>
+            </div>
+            <div class="stat-badge blue-b" id="a-carros-hoy-b">12 hoy</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="a-motos-dentro">3</span>
+              <span class="stat-label">Motos dentro</span>
+            </div>
+            <div class="stat-badge yellow-b" id="a-motos-hoy-b">8 hoy</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="a-bicis-dentro">7</span>
+              <span class="stat-label">Bicicletas dentro</span>
+            </div>
+            <div class="stat-badge green-b" id="a-bicis-hoy-b">21 hoy</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="a-total-dentro">15</span>
+              <span class="stat-label">Total dentro</span>
+            </div>
+            <div class="stat-badge red-b" id="a-total-hoy-b">41 hoy</div>
+          </div>
+        </div>
+
+        <!-- Ajuste manual Lado A -->
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-sliders"></i> Ajuste manual de conteo — Lado A</div>
+          <div class="a-manual-grid">
+
+            <div class="a-counter-card">
+              <div class="a-counter-label"><i class="bi bi-car-front-fill"></i> Carros</div>
+              <div class="a-counter-row">
+                <button class="btn-cupo minus" onclick="adjustA('carros',-1)"><i class="bi bi-dash-lg"></i></button>
+                <span class="a-counter-num" id="a-carros-num">5</span>
+                <button class="btn-cupo plus"  onclick="adjustA('carros', 1)"><i class="bi bi-plus-lg"></i></button>
+              </div>
+              <div class="a-counter-sub">Entradas: <strong id="a-carros-ent">12</strong> · Salidas: <strong id="a-carros-sal">7</strong></div>
+            </div>
+
+            <div class="a-counter-card">
+              <div class="a-counter-label"><i class="bi bi-bicycle"></i> Motos</div>
+              <div class="a-counter-row">
+                <button class="btn-cupo minus" onclick="adjustA('motos',-1)"><i class="bi bi-dash-lg"></i></button>
+                <span class="a-counter-num" id="a-motos-num">3</span>
+                <button class="btn-cupo plus"  onclick="adjustA('motos', 1)"><i class="bi bi-plus-lg"></i></button>
+              </div>
+              <div class="a-counter-sub">Entradas: <strong id="a-motos-ent">8</strong> · Salidas: <strong id="a-motos-sal">5</strong></div>
+            </div>
+
+            <div class="a-counter-card">
+              <div class="a-counter-label"><i class="bi bi-bicycle"></i> Bicicletas</div>
+              <div class="a-counter-row">
+                <button class="btn-cupo minus" onclick="adjustA('bicis',-1)"><i class="bi bi-dash-lg"></i></button>
+                <span class="a-counter-num" id="a-bicis-num">7</span>
+                <button class="btn-cupo plus"  onclick="adjustA('bicis', 1)"><i class="bi bi-plus-lg"></i></button>
+              </div>
+              <div class="a-counter-sub">Entradas: <strong id="a-bicis-ent">21</strong> · Salidas: <strong id="a-bicis-sal">14</strong></div>
+            </div>
+
+          </div>
+          <div class="cupos-info-note" style="margin-top:16px">
+            <i class="bi bi-info-circle-fill"></i>
+            El conteo se actualiza automáticamente al registrar entradas/salidas por QR. El ajuste manual es solo para correcciones.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ─── LADO B ─── -->
+      <div id="panel-B" class="side-panel" style="display:none">
+
+        <div class="cupos-layout">
+
+          <!-- Control espacios -->
+          <div class="glass-panel cupos-control">
+            <div class="panel-title"><i class="bi bi-car-front-fill"></i> Espacios para carros — Lado B</div>
+
+            <div class="cupos-display">
+              <div class="cupo-circle ok" id="b-cupo-circle">
+                <span class="cupo-num" id="b-disp-num">22</span>
+                <span class="cupo-lbl">libres</span>
+              </div>
+              <div class="cupo-total-info">
+                <div>Total espacios: <strong id="b-total-num">30</strong></div>
+                <div>Ocupados: <strong id="b-occ-num">8</strong></div>
+                <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45)">Solo carros</div>
+              </div>
+            </div>
+
+            <div class="cupos-btns">
+              <button class="btn-cupo minus" onclick="adjustB(-1)">
+                <i class="bi bi-dash-lg"></i> Liberar 1
+              </button>
+              <button class="btn-cupo plus" onclick="adjustB(1)">
+                <i class="bi bi-plus-lg"></i> Ocupar 1
+              </button>
+            </div>
+
+            <div class="cupos-set-row">
+              <label>Ajustar total de espacios Lado B:</label>
+              <div class="set-row">
+                <input type="number" id="b-total-input" value="30" min="1" max="200"/>
+                <button class="btn-set" onclick="setBTotal()">Aplicar</button>
+              </div>
+            </div>
+
+            <div class="cupos-info-note">
+              <i class="bi bi-info-circle-fill"></i>
+              Cada carro que ingresa al Lado B ocupa 1 espacio numerado. Al salir, el espacio queda libre automáticamente.
+            </div>
+          </div>
+
+          <!-- Mapa Lado B -->
+          <div class="glass-panel cupos-map-panel">
+            <div class="panel-title"><i class="bi bi-map-fill"></i> Mapa de espacios — Lado B</div>
+            <div class="cupos-legend">
+              <span><i class="bi bi-square-fill" style="color:#4caf50"></i> Libre</span>
+              <span><i class="bi bi-square-fill" style="color:#ef5350"></i> Ocupado</span>
+            </div>
+            <div class="b-map-wrap">
+              <div class="b-road-label top">↑ Entrada / Salida</div>
+              <div class="b-parking-area">
+                <div class="b-lane-label">Fila 1</div>
+                <div class="cupos-grid" id="b-grid-row1"></div>
+                <div class="b-road"></div>
+                <div class="b-lane-label">Fila 2</div>
+                <div class="cupos-grid" id="b-grid-row2"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ══ USUARIOS ══ -->
+    <section id="section-usuarios" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Gestión de <span class="hl">Usuarios</span></h1>
+          <p class="section-sub">Todos los usuarios registrados en el sistema</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="panel-toolbar">
+          <div class="search-wrap">
+            <i class="bi bi-search"></i>
+            <input type="text" id="user-search" placeholder="Buscar por nombre o ID..." oninput="filterUsers()"/>
+          </div>
+          <div class="filter-wrap">
+            <select id="filter-vehicle" onchange="filterUsers()">
+              <option value="">Todos los vehículos</option>
+              <option value="Carro">Carro</option>
+              <option value="Moto">Moto</option>
+              <option value="Bicicleta">Bicicleta</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="history-table" id="users-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>ID Sistema</th>
+                <th>Identificación</th>
+                <th>Centro SENA</th>
+                <th>Vehículo</th>
+                <th>Estado</th>
+                <th>Entrada / Salida</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ REGISTRAR USUARIO ══ -->
+    <section id="section-registrar" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Registrar <span class="hl">Usuario</span></h1>
+          <p class="section-sub">Crea una cuenta manualmente para un nuevo aprendiz o funcionario</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-person-plus-fill"></i> Datos del nuevo usuario</div>
+
+        <div class="reg-form-grid">
+          <div class="form-group">
+            <label><i class="bi bi-person-fill"></i> Nombre completo</label>
+            <input type="text" id="reg-nombre" placeholder="Ej: Ana María Rodríguez"/>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-card-heading"></i> Tipo de identificación</label>
+            <select id="reg-tipo-id">
+              <option value="">Selecciona una opción</option>
+              <option value="TI">Tarjeta de identidad (TI)</option>
+              <option value="CC">Cédula de ciudadanía (CC)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-123"></i> Número de identificación</label>
+            <input type="text" id="reg-num-id" placeholder="Ej: 1005234567"/>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-geo-alt-fill"></i> Región</label>
+            <select id="reg-region" onchange="filterCentrosReg()">
+              <option value="">Selecciona una región</option>
+              <option value="andina">Andina</option>
+              <option value="caribe">Caribe</option>
+              <option value="pacifico">Pacífico</option>
+              <option value="orinoquia">Orinoquía</option>
+              <option value="amazonia">Amazonía</option>
+              <option value="insular">Insular</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label><i class="bi bi-building"></i> Centro de formación SENA</label>
+            <select id="reg-centro">
+              <option value="">Selecciona primero una región</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-envelope-fill"></i> Correo electrónico</label>
+            <input type="email" id="reg-email" placeholder="usuario@sena.edu.co"/>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-lock-fill"></i> Contraseña temporal</label>
+            <div class="input-wrapper password-wrapper">
+              <input type="password" id="reg-pass" placeholder="Mínimo 8 caracteres"/>
+              <span class="eye-icon" onclick="togglePass('reg-pass','eye-reg')">
+                <i id="eye-reg" class="bi bi-eye"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="reg-divider"><span>Vehículo (opcional)</span></div>
+
+        <!-- Tipo vehículo -->
+        <div class="vehicle-tabs">
+          <button class="vtab active" onclick="setRegVehicle('ninguno', this)">
+            <i class="bi bi-x-circle"></i> Sin vehículo
+          </button>
+          <button class="vtab" onclick="setRegVehicle('carro', this)">
+            <i class="bi bi-car-front-fill"></i> Carro
+          </button>
+          <button class="vtab" onclick="setRegVehicle('moto', this)">
+            <i class="bi bi-bicycle"></i> Moto
+          </button>
+          <button class="vtab" onclick="setRegVehicle('bicicleta', this)">
+            <i class="bi bi-bicycle"></i> Bicicleta
+          </button>
+        </div>
+
+        <div id="reg-form-ninguno" class="vehicle-form"></div>
+
+        <div id="reg-form-carro" class="vehicle-form" style="display:none">
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="bi bi-123"></i> Placa</label>
+              <input type="text" id="rv-placa-c" placeholder="ABC-123"/>
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-palette"></i> Color</label>
+              <input type="text" id="rv-color-c" placeholder="Rojo, Negro..."/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-card-text"></i> Descripción</label>
+            <textarea id="rv-desc-c" placeholder="Sedan 4 puertas, modelo 2020..." rows="2"></textarea>
+          </div>
+        </div>
+
+        <div id="reg-form-moto" class="vehicle-form" style="display:none">
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="bi bi-123"></i> Placa</label>
+              <input type="text" id="rv-placa-m" placeholder="XYZ-45B"/>
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-palette"></i> Color</label>
+              <input type="text" id="rv-color-m" placeholder="Azul, Blanco..."/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-card-text"></i> Descripción</label>
+            <textarea id="rv-desc-m" placeholder="Moto deportiva 200cc..." rows="2"></textarea>
+          </div>
+        </div>
+
+        <div id="reg-form-bicicleta" class="vehicle-form" style="display:none">
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="bi bi-bicycle"></i> Modelo</label>
+              <input type="text" id="rv-modelo-b" placeholder="Trek FX3..."/>
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-palette"></i> Color</label>
+              <input type="text" id="rv-color-b" placeholder="Verde, Plateado..."/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-card-text"></i> Descripción</label>
+            <textarea id="rv-desc-b" placeholder="Bicicleta montaña rin 29..." rows="2"></textarea>
+          </div>
+        </div>
+
+        <button class="btn-save" onclick="registrarUsuario()">
+          <i class="bi bi-person-check-fill"></i> Registrar usuario
+        </button>
+      </div>
+    </section>
+
+    <!-- ══ PERFIL ADMIN ══ -->
+    <section id="section-perfil" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Mi <span class="hl">Perfil</span></h1>
+          <p class="section-sub">Información del administrador</p>
+        </div>
+      </div>
+      <div class="glass-panel">
+        <div class="profile-avatar-area">
+          <div class="avatar-circle admin-av-big" id="admin-avatar">AD</div>
+          <div>
+            <div class="profile-name" id="admin-display-name">Administrador</div>
+            <div class="profile-role"><i class="bi bi-shield-lock-fill" style="color:#ffd54f;font-size:12px"></i> Rol: Administrador · SENA</div>
+          </div>
+        </div>
+        <div class="profile-form-grid">
+          <div class="form-group">
+            <label><i class="bi bi-person-fill"></i> Nombre completo</label>
+            <input type="text" id="a-nombre" placeholder="Nombre del administrador" oninput="updateAdminAvatar(this.value)"/>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-card-heading"></i> Tipo de identificación</label>
+            <select id="a-tipo-id">
+              <option value="">Selecciona</option>
+              <option value="CC">Cédula de ciudadanía (CC)</option>
+              <option value="TI">Tarjeta de identidad (TI)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-123"></i> Número de identificación</label>
+            <input type="text" id="a-num-id" placeholder="Número de ID"/>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-geo-alt-fill"></i> Región</label>
+            <select id="a-region" onchange="filterCentrosAdmin()">
+              <option value="">Selecciona una región</option>
+              <option value="andina">Andina</option>
+              <option value="caribe">Caribe</option>
+              <option value="pacifico">Pacífico</option>
+              <option value="orinoquia">Orinoquía</option>
+              <option value="amazonia">Amazonía</option>
+              <option value="insular">Insular</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label><i class="bi bi-building"></i> Centro de formación SENA</label>
+            <select id="a-centro"><option value="">Selecciona primero una región</option></select>
+          </div>
+        </div>
+        <button class="btn-save" onclick="saveAdminProfile()">
+          <i class="bi bi-check2-circle"></i> Guardar cambios
+        </button>
+      </div>
+    </section>
+
+    <!-- ══ VEHÍCULO ADMIN ══ -->
+    <section id="section-vehiculo" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Mi <span class="hl">Vehículo</span></h1>
+          <p class="section-sub">Registra o actualiza tu vehículo personal</p>
+        </div>
+      </div>
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-car-front-fill"></i> Tipo de vehículo</div>
+        <div class="vehicle-tabs">
+          <button class="vtab active" onclick="setAdminVehicle('carro', this)"><i class="bi bi-car-front-fill"></i> Carro</button>
+          <button class="vtab" onclick="setAdminVehicle('moto', this)"><i class="bi bi-bicycle"></i> Moto</button>
+          <button class="vtab" onclick="setAdminVehicle('bicicleta', this)"><i class="bi bi-bicycle"></i> Bicicleta</button>
+        </div>
+
+        <div id="av-form-carro" class="vehicle-form">
+          <div class="form-row">
+            <div class="form-group"><label><i class="bi bi-123"></i> Placa</label><input type="text" placeholder="ABC-123"/></div>
+            <div class="form-group"><label><i class="bi bi-palette"></i> Color</label><input type="text" placeholder="Color..."/></div>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-camera"></i> Foto <span class="optional">(opcional)</span></label>
+            <div class="file-drop" onclick="document.getElementById('av-foto-c').click()">
+              <i class="bi bi-cloud-arrow-up"></i><span>Subir foto</span>
+              <input type="file" id="av-foto-c" accept="image/*" hidden onchange="previewImage(this,'av-preview-c')"/>
+            </div>
+            <img id="av-preview-c" class="img-preview" src="" alt="" style="display:none"/>
+          </div>
+          <div class="form-group"><label><i class="bi bi-card-text"></i> Descripción</label><textarea placeholder="Descripción..." rows="2"></textarea></div>
+          <button class="btn-save" onclick="saveAdminVehicle('carro')"><i class="bi bi-floppy"></i> Guardar vehículo</button>
+        </div>
+
+        <div id="av-form-moto" class="vehicle-form" style="display:none">
+          <div class="form-row">
+            <div class="form-group"><label><i class="bi bi-123"></i> Placa</label><input type="text" placeholder="XYZ-45B"/></div>
+            <div class="form-group"><label><i class="bi bi-palette"></i> Color</label><input type="text" placeholder="Color..."/></div>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-camera"></i> Foto <span class="optional">(opcional)</span></label>
+            <div class="file-drop" onclick="document.getElementById('av-foto-m').click()">
+              <i class="bi bi-cloud-arrow-up"></i><span>Subir foto</span>
+              <input type="file" id="av-foto-m" accept="image/*" hidden onchange="previewImage(this,'av-preview-m')"/>
+            </div>
+            <img id="av-preview-m" class="img-preview" src="" alt="" style="display:none"/>
+          </div>
+          <div class="form-group"><label><i class="bi bi-card-text"></i> Descripción</label><textarea placeholder="Descripción..." rows="2"></textarea></div>
+          <button class="btn-save" onclick="saveAdminVehicle('moto')"><i class="bi bi-floppy"></i> Guardar vehículo</button>
+        </div>
+
+        <div id="av-form-bicicleta" class="vehicle-form" style="display:none">
+          <div class="form-row">
+            <div class="form-group"><label><i class="bi bi-bicycle"></i> Modelo</label><input type="text" placeholder="Trek FX3..."/></div>
+            <div class="form-group"><label><i class="bi bi-palette"></i> Color</label><input type="text" placeholder="Color..."/></div>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-camera"></i> Foto <span class="optional recommended">(opcional — recomendada)</span></label>
+            <div class="file-drop" onclick="document.getElementById('av-foto-b').click()">
+              <i class="bi bi-cloud-arrow-up"></i><span>Subir foto</span>
+              <input type="file" id="av-foto-b" accept="image/*" hidden onchange="previewImage(this,'av-preview-b')"/>
+            </div>
+            <img id="av-preview-b" class="img-preview" src="" alt="" style="display:none"/>
+          </div>
+          <div class="form-group"><label><i class="bi bi-card-text"></i> Descripción</label><textarea placeholder="Descripción..." rows="2"></textarea></div>
+          <button class="btn-save" onclick="saveAdminVehicle('bicicleta')"><i class="bi bi-floppy"></i> Guardar vehículo</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── HISTORIAL ADMIN ─── -->
+    <section id="section-historia" class="section">
+      <div class="section-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:24px;">
+        <div>
+          <h1><i class="bi bi-calendar2-week" style="color:var(--brand-color);margin-right:8px;"></i>Historial del Parqueadero</h1>
+          <p class="section-sub">Registros diarios de uso · Se actualiza automáticamente cada día</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn-save" style="padding:9px 18px;font-size:13px;" id="hist-btn-hoy" onclick="cargarDia('hoy')">
+            <i class="bi bi-calendar-check"></i> Hoy
+          </button>
+          <button class="btn-save" style="padding:9px 18px;font-size:13px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);" id="hist-btn-ayer" onclick="cargarDia('ayer')">
+            <i class="bi bi-calendar-minus"></i> Ayer
+          </button>
+          <button class="btn-save" style="padding:9px 18px;font-size:13px;" onclick="exportarAdminCSV()">
+            <i class="bi bi-download"></i> Descargar CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Selector de fecha + resumen del día -->
+      <div class="glass-panel" style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:16px;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <label style="font-size:13px;color:rgba(255,255,255,0.6);display:flex;align-items:center;gap:6px;">
+              <i class="bi bi-calendar3" style="color:var(--brand-color);"></i> Seleccionar fecha:
+            </label>
+            <input type="date" id="hist-admin-fecha" style="padding:9px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.92);font-family:'Poppins',sans-serif;font-size:13px;color:#333;outline:none;cursor:pointer;" onchange="cargarDia('custom')">
+            <button class="btn-save" style="padding:9px 16px;font-size:13px;" onclick="cargarDia('custom')">
+              <i class="bi bi-search"></i> Ver día
+            </button>
+          </div>
+          <div id="hist-admin-dia-label" style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.5);"></div>
+        </div>
+      </div>
+
+      <!-- Tarjetas resumen del día -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:20px;">
+        <div class="stat-card green">
+          <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="ha-total">—</span>
+            <span class="stat-label">Visitas del día</span>
+          </div>
+          <div class="stat-badge" style="background:rgba(76,175,80,0.22);color:#a5d6a7;">Total</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon"><i class="bi bi-activity"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="ha-activos">—</span>
+            <span class="stat-label">Aún en parqueadero</span>
+          </div>
+          <div class="stat-badge blue-b">En curso</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon"><i class="bi bi-stopwatch"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="ha-promedio">—</span>
+            <span class="stat-label">Promedio de estadía</span>
+          </div>
+          <div class="stat-badge" style="background:rgba(244,67,54,0.2);color:#ef9a9a;">Horas</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="ha-tipo-top">—</span>
+            <span class="stat-label">Vehículo más frecuente</span>
+          </div>
+          <div class="stat-badge" style="background:rgba(255,193,7,0.2);color:#ffe082;">Tipo</div>
+        </div>
+      </div>
+
+      <!-- Barra de tipos -->
+      <div class="glass-panel" id="ha-tipos-panel" style="margin-bottom:20px;display:none;">
+        <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Distribución por tipo de vehículo</div>
+        <div id="ha-tipos-bars" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+
+      <!-- Filtro rápido + tabla -->
+      <div class="glass-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+          <div class="panel-title" style="margin-bottom:0;"><i class="bi bi-table"></i> Registros del día</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <div style="position:relative;">
+              <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.35);font-size:13px;"></i>
+              <input type="text" id="ha-buscar" placeholder="Buscar usuario o placa..." style="padding:8px 12px 8px 32px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);color:#fff;font-family:'Poppins',sans-serif;font-size:13px;outline:none;width:220px;" oninput="filtrarTablaAdmin()">
+            </div>
+            <select id="ha-filtro-tipo" style="padding:8px 14px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);color:#fff;font-family:'Poppins',sans-serif;font-size:13px;outline:none;" onchange="filtrarTablaAdmin()">
+              <option value="">Todos los vehículos</option>
+              <option value="Carro">Carro</option>
+              <option value="Moto">Moto</option>
+              <option value="Bicicleta">Bicicleta</option>
+            </select>
+            <span id="ha-count" style="font-size:12px;color:rgba(255,255,255,0.4);"></span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th><i class="bi bi-person" style="margin-right:4px;color:var(--brand-color);"></i>Usuario</th>
+                <th><i class="bi bi-car-front" style="margin-right:4px;color:var(--brand-color);"></i>Vehículo</th>
+                <th><i class="bi bi-geo-alt" style="margin-right:4px;color:var(--brand-color);"></i>Lado</th>
+                <th><i class="bi bi-box-arrow-in-right" style="margin-right:4px;color:var(--brand-color);"></i>Entrada</th>
+                <th><i class="bi bi-box-arrow-right" style="margin-right:4px;color:var(--brand-color);"></i>Salida</th>
+                <th><i class="bi bi-stopwatch" style="margin-right:4px;color:var(--brand-color);"></i>Duración</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="ha-tbody">
+              <tr><td colspan="8" style="text-align:center;padding:40px;opacity:.4;">
+                <i class="bi bi-calendar-x" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+                Selecciona un día para ver los registros
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;flex-wrap:wrap;gap:10px;">
+          <span id="ha-page-info" style="font-size:12px;color:rgba(255,255,255,0.4);"></span>
+          <div id="ha-page-btns" style="display:flex;gap:7px;flex-wrap:wrap;"></div>
+        </div>
+      </div>
+
+      <!-- Historial de días recientes -->
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-calendar-week"></i> Días recientes — acceso rápido</div>
+        <div id="ha-dias-recientes" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal confirmación QR -->
+  <!-- div oculto requerido por Html5Qrcode.scanFile -->
+  <div id="qr-file-temp" style="display:none"></div>
+
+  <div class="modal-overlay" id="qr-modal" style="display:none">
+    <div class="modal-card">
+      <div class="modal-icon" id="modal-icon"><i class="bi bi-person-check-fill"></i></div>
+      <div class="modal-user-info" id="modal-user-info"></div>
+      <div class="modal-actions" id="modal-actions"></div>
+      <button class="modal-close" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <script>
+  // ══ LISTA DE USUARIOS (DINÁMICA) ══
+  let usuarios = [];
+
+  let regionesSENA = [];
+  let centrosSENA  = [];
+
+  // ══ ESTADO LADO A (conteo libre) ══
+  const ladoA = {
+    carros: { dentro:0, entradas:0, salidas:0 },
+    motos:  { dentro:0, entradas:0, salidas:0 },
+    bicis:  { dentro:0, entradas:0, salidas:0 },
+  };
+
+  // ══ ESTADO LADO B (espacios controlados, solo carros) ══
+  const ladoB = { total:30, ocupados:0 };
+
+  // Tabs Lado A / B
+  function switchSide(side) {
+    document.getElementById('panel-A').style.display = side==='A' ? 'block' : 'none';
+    document.getElementById('panel-B').style.display = side==='B' ? 'block' : 'none';
+    document.getElementById('tab-a').classList.toggle('active', side==='A');
+    document.getElementById('tab-b').classList.toggle('active', side==='B');
+    if (side==='B') renderBGrid();
+  }
+
+  // ── Lado A helpers ──
+  function refreshLadoA() {
+    const total = ladoA.carros.dentro + ladoA.motos.dentro + ladoA.bicis.dentro;
+    const totalHoy = ladoA.carros.entradas + ladoA.motos.entradas + ladoA.bicis.entradas;
+    document.getElementById('a-carros-dentro').textContent = ladoA.carros.dentro;
+    document.getElementById('a-motos-dentro').textContent  = ladoA.motos.dentro;
+    document.getElementById('a-bicis-dentro').textContent  = ladoA.bicis.dentro;
+    document.getElementById('a-total-dentro').textContent  = total;
+    document.getElementById('a-carros-hoy-b').textContent  = ladoA.carros.entradas + ' hoy';
+    document.getElementById('a-motos-hoy-b').textContent   = ladoA.motos.entradas  + ' hoy';
+    document.getElementById('a-bicis-hoy-b').textContent   = ladoA.bicis.entradas  + ' hoy';
+    document.getElementById('a-total-hoy-b').textContent   = totalHoy + ' hoy';
+    document.getElementById('a-carros-num').textContent  = ladoA.carros.dentro;
+    document.getElementById('a-motos-num').textContent   = ladoA.motos.dentro;
+    document.getElementById('a-bicis-num').textContent   = ladoA.bicis.dentro;
+    document.getElementById('a-carros-ent').textContent  = ladoA.carros.entradas;
+    document.getElementById('a-carros-sal').textContent  = ladoA.carros.salidas;
+    document.getElementById('a-motos-ent').textContent   = ladoA.motos.entradas;
+    document.getElementById('a-motos-sal').textContent   = ladoA.motos.salidas;
+    document.getElementById('a-bicis-ent').textContent   = ladoA.bicis.entradas;
+    document.getElementById('a-bicis-sal').textContent   = ladoA.bicis.salidas;
+    // stats dashboard
+    const totalOcup = total + ladoB.ocupados;
+    const totalDisp = ladoB.total - ladoB.ocupados;
+    document.getElementById('stat-disponibles').textContent = totalDisp;
+    document.getElementById('stat-ocupados').textContent = totalOcup;
+    const pct = Math.round((ladoB.ocupados / ladoB.total)*100);
+    document.getElementById('stat-pct').textContent = pct+'%';
+    const bar = document.getElementById('occ-bar');
+    bar.style.width = pct+'%'; bar.querySelector('span').textContent = pct+'%';
+  }
+
+  function adjustA(tipo, delta) {
+    const obj = ladoA[tipo];
+    const newVal = obj.dentro + delta;
+    if (newVal < 0) return;
+    obj.dentro = newVal;
+    if (delta > 0) obj.entradas++;
+    else           obj.salidas++;
+    refreshLadoA();
+    showToast(delta > 0 ? `+1 ${tipo} en Lado A` : `-1 ${tipo} en Lado A`);
+  }
+
+  // ── Lado B helpers ──
+  function refreshLadoB() {
+    const disp = ladoB.total - ladoB.ocupados;
+    const pct  = Math.round((ladoB.ocupados / ladoB.total)*100);
+    document.getElementById('b-disp-num').textContent  = disp;
+    document.getElementById('b-occ-num').textContent   = ladoB.ocupados;
+    document.getElementById('b-total-num').textContent = ladoB.total;
+    const circle = document.getElementById('b-cupo-circle');
+    circle.className = 'cupo-circle ' + (pct>=80?'danger':pct>=50?'warn':'ok');
+    renderBGrid();
+  }
+
+  function adjustB(delta) {
+    const newOcc = ladoB.ocupados + delta;
+    if (newOcc < 0 || newOcc > ladoB.total) return;
+    ladoB.ocupados = newOcc;
+    refreshLadoB();
+    showToast(delta>0 ? 'Espacio ocupado (Lado B)' : 'Espacio liberado (Lado B)');
+  }
+
+  function setBTotal() {
+    const val = parseInt(document.getElementById('b-total-input').value);
+    if (!val || val < 1) return;
+    ladoB.total = val;
+    if (ladoB.ocupados > ladoB.total) ladoB.ocupados = ladoB.total;
+    refreshLadoB();
+    showToast(`Total Lado B actualizado a ${val} espacios`);
+  }
+
+  function renderBGrid() {
+    const half  = Math.ceil(ladoB.total / 2);
+    const grid1 = document.getElementById('b-grid-row1');
+    const grid2 = document.getElementById('b-grid-row2');
+    if (!grid1) return;
+    let h1='', h2='';
+    for (let i=1; i<=ladoB.total; i++) {
+      const occ = i <= ladoB.ocupados;
+      const slot = `<div class="cupo-slot ${occ?'occ':'free'}" title="Espacio ${i}">${i}</div>`;
+      if (i <= half) h1 += slot; else h2 += slot;
+    }
+    grid1.innerHTML = h1; grid2.innerHTML = h2;
+  }
+
+  // Función de compatibilidad para QR/toggle (actualiza conteos según vehículo)
+  function updateCuposUI() {
+    refreshLadoA();
+    refreshLadoB();
+    // Sync dashboard Lado A stats
+    const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const totalA = ladoA.carros.dentro + ladoA.motos.dentro + ladoA.bicis.dentro;
+    const totalAhoy = ladoA.carros.entradas + ladoA.motos.entradas + ladoA.bicis.entradas;
+    setEl('dA-carros-dentro', ladoA.carros.dentro);
+    setEl('dA-motos-dentro',  ladoA.motos.dentro);
+    setEl('dA-bicis-dentro',  ladoA.bicis.dentro);
+    setEl('dA-total-dentro',  totalA);
+    setEl('dA-carros-hoy', ladoA.carros.entradas + ' hoy');
+    setEl('dA-motos-hoy',  ladoA.motos.entradas  + ' hoy');
+    setEl('dA-bicis-hoy',  ladoA.bicis.entradas  + ' hoy');
+    setEl('dA-total-hoy',  totalAhoy + ' hoy');
+    // Sync dashboard Lado B stats
+    const dispB = ladoB.total - ladoB.ocupados;
+    const pctB  = Math.round((ladoB.ocupados / ladoB.total) * 100);
+    setEl('dB-disponibles', dispB);
+    setEl('dB-ocupados',    ladoB.ocupados);
+    setEl('dB-pct',         pctB + '%');
+    const barB = document.getElementById('occ-bar-B');
+    if (barB) { barB.style.width = pctB + '%'; barB.querySelector('span').textContent = pctB + '%'; }
+  }
+
+  // ══ INIT ══
+  window.addEventListener('DOMContentLoaded', async () => {
+    startClock();
+    
+    // Render placeholders
+    renderChartHora();
+    renderChartSemana();
+    refreshLadoA();
+    refreshLadoB();
+
+    // Hacer limpieza de tablas
+    const rts = ['recent-tbody', 'recent-tbody-A', 'recent-tbody-B'];
+    rts.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+    
+    // Cargar catálogos (Regiones y Centros)
+    await cargarCatalogos();
+
+    // Cargar datos reales desde la API
+    await cargarCuposDesdeAPI();
+    await cargarUsuariosDesdeAPI();
+    await cargarRecientesDesdeAPI();
+    await cargarPerfilAdmin(); // Cargar datos del admin logueado
+    
+    // Auto-refresh cada 60 segundos
+    setInterval(() => {
+      cargarCuposDesdeAPI();
+      cargarRecientesDesdeAPI();
+      cargarUsuariosDesdeAPI();
+    }, 60000);
+  });
+
+  async function cargarCatalogos() {
+    try {
+      const [resR, resC] = await Promise.all([
+        apiFetch('/catalogos/regiones'),
+        apiFetch('/catalogos/centros')
+      ]);
+      const [dR, dC] = await Promise.all([resR.json(), resC.json()]);
+      if (dR.ok) regionesSENA = dR.data;
+      if (dC.ok) centrosSENA  = dC.data;
+
+      // Llenar selects de regiones
+      const fillReg = (id) => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        sel.innerHTML = '<option value="">Selecciona una región</option>';
+        regionesSENA.forEach(r => {
+          const o = document.createElement('option'); o.value = r.id_region; o.textContent = r.nombre; sel.appendChild(o);
+        });
+      };
+      fillReg('reg-region');
+      fillReg('a-region');
+    } catch(e) { console.warn('Error catálogos:', e); }
+  }
+
+  async function cargarPerfilAdmin() {
+    try {
+      const res = await apiFetch('/usuarios/perfil');
+      const data = await res.json();
+      if (data.ok && data.data) {
+        const u = data.data;
+        document.getElementById('a-nombre').value = u.nombre_completo || '';
+        document.getElementById('a-tipo-id').value = u.tipo_id || '';
+        document.getElementById('a-num-id').value = u.numero_id || '';
+        if (u.id_region) {
+          document.getElementById('a-region').value = u.id_region;
+          filterCentrosAdmin();
+          document.getElementById('a-centro').value = u.id_centro || '';
+        }
+        updateAdminAvatar(u.nombre_completo || 'Admin');
+      }
+    } catch(e) { console.warn('Error perfil admin:', e); }
+  }
+
+  async function cargarCuposDesdeAPI() {
+    try {
+      const res  = await apiFetch('/parqueadero/cupos');
+      if (!res) return;
+      const data = await res.json();
+      if (!data.ok || !data.data) return;
+
+      // Reiniciar contadores a cero antes de repoblar
+      ladoA.carros.dentro = 0; ladoA.carros.entradas = 0; ladoA.carros.salidas = 0;
+      ladoA.motos.dentro  = 0; ladoA.motos.entradas  = 0; ladoA.motos.salidas  = 0;
+      ladoA.bicis.dentro  = 0; ladoA.bicis.entradas  = 0; ladoA.bicis.salidas  = 0;
+      ladoB.ocupados      = 0;
+
+      // data.data viene de vw_OcupacionActual — adaptar según las columnas reales
+      data.data.forEach(row => {
+        const lado  = (row.lado  || row.Lado  || '').toString().toUpperCase();
+        const tipo  = (row.tipo  || row.Tipo  || row.tipo_vehiculo || '').toString().toLowerCase();
+        const dentro   = parseInt(row.dentro   || row.Dentro   || 0);
+        const entradas = parseInt(row.entradas || row.Entradas || 0);
+        const salidas  = parseInt(row.salidas  || row.Salidas  || 0);
+
+        if (lado === 'A' || lado === 'LADO A') {
+          if (tipo.includes('carro'))  { ladoA.carros.dentro += dentro; ladoA.carros.entradas += entradas; ladoA.carros.salidas += salidas; }
+          if (tipo.includes('moto'))   { ladoA.motos.dentro  += dentro; ladoA.motos.entradas  += entradas; ladoA.motos.salidas  += salidas; }
+          if (tipo.includes('bici'))   { ladoA.bicis.dentro  += dentro; ladoA.bicis.entradas  += entradas; ladoA.bicis.salidas  += salidas; }
+        }
+        if (lado === 'B' || lado === 'LADO B') {
+          ladoB.ocupados += dentro;
+          // Entradas/salidas Lado B van a los contadores del dashboard
+          const el = document.getElementById('dB-entradas');
+          const es = document.getElementById('dB-salidas');
+          if (el) el.textContent = parseInt(el.textContent || 0) + entradas;
+          if (es) es.textContent = parseInt(es.textContent || 0) + salidas;
+        }
+      });
+
+      // Actualizar entradas/salidas globales de hoy (suma total)
+      const totalEnt = ladoA.carros.entradas + ladoA.motos.entradas + ladoA.bicis.entradas
+                     + parseInt(document.getElementById('dB-entradas')?.textContent || 0);
+      const totalSal = ladoA.carros.salidas  + ladoA.motos.salidas  + ladoA.bicis.salidas
+                     + parseInt(document.getElementById('dB-salidas')?.textContent  || 0);
+      const elEnt = document.getElementById('stat-entradas');
+      const elSal = document.getElementById('stat-salidas');
+      if (elEnt) elEnt.textContent = totalEnt;
+      if (elSal) elSal.textContent = totalSal;
+
+      updateCuposUI();
+    } catch (err) {
+      console.warn('No se pudo cargar ocupación desde la API:', err);
+    }
+  }
+
+  async function cargarUsuariosDesdeAPI() {
+    try {
+      const res = await apiFetch('/parqueadero/usuarios-admin');
+      if (!res) return;
+      const data = await res.json();
+      if (data.ok && data.data) {
+        usuarios = data.data.map(u => ({
+          id: u.qr_code || 'SIN-QR',
+          id_usuario: u.id_usuario,
+          id_vehiculo: u.id_vehiculo || null,
+          nombre: u.nombre_completo || 'Sin nombre',
+          tipoId: u.tipo_id,
+          numId: u.numero_id,
+          centro: u.centro_nombre || 'No asignado',
+          vehiculo: u.vehiculo_tipo ? (u.vehiculo_tipo.toLowerCase() === 'carro' ? 'Carro' : u.vehiculo_tipo.toLowerCase() === 'moto' ? 'Moto' : 'Bicicleta') : 'Sin Vehículo',
+          estado: u.dentro ? 'Dentro' : 'Fuera'
+        }));
+        renderUsersTable(usuarios);
+      }
+    } catch(e) { console.warn('Error usuarios:', e); }
+  }
+
+  async function cargarRecientesDesdeAPI() {
+    try {
+      const res = await apiFetch('/parqueadero/reciente');
+      if (!res) return;
+      const data = await res.json();
+      if (data.ok && data.data) {
+        let htmlMain = '', htmlA = '', htmlB = '';
+        data.data.forEach(r => {
+          const nombre = r.nombre_completo;
+          const qr = r.qr_code || '---';
+          const veh = r.tipo_vehiculo ? r.tipo_vehiculo.charAt(0).toUpperCase() + r.tipo_vehiculo.slice(1) : 'Vehículo';
+          const tipo = r.estado === 'activo' ? 'in' : 'out';
+          const time = fechaColombia(r.fecha).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+          const vtag = veh==='Carro'?'car':veh==='Moto'?'moto':'bike';
+          const evTag = tipo==='in'?'Entrada':'Salida';
+          
+          let ladoStr = veh==='Carro' ? 'A/B' : 'A';
+          const badgeLado = `<span class="side-badge ${ladoStr.toLowerCase().replace('/','')}">${ladoStr}</span>`;
+
+          htmlMain += `<tr><td>${nombre}</td><td><code>${qr}</code></td><td><span class="vtag ${vtag}">${veh}</span></td><td>${time}</td><td>${badgeLado}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
+          htmlA += `<tr><td>${nombre}</td><td><span class="vtag ${vtag}">${veh}</span></td><td>${time}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
+          if (veh === 'Carro') {
+            htmlB += `<tr><td>${nombre}</td><td><span class="vtag car">Autorizado</span></td><td>${time}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
+          }
+        });
+        
+        const tbM = document.getElementById('recent-tbody');
+        const tbA = document.getElementById('recent-tbody-A');
+        const tbB = document.getElementById('recent-tbody-B');
+        
+        if (tbM) tbM.innerHTML = htmlMain || '<tr><td colspan="6" style="text-align:center;padding:20px;opacity:0.5">Sin actividad reciente</td></tr>';
+        if (tbA) tbA.innerHTML = htmlA || '<tr><td colspan="4" style="text-align:center;padding:20px;opacity:0.5">Sin actividad</td></tr>';
+        if (tbB) tbB.innerHTML = htmlB || '<tr><td colspan="4" style="text-align:center;padding:20px;opacity:0.5">Sin actividad</td></tr>';
+      }
+    } catch(e) { console.warn('Error reciente:', e); }
+  }
+
+  function startClock() {
+    function tick() {
+      const now = new Date();
+      document.getElementById('live-time').textContent =
+        now.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    }
+    tick(); setInterval(tick, 1000);
+  }
+
+  // ══ CHARTS ══
+  function chartDefaults() {
+    return {
+      plugins: { legend: { labels: { color:'rgba(255,255,255,0.7)', font:{ family:'Poppins', size:11 } } } },
+      scales: {
+        x: { ticks:{ color:'rgba(255,255,255,0.55)', font:{family:'Poppins',size:10} }, grid:{ color:'rgba(255,255,255,0.07)' } },
+        y: { ticks:{ color:'rgba(255,255,255,0.55)', font:{family:'Poppins',size:10} }, grid:{ color:'rgba(255,255,255,0.07)' } }
+      }
+    };
+  }
+
+  function renderChartHora() {
+    const ctx = document.getElementById('chartHora').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['6AM','7AM','8AM','9AM','10AM','11AM','12PM','1PM','2PM','3PM','4PM','5PM'],
+        datasets: [
+          { label:'Entradas', data:[2,5,8,6,4,3,7,5,4,3,2,1], backgroundColor:'rgba(66,165,245,0.75)', borderRadius:6 },
+          { label:'Salidas',  data:[0,1,3,4,5,4,5,4,3,2,2,1], backgroundColor:'rgba(239,83,80,0.65)',  borderRadius:6 }
+        ]
+      },
+      options: { ...chartDefaults(), responsive:true, maintainAspectRatio:false }
+    });
+  }
+
+  function renderChartSemana() {
+    const ctx = document.getElementById('chartSemana').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],
+        datasets: [{
+          label:'Ingresos',
+          data:[38,45,41,50,47,22,10],
+          borderColor:'#42a5f5',
+          backgroundColor:'rgba(66,165,245,0.12)',
+          fill:true,
+          tension:0.4,
+          pointBackgroundColor:'#42a5f5',
+          pointRadius:4
+        }]
+      },
+      options: { ...chartDefaults(), responsive:true, maintainAspectRatio:false }
+    });
+  }
+
+  // ══ TABLA USUARIOS ══
+  function renderUsersTable(list) {
+    const tbody = document.getElementById('users-tbody');
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:rgba(255,255,255,0.4);padding:24px">Sin resultados</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(u => {
+      const dentro = u.estado === 'Dentro';
+      // Columna de entrada/salida rápida
+      let entradaSalidaCol;
+      if (dentro) {
+        entradaSalidaCol = `
+          <div class="inline-action-wrap">
+            <button class="inline-action-btn exit-btn" title="Registrar salida" onclick="toggleUserStatus('${u.id}')">
+              <i class="bi bi-arrow-up-circle-fill"></i> Salida
+            </button>
+          </div>`;
+      } else {
+        const ladoOpts = u.vehiculo === 'Carro'
+          ? '<option value="1">Lado A</option><option value="2">Lado B</option>'
+          : '<option value="1">Lado A</option>';
+        entradaSalidaCol = `
+          <div class="inline-action-wrap">
+            <select class="inline-select" id="lado-sel-${u.id}">
+              ${ladoOpts}
+            </select>
+            <button class="inline-action-btn entry-btn" title="Registrar entrada" onclick="toggleUserStatusWithLado('${u.id}')">
+              <i class="bi bi-arrow-down-circle-fill"></i> Entrada
+            </button>
+          </div>`;
+      }
+      return `
+      <tr>
+        <td><div class="user-cell"><div class="mini-av">${u.nombre.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>${u.nombre}</div></td>
+        <td><code class="id-code">${u.id}</code></td>
+        <td>${u.tipoId} · ${u.numId}</td>
+        <td class="centro-td">${u.centro}</td>
+        <td><span class="vtag ${u.vehiculo==='Carro'?'car':u.vehiculo==='Moto'?'moto':'bike'}">${u.vehiculo}</span></td>
+        <td><span class="event-badge ${dentro?'in':'out'}">${u.estado}</span></td>
+        <td>${entradaSalidaCol}</td>
+        <td>
+          <div class="action-btns">
+            <button class="act-btn view" title="Ver QR" onclick="showUserQR('${u.id}','${u.nombre}')"><i class="bi bi-qr-code"></i></button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function filterUsers() {
+    const q = document.getElementById('user-search').value.toLowerCase();
+    const vf = document.getElementById('filter-vehicle').value;
+    const filtered = usuarios.filter(u =>
+      (u.nombre.toLowerCase().includes(q) || u.id.toLowerCase().includes(q)) &&
+      (!vf || u.vehiculo === vf)
+    );
+    renderUsersTable(filtered);
+  }
+
+  async function toggleUserStatus(id) {
+    const u = usuarios.find(x => x.id === id);
+    if (!u) return;
+    const wasInside = u.estado === 'Dentro';
+    // Llamar a la API para registrar la salida
+    try {
+      const res = await apiFetch('/parqueadero/admin-salida', {
+        method: 'POST',
+        body: JSON.stringify({ id_usuario: u.id_usuario }),
+      });
+      const data = await res.json();
+      if (!data.ok) { showToast(data.message || 'Error al registrar salida', 'error'); return; }
+    } catch (e) { showToast('Error de conexión', 'error'); return; }
+    // Actualizar estado local tras confirmación de la API
+    u.estado = 'Fuera';
+    if (u.vehiculo === 'Carro')     { ladoA.carros.dentro--; }
+    else if (u.vehiculo === 'Moto') { ladoA.motos.dentro--;  }
+    else                            { ladoA.bicis.dentro--;   }
+    updateCuposUI();
+    await cargarUsuariosDesdeAPI();
+    showToast(`${u.nombre} → Salida registrada ✓`);
+    addRecentActivity(u, 'out');
+  }
+
+  async function toggleUserStatusWithLado(id) {
+    const u = usuarios.find(x => x.id === id);
+    if (!u || u.estado === 'Dentro') return;
+    const ladoSel = document.getElementById('lado-sel-' + id);
+    const lado = ladoSel ? parseInt(ladoSel.value) : 1;
+    const ladoNombre = lado === 2 ? 'B' : 'A';
+    // Buscar el id_vehiculo del usuario
+    let id_vehiculo = u.id_vehiculo;
+    if (!id_vehiculo) {
+      // Consultar vehículos del usuario si no están en caché
+      try {
+        const rv = await apiFetch(`/parqueadero/escanear`, {
+          method: 'POST',
+          body: JSON.stringify({ qr_code: u.id }),
+        });
+        const dv = await rv.json();
+        if (dv.ok && dv.vehiculos && dv.vehiculos.length > 0) {
+          id_vehiculo = dv.vehiculos[0].id_vehiculo;
+          u.id_vehiculo = id_vehiculo;
+        } else {
+          showToast('No se encontró vehículo para este usuario', 'error'); return;
+        }
+      } catch (e) { showToast('Error de conexión', 'error'); return; }
+    }
+    // Llamar a la API para registrar la entrada
+    try {
+      const res = await apiFetch('/parqueadero/admin-entrada', {
+        method: 'POST',
+        body: JSON.stringify({ id_usuario: u.id_usuario, id_vehiculo, id_lado: lado }),
+      });
+      const data = await res.json();
+      if (!data.ok) { showToast(data.message || 'Error al registrar entrada', 'error'); return; }
+    } catch (e) { showToast('Error de conexión', 'error'); return; }
+    // Actualizar estado local tras confirmación de la API
+    u.estado = 'Dentro';
+    u.ladoActual = ladoNombre;
+    if (u.vehiculo === 'Carro')     { ladoA.carros.dentro++; ladoA.carros.entradas++; }
+    else if (u.vehiculo === 'Moto') { ladoA.motos.dentro++;  ladoA.motos.entradas++;  }
+    else                            { ladoA.bicis.dentro++;   ladoA.bicis.entradas++;   }
+    updateCuposUI();
+    await cargarUsuariosDesdeAPI();
+    showToast(`${u.nombre} → Entrada registrada (Lado ${ladoNombre}) ✓`);
+    addRecentActivity(u, 'in', ladoNombre);
+  }
+
+  // ══ DASHBOARD LADO TABS ══
+  function switchDashLado(lado, btn) {
+    document.querySelectorAll('.dash-lado-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.dash-side-panel').forEach(p => p.style.display = 'none');
+    const panelId = lado === 'global' ? 'dash-panel-global' : 'dash-panel-' + lado;
+    const panel = document.getElementById(panelId);
+    if (panel) panel.style.display = '';
+    if (lado === 'A' && !window._chartAInit) { renderChartHoraA(); renderChartTipoA(); window._chartAInit = true; }
+    if (lado === 'B' && !window._chartBInit) { renderChartHoraB(); renderChartSemanaB(); window._chartBInit = true; }
+  }
+
+  function renderChartHoraA() {
+    const ctx = document.getElementById('chartHoraA');
+    if (!ctx) return;
+    new Chart(ctx, { type:'bar', data:{ labels:['6h','7h','8h','9h','10h','11h','12h','13h','14h','15h','16h','17h'], datasets:[
+      { label:'Entradas A', data:[2,5,9,12,8,6,10,7,4,5,3,1], backgroundColor:'rgba(99,179,237,0.7)', borderRadius:4 },
+      { label:'Salidas A',  data:[0,1,3,5,7,5,8,6,3,4,2,1],  backgroundColor:'rgba(252,129,74,0.7)',  borderRadius:4 }
+    ]}, options:{ ...chartDefaults(), plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
+  }
+
+  function renderChartTipoA() {
+    const ctx = document.getElementById('chartTipoA');
+    if (!ctx) return;
+    new Chart(ctx, { type:'doughnut', data:{ labels:['Carros','Motos','Bicicletas'], datasets:[{
+      data:[ladoA.carros.dentro, ladoA.motos.dentro, ladoA.bicis.dentro],
+      backgroundColor:['rgba(99,179,237,0.8)','rgba(252,211,77,0.8)','rgba(72,187,120,0.8)'],
+      borderColor:'rgba(255,255,255,0.1)', borderWidth:2
+    }]}, options:{ plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:12 } } } }, cutout:'65%' } });
+  }
+
+  function renderChartHoraB() {
+    const ctx = document.getElementById('chartHoraB');
+    if (!ctx) return;
+    new Chart(ctx, { type:'bar', data:{ labels:['6h','7h','8h','9h','10h','11h','12h','13h','14h','15h','16h','17h'], datasets:[
+      { label:'Entradas B', data:[0,1,3,4,2,1,2,1,0,0,0,0], backgroundColor:'rgba(159,122,234,0.7)', borderRadius:4 },
+      { label:'Salidas B',  data:[0,0,1,2,1,0,1,1,0,0,0,0], backgroundColor:'rgba(237,137,54,0.7)',  borderRadius:4 }
+    ]}, options:{ ...chartDefaults(), plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
+  }
+
+  function renderChartSemanaB() {
+    const ctx = document.getElementById('chartSemanaB');
+    if (!ctx) return;
+    const days = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    new Chart(ctx, { type:'line', data:{ labels:days, datasets:[{ label:'Ingresos Lado B', data:[8,11,9,14,10,3,0],
+      borderColor:'rgba(159,122,234,0.9)', backgroundColor:'rgba(159,122,234,0.15)',
+      tension:0.4, fill:true, pointBackgroundColor:'rgba(159,122,234,1)', pointRadius:4
+    }]}, options:{ ...chartDefaults(), plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
+  }
+
+  // ══ ESCÁNER QR ══
+  let html5QrcodeScanner = null;
+  let currentFacingMode  = 'environment';
+
+  function startScan() {
+    const overlay  = document.getElementById('qr-overlay');
+    const status   = document.getElementById('scan-status');
+    const btnStart = document.getElementById('btn-start-scan');
+    const btnStop  = document.getElementById('btn-stop-scan');
+    const btnFlip  = document.getElementById('btn-flip-cam');
+
+    btnStart.style.display = 'none';
+    if (btnStop)  btnStop.style.display  = 'inline-flex';
+    if (btnFlip)  btnFlip.style.display  = 'inline-flex';
+    if (overlay)  overlay.style.display  = 'flex';
+    if (status)   status.innerHTML = '<i class="bi bi-camera-video-fill" style="color:#4fc3f7"></i> Iniciando cámara...';
+
+    html5QrcodeScanner = new Html5Qrcode('qr-reader');
+    html5QrcodeScanner.start(
+      { facingMode: currentFacingMode },
+      { fps: 12, qrbox: { width: 250, height: 250 } },
+      (decodedText) => {
+        stopScan();
+        processQRResult(decodedText);
+      },
+      () => {}
+    ).then(() => {
+      if (status) status.innerHTML = '<i class="bi bi-camera-video-fill" style="color:#69f0ae"></i> Cámara activa — apunta al QR';
+    }).catch((err) => {
+      console.warn("Camera start error:", err);
+      // No llamar a stopScan() aquí porque falló al iniciar y no está escaneando
+      if (currentFacingMode === 'environment') {
+        currentFacingMode = 'user';
+        showToast('Cámara trasera no disponible, activando frontal...', 'info');
+        setTimeout(startScan, 300);
+      } else {
+        if (status) status.innerHTML = '<i class="bi bi-camera-video-off" style="color:#ef9a9a"></i> Sin acceso a cámara';
+        showToast('Otorga permisos de cámara en tu navegador o sube la imagen.', 'error');
+        currentFacingMode = 'environment';
+      }
+    });
+  }
+
+  function stopScan() {
+    const overlay  = document.getElementById('qr-overlay');
+    const status   = document.getElementById('scan-status');
+    const btnStart = document.getElementById('btn-start-scan');
+    const btnStop  = document.getElementById('btn-stop-scan');
+    const btnFlip  = document.getElementById('btn-flip-cam');
+
+    if (html5QrcodeScanner) {
+      html5QrcodeScanner.stop().catch(() => {});
+      html5QrcodeScanner = null;
+    }
+    btnStart.style.display = 'inline-flex';
+    if (btnStop)  btnStop.style.display  = 'none';
+    if (btnFlip)  btnFlip.style.display  = 'none';
+    if (overlay)  overlay.style.display  = 'none';
+    if (status)   status.innerHTML = '<i class="bi bi-camera-video-off"></i> Cámara inactiva';
+  }
+
+  function flipCamera() {
+    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+    if (html5QrcodeScanner) { stopScan(); setTimeout(startScan, 300); }
+    else startScan();
+  }
+
+  function scanFromFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const content = document.getElementById('scan-result-content');
+    content.innerHTML = `<div class="result-loading"><i class="bi bi-hourglass-split"></i> Leyendo imagen QR...</div>`;
+    
+    // Html5Qrcode es una clase, debe usarse como instancia para leer archivos
+    const scanner = new Html5Qrcode('qr-reader');
+    scanner.scanFile(file, true)
+      .then(decodedText => { input.value = ''; processQRResult(decodedText); })
+      .catch((err) => {
+        console.warn("Scan file error:", err);
+        input.value = '';
+        content.innerHTML = `
+          <div class="result-error">
+            <i class="bi bi-x-circle-fill"></i>
+            <strong>No se detectó QR en la imagen</strong>
+            <span>Asegúrate de que el código sea claro y no esté recortado</span>
+          </div>`;
+      });
+  }
+
+  function processManual() {
+    const id = document.getElementById('manual-id').value.trim();
+    if (!id) return;
+    processQRResult(id);
+  }
+
+async function processQRResult(rawText) {
+  const content = document.getElementById('scan-result-content');
+  content.innerHTML = `<div class="result-loading"><i class="bi bi-hourglass-split"></i> Buscando usuario...</div>`;
+
+  // El QR puede ser JSON (nuevo formato) o texto plano (formato viejo)
+  let qr_code = rawText;
+  try {
+    const parsed = JSON.parse(rawText);
+    qr_code = parsed.qr_code;   // extraer el qr_code del JSON
+  } catch (e) {
+    // era texto plano, usar tal cual
+  }
+
+  try {
+    const res = await apiFetch('/parqueadero/escanear', {
+      method: 'POST',
+      body: JSON.stringify({ qr_code }),
+    });
+    const data = await res.json();
+
+    if (!data.ok) {
+      content.innerHTML = `
+        <div class="result-error">
+          <i class="bi bi-x-circle-fill"></i>
+          <strong>Usuario no encontrado</strong>
+          <span>QR: ${qr_code}</span>
+        </div>`;
+      return;
+    }
+
+    showScanResult(data);
+  } catch (e) {
+    content.innerHTML = `<div class="result-error"><i class="bi bi-wifi-off"></i> Error de conexión</div>`;
+  }
+}
+
+  function showScanResult(data) {
+  const { usuario, vehiculos, dentro, estado_actual } = data;
+  const content = document.getElementById('scan-result-content');
+
+  const ROL_LABELS = { aprendiz:'Aprendiz', funcionario:'Funcionario', instructor:'Instructor', admin:'Administrador' };
+  const initials = usuario.nombre_completo.split(' ').map(w=>w[0]).slice(0,2).join('');
+
+  // Construir lista de vehículos
+  const vehHTML = vehiculos.length === 0
+    ? `<span style="opacity:.6">Sin vehículos registrados</span>`
+    : vehiculos.map(v => {
+        const vtag = v.tipo==='carro'?'car':v.tipo==='moto'?'moto':'bike';
+        const id   = v.placa || v.modelo || v.color;
+        return `<span class="vtag ${vtag}">${v.tipo}</span> ${id}`;
+      }).join('<br>');
+
+  content.innerHTML = `
+    <div class="result-user">
+      <div class="result-av">${initials}</div>
+      <div class="result-details">
+        <div class="result-name">${usuario.nombre_completo}</div>
+        <div class="result-id"><i class="bi bi-fingerprint"></i> ${usuario.tipo_id} ${usuario.numero_id}</div>
+        <div class="result-id"><i class="bi bi-person-badge"></i> ${ROL_LABELS[usuario.rol] || usuario.rol || 'Sin rol'}</div>
+        ${usuario.centro_nombre ? `<div class="result-id"><i class="bi bi-building"></i> ${usuario.centro_nombre}</div>` : ''}
+        <div class="result-vehicle" style="margin-top:6px">${vehHTML}</div>
+        <div class="result-status" style="margin-top:6px">
+          Estado: <span class="event-badge ${dentro?'in':'out'}">${dentro ? 'Dentro' : 'Fuera'}</span>
+          ${estado_actual ? `· ${estado_actual.lado} · desde ${fechaColombia(estado_actual.fecha_entrada).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="result-action-btns" id="action-btns-area">
+      ${buildActionButtons(usuario, vehiculos, dentro)}
+    </div>`;
+}
+
+function buildActionButtons(usuario, vehiculos, dentro) {
+  if (dentro) {
+    // Solo mostrar salida
+    return `<button class="btn-exit" onclick="adminSalida(${usuario.id_usuario})">
+      <i class="bi bi-arrow-up-circle-fill"></i> Registrar Salida
+    </button>`;
+  }
+  if (vehiculos.length === 0) {
+    return `<div style="opacity:.6;font-size:.85rem">Sin vehículos para registrar entrada.</div>`;
+  }
+  // Mostrar selector de vehículo + lado
+  const optsVeh = vehiculos.map(v =>
+    `<option value="${v.id_vehiculo}">${v.tipo} ${v.placa || v.modelo || v.color}</option>`
+  ).join('');
+  return `
+    <select id="sel-vehiculo" style="padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:inherit;margin-bottom:8px">
+      ${optsVeh}
+    </select>
+    <select id="sel-lado" style="padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:inherit;margin-bottom:8px">
+      <option value="1">Lado A</option>
+      <option value="2">Lado B</option>
+    </select>
+    <button class="btn-entry" onclick="adminEntrada(${usuario.id_usuario})">
+      <i class="bi bi-arrow-down-circle-fill"></i> Registrar Entrada
+    </button>`;
+}
+
+async function adminEntrada(id_usuario) {
+  const id_vehiculo = document.getElementById('sel-vehiculo').value;
+  const id_lado     = document.getElementById('sel-lado').value;
+  try {
+    const res  = await apiFetch('/parqueadero/admin-entrada', {
+      method: 'POST',
+      body: JSON.stringify({ id_usuario, id_vehiculo, id_lado }),
+    });
+    const data = await res.json();
+    if (!data.ok) { showToast(data.message, 'error'); return; }
+    showToast('Entrada registrada ✓');
+    updateCuposUI();
+    document.getElementById('scan-result-content').innerHTML = `
+      <div class="result-success">
+        <i class="bi bi-check-circle-fill"></i>
+        <strong>Entrada registrada correctamente</strong>
+      </div>`;
+  } catch { showToast('Error de conexión', 'error'); }
+}
+
+async function adminSalida(id_usuario) {
+  try {
+    const res  = await apiFetch('/parqueadero/admin-salida', {
+      method: 'POST',
+      body: JSON.stringify({ id_usuario }),
+    });
+    const data = await res.json();
+    if (!data.ok) { showToast(data.message, 'error'); return; }
+    showToast('Salida registrada ✓');
+    updateCuposUI();
+    document.getElementById('scan-result-content').innerHTML = `
+      <div class="result-success">
+        <i class="bi bi-check-circle-fill"></i>
+        <strong>Salida registrada correctamente</strong>
+      </div>`;
+  } catch { showToast('Error de conexión', 'error'); }
+}
+
+  function registerEvent(userId, tipo) {
+    const u = usuarios.find(x => x.id === userId);
+    if (u) {
+      if (tipo === 'entrada') { u.estado = 'Dentro'; cuposOcupados = Math.min(cuposOcupados + 1, cuposTotal); }
+      else                    { u.estado = 'Fuera';  cuposOcupados = Math.max(cuposOcupados - 1, 0); }
+      updateCuposUI();
+      renderUsersTable(usuarios);
+      addRecentActivity(u, tipo === 'entrada' ? 'in' : 'out');
+    }
+    showToast(`${tipo.charAt(0).toUpperCase()+tipo.slice(1)} registrada ✓`);
+    document.getElementById('scan-result-content').innerHTML = `
+      <div class="result-success">
+        <i class="bi bi-check-circle-fill"></i>
+        <strong>${tipo.charAt(0).toUpperCase()+tipo.slice(1)} registrada correctamente</strong>
+      </div>`;
+    document.getElementById('manual-id').value = '';
+  }
+
+  // ══ ACTIVIDAD RECIENTE ══
+  function addRecentActivity(u, tipo, lado) {
+    const now = new Date();
+    const time = now.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+    const vtag = u.vehiculo==='Carro'?'car':u.vehiculo==='Moto'?'moto':'bike';
+    const ladoStr = lado || (u.ladoActual || 'A');
+    const badgeLado = `<span class="side-badge ${ladoStr.toLowerCase()}">${ladoStr}</span>`;
+
+    // Tabla global
+    const tbody = document.getElementById('recent-tbody');
+    if (tbody) {
+      const row = `<tr><td>${u.nombre}</td><td>${u.id}</td><td><span class="vtag ${vtag}">${u.vehiculo}</span></td><td>${time}</td><td>${badgeLado}</td><td><span class="event-badge ${tipo==='in'?'in':'out'}">${tipo==='in'?'Entrada':'Salida'}</span></td></tr>`;
+      tbody.insertAdjacentHTML('afterbegin', row);
+      if (tbody.children.length > 8) tbody.removeChild(tbody.lastChild);
+    }
+    // Tabla lado A
+    if (ladoStr === 'A') {
+      const tbodyA = document.getElementById('recent-tbody-A');
+      if (tbodyA) {
+        const rowA = `<tr><td>${u.nombre}</td><td><span class="vtag ${vtag}">${u.vehiculo}</span></td><td>${time}</td><td><span class="event-badge ${tipo==='in'?'in':'out'}">${tipo==='in'?'Entrada':'Salida'}</span></td></tr>`;
+        tbodyA.insertAdjacentHTML('afterbegin', rowA);
+        if (tbodyA.children.length > 8) tbodyA.removeChild(tbodyA.lastChild);
+      }
+    }
+    // Tabla lado B
+    if (ladoStr === 'B') {
+      const tbodyB = document.getElementById('recent-tbody-B');
+      if (tbodyB) {
+        const rolTag = u.rol || 'Funcionario';
+        const rowB = `<tr><td>${u.nombre}</td><td><span class="vtag car">${rolTag}</span></td><td>${time}</td><td><span class="event-badge ${tipo==='in'?'in':'out'}">${tipo==='in'?'Entrada':'Salida'}</span></td></tr>`;
+        tbodyB.insertAdjacentHTML('afterbegin', rowB);
+        if (tbodyB.children.length > 8) tbodyB.removeChild(tbodyB.lastChild);
+      }
+    }
+  }
+
+  // ══ QR USUARIO ══
+  function showUserQR(id, nombre) {
+    const modal = document.getElementById('qr-modal');
+    const info = document.getElementById('modal-user-info');
+    info.innerHTML = `
+      <div class="modal-name">${nombre}</div>
+      <div class="modal-qr-wrap"><canvas id="modal-qr-canvas"></canvas></div>
+      <div class="modal-id-tag"><i class="bi bi-fingerprint"></i> ${id}</div>`;
+    modal.style.display = 'flex';
+    setTimeout(() => {
+      QRCode.toCanvas(document.getElementById('modal-qr-canvas'), id, {
+        width: 180, margin: 1,
+        color: { dark:'#0d2d55', light:'#ffffff' }
+      });
+    }, 80);
+    document.getElementById('modal-actions').innerHTML = `
+      <button class="btn-save" onclick="downloadModalQR()"><i class="bi bi-download"></i> Descargar</button>`;
+  }
+
+  function downloadModalQR() {
+    const canvas = document.getElementById('modal-qr-canvas');
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = 'qr-usuario.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  }
+
+  function closeModal() {
+    document.getElementById('qr-modal').style.display = 'none';
+  }
+
+  // ══ REGISTRAR USUARIO ══
+  let regVehicleType = 'ninguno';
+  function setRegVehicle(type, btn) {
+    regVehicleType = type;
+    document.querySelectorAll('.vehicle-tabs .vtab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    ['ninguno','carro','moto','bicicleta'].forEach(t => {
+      const el = document.getElementById('reg-form-' + t);
+      if (el) el.style.display = t === type ? 'block' : 'none';
+    });
+  }
+
+  async function registrarUsuario() {
+    const nombre = document.getElementById('reg-nombre').value.trim();
+    const tipoId = document.getElementById('reg-tipo-id').value;
+    const numId  = document.getElementById('reg-num-id').value.trim();
+    const centro = document.getElementById('reg-centro').value || null;
+    const email  = document.getElementById('reg-email').value.trim();
+    const pass   = document.getElementById('reg-pass').value;
+
+    if (!nombre || !tipoId || !numId || !email || !pass) { 
+      showToast('Por favor, completa nombre, identificación, correo y contraseña.'); 
+      return; 
+    }
+
+    try {
+      const btn = document.querySelector('#section-registrar .btn-save');
+      if (btn) { btn.innerHTML = '<i class="bi bi-hourglass"></i> Procesando...'; btn.disabled = true; }
+
+      const res = await apiFetch('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          nombre_completo: nombre,
+          tipo_id: tipoId,
+          numero_id: numId,
+          id_centro: centro ? parseInt(centro) : null,
+          email: email,
+          password: pass,
+          rol: 'aprendiz'
+        })
+      });
+      const data = await res.json();
+      
+      if (!data.ok) {
+        showToast(data.message || 'Error al registrar', 'error');
+      } else {
+        showToast(`Usuario ${nombre} registrado con éxito ✓`);
+        if (regVehicleType !== 'ninguno') {
+          setTimeout(() => showToast('Aviso: El vehículo lo debe registrar el usuario desde su propio perfil', 'info'), 2500);
+        }
+        // limpiar formulario
+        ['reg-nombre','reg-num-id','reg-email','reg-pass'].forEach(id => {
+          const el = document.getElementById(id); if (el) el.value='';
+        });
+        document.getElementById('reg-tipo-id').value = '';
+        await cargarUsuariosDesdeAPI(); // refrescar la tabla dinámica
+      }
+      if (btn) { btn.innerHTML = '<i class="bi bi-person-check-fill"></i> Registrar usuario'; btn.disabled = false; }
+    } catch(e) { 
+      showToast('Error de conexión.', 'error'); 
+      const btn = document.querySelector('#section-registrar .btn-save');
+      if (btn) { btn.innerHTML = '<i class="bi bi-person-check-fill"></i> Registrar usuario'; btn.disabled = false; }
+    }
+  }
+
+  // ══ PERFIL ADMIN ══
+  function updateAdminAvatar(nombre) {
+    const parts = nombre.trim().split(' ').filter(Boolean);
+    const initials = parts.length >= 2 ? (parts[0][0]+parts[1][0]).toUpperCase() : (parts[0]?parts[0][0].toUpperCase():'A');
+    document.getElementById('admin-avatar').textContent = initials;
+    document.getElementById('admin-display-name').textContent = nombre || 'Administrador';
+  }
+
+  function filterCentrosReg()   { fillCentroSelect('reg-region', 'reg-centro'); }
+  function filterCentrosAdmin() { fillCentroSelect('a-region', 'a-centro'); }
+
+  function fillCentroSelect(regionId, selectId) {
+    const idRegion = document.getElementById(regionId).value;
+    const sel      = document.getElementById(selectId);
+    sel.innerHTML  = '<option value="">Selecciona un centro</option>';
+    if (!idRegion) return;
+    
+    const filtrados = centrosSENA.filter(c => c.id_region == idRegion);
+    filtrados.forEach(c => {
+      const o = document.createElement('option'); 
+      o.value = c.id_centro; 
+      o.textContent = c.nombre; 
+      sel.appendChild(o);
+    });
+  }
+
+  async function saveAdminProfile() {
+    const btn = document.querySelector('#section-perfil .btn-save');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
+    
+    const nombre_completo = document.getElementById('a-nombre').value.trim();
+    const tipo_id = document.getElementById('a-tipo-id').value;
+    const numero_id = document.getElementById('a-num-id').value.trim();
+    const id_centro = document.getElementById('a-centro').value || null;
+
+    if (!nombre_completo || !tipo_id || !numero_id) {
+      showToast('Nombre e Identificación son requeridos', 'error');
+      btn.innerHTML = oldText;
+      return;
+    }
+
+    try {
+      const res = await apiFetch('/usuarios/perfil', {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          nombre_completo, 
+          tipo_id, 
+          numero_id, 
+          id_centro: id_centro ? parseInt(id_centro) : null 
+        })
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        showToast(data.message || 'Error al guardar el perfil.', 'error');
+        btn.innerHTML = oldText;
+      } else {
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> ¡Guardado!';
+        btn.style.background = '#1b5e20';
+        updateAdminAvatar(nombre_completo);
+        showToast('Perfil actualizado correctamente.', 'info');
+      }
+    } catch(e) {
+      showToast('Error de conexión', 'error');
+      btn.innerHTML = oldText;
+    }
+    setTimeout(() => { btn.innerHTML = '<i class="bi bi-check2-circle"></i> Guardar cambios'; btn.style.background = ''; }, 2200);
+  }
+
+  // ════════ LOGOUT ════════
+  async function handleLogout() {
+    try {
+      if (typeof Auth !== 'undefined' && Auth.getRefreshToken) {
+        await apiFetch('/auth/logout', { 
+          method: 'POST', 
+          body: JSON.stringify({ refresh_token: Auth.getRefreshToken() }) 
+        });
+        Auth.clear();
+      }
+    } catch (e) { }
+    window.location.href = 'login.html';
+  }
+
+  // ══ VEHÍCULO ADMIN ══
+  function setAdminVehicle(type, btn) {
+    document.querySelectorAll('#section-vehiculo .vtab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    ['carro','moto','bicicleta'].forEach(t => {
+      document.getElementById('av-form-' + t).style.display = t === type ? 'block' : 'none';
+    });
+  }
+
+  async function saveAdminVehicle(tipo) {
+    const btn = event.currentTarget;
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
+
+    const formData = new FormData();
+    const isBici = tipo === 'bicicleta';
+    const idTipo = tipo === 'carro' ? 2 : tipo === 'moto' ? 3 : 1;
+    
+    formData.append('id_tipo', idTipo);
+    const pre = tipo === 'carro' ? 'c' : tipo === 'moto' ? 'm' : 'b';
+    
+    // Extracción de datos según placeholders
+    const inputs = document.querySelectorAll(`#av-form-${tipo} input[type="text"]`);
+    if (!isBici) {
+      const placa = inputs[0].value.trim();
+      if (!placa) { showToast('La placa es obligatoria', 'error'); btn.innerHTML=oldText; return; }
+      formData.append('placa', placa);
+    } else {
+      const modelo = inputs[0].value.trim();
+      if (!modelo) { showToast('El modelo es obligatorio', 'error'); btn.innerHTML=oldText; return; }
+      formData.append('modelo', modelo);
+    }
+    
+    const color = inputs[1].value.trim();
+    if (!color) { showToast('El color es obligatorio', 'error'); btn.innerHTML=oldText; return; }
+    formData.append('color', color);
+    
+    const desc = document.querySelector(`#av-form-${tipo} textarea`).value.trim();
+    if (desc) formData.append('descripcion', desc);
+    
+    const fileInput = document.getElementById(`av-foto-${pre}`);
+    if (fileInput && fileInput.files[0]) {
+      formData.append('foto', fileInput.files[0]);
+    }
+
+    try {
+      const res = await fetch('/api/vehiculos', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${Auth.getToken()}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        showToast(data.message || 'Error al guardar.', 'error');
+      } else {
+        showToast('Vehículo registrado exitosamente ✓', 'info');
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Guardado';
+        btn.style.background = '#1b5e20';
+        inputs[0].value = ''; inputs[1].value = '';
+        document.querySelector(`#av-form-${tipo} textarea`).value = '';
+        const prev = document.getElementById(`av-preview-${pre}`);
+        if(prev) { prev.src=''; prev.style.display='none'; }
+        if(fileInput) fileInput.value='';
+      }
+    } catch { showToast('Error de conexión', 'error'); }
+    setTimeout(() => { btn.innerHTML = oldText; btn.style.background = ''; }, 2500);
+  }
+
+  // ══ NAVEGACIÓN ══
+  function showSection(name, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    if (btn) btn.classList.add('active');
+    else {
+      const navBtn = document.querySelector(`.nav-item[onclick*="'${name}'"]`);
+      if (navBtn) navBtn.classList.add('active');
+    }
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+    if (name !== 'scanner') stopScan();
+    if (name === 'historia') initHistorialAdmin();
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('show');
+  }
+
+  // ══ TOGGLE PASSWORD ══
+  function togglePass(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon  = document.getElementById(iconId);
+    if (input.type === 'password') { input.type = 'text';     icon.classList.replace('bi-eye','bi-eye-slash'); }
+    else                           { input.type = 'password'; icon.classList.replace('bi-eye-slash','bi-eye'); }
+  }
+
+  // ══ PREVIEW IMAGEN ══
+  function previewImage(input, previewId) {
+    const preview = document.getElementById(previewId);
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  // ══ TOAST ══
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ════════ UTILIDAD ZONA HORARIA COLOMBIA (UTC-5) ════════
+  // El backend ahora envía las fechas como ISO strings con zona horaria de Colombia.
+  // Esta función simplemente parsea el ISO string y lo interpreta correctamente.
+  function fechaColombia(fechaStr) {
+    if (!fechaStr) return null;
+    // El backend ya envió la fecha con la zona horaria de Colombia ajustada
+    // Solo necesitamos crear un objeto Date a partir del ISO string
+    return new Date(fechaStr);
+  }
+
+  function hoyColombia() {
+    // Obtener la fecha actual en Colombia como string YYYY-MM-DD
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+  }
+
+  function ayerColombia() {
+    const hoy = new Date();
+    // Restar 1 día y obtener en Colombia
+    hoy.setDate(hoy.getDate() - 1);
+    return hoy.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+  }
+
+  // ════════ HISTORIAL ADMIN ════════
+  let haRegistros = [];
+  let haFiltrados = [];
+  let haPage = 1;
+  const HA_LIMIT = 15;
+  let haAutoInterval = null;
+  let haFechaActual = '';
+
+  function initHistorialAdmin() {
+    const hoy = hoyColombia();
+    document.getElementById('hist-admin-fecha').value = hoy;
+    cargarDia('hoy');
+    renderDiasRecientes();
+    clearInterval(haAutoInterval);
+    haAutoInterval = setInterval(() => {
+      const f = document.getElementById('hist-admin-fecha').value;
+      if (f === hoyColombia()) cargarDia('custom');
+    }, 60000);
+  }
+
+  async function cargarDia(tipo) {
+    const hoy  = hoyColombia();
+    const ayer = ayerColombia();
+    let fecha  = document.getElementById('hist-admin-fecha').value || hoy;
+
+    if (tipo === 'hoy')  { fecha = hoy;  document.getElementById('hist-admin-fecha').value = hoy;  }
+    if (tipo === 'ayer') { fecha = ayer; document.getElementById('hist-admin-fecha').value = ayer; }
+
+    haFechaActual = fecha;
+
+    const label  = document.getElementById('hist-admin-dia-label');
+    const esHoy  = fecha === hoy;
+    const esAyer = fecha === ayer;
+    const fLabel = new Date(fecha + 'T12:00:00').toLocaleDateString('es-CO', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    label.innerHTML = `<i class="bi bi-calendar-event" style="color:var(--brand-color);margin-right:5px;"></i>${fLabel}`
+      + (esHoy  ? ' <span style="background:rgba(76,175,80,0.2);color:#a5d6a7;font-size:11px;padding:2px 8px;border-radius:20px;margin-left:6px;">Hoy</span>' : '')
+      + (esAyer ? ' <span style="background:rgba(255,193,7,0.15);color:#ffe082;font-size:11px;padding:2px 8px;border-radius:20px;margin-left:6px;">Ayer</span>' : '');
+
+    const tbody = document.getElementById('ha-tbody');
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:36px;opacity:.4;">
+      <i class="bi bi-hourglass-split" style="font-size:24px;display:block;margin-bottom:8px;"></i>Cargando...</td></tr>`;
+
+    try {
+      const data = await apiGet(`/parqueadero/historial-admin?fecha=${fecha}`);
+      if (!data.ok) { showToast(data.message || 'Error al cargar historial', 'error'); return; }
+      haRegistros = data.data || [];
+      haPage = 1;
+      document.getElementById('ha-buscar').value = '';
+      document.getElementById('ha-filtro-tipo').value = '';
+      calcularResumenAdmin();
+      renderTiposBar();
+      filtrarTablaAdmin();
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:36px;opacity:.4;">Error de conexión</td></tr>`;
+    }
+  }
+
+  function calcularResumenAdmin() {
+    const total   = haRegistros.length;
+    const activos = haRegistros.filter(r => r.estado === 'activo').length;
+    const compl   = haRegistros.filter(r => r.duracion_min != null);
+    const promMin = compl.length ? Math.round(compl.reduce((s,r) => s + r.duracion_min, 0) / compl.length) : 0;
+    const promH   = Math.floor(promMin / 60);
+    const promM   = promMin % 60;
+
+    const freq = {};
+    haRegistros.forEach(r => { freq[r.tipo_vehiculo] = (freq[r.tipo_vehiculo] || 0) + 1; });
+    const topTipo = Object.entries(freq).sort((a,b) => b[1]-a[1])[0];
+
+    document.getElementById('ha-total').textContent    = total;
+    document.getElementById('ha-activos').textContent  = activos;
+    document.getElementById('ha-promedio').textContent = promH > 0 ? `${promH}h ${promM}m` : `${promM}m`;
+    document.getElementById('ha-tipo-top').textContent = topTipo ? topTipo[0] : '—';
+  }
+
+  function renderTiposBar() {
+    const panel = document.getElementById('ha-tipos-panel');
+    const cont  = document.getElementById('ha-tipos-bars');
+    if (!haRegistros.length) { panel.style.display = 'none'; return; }
+
+    const colores = { 'Carro':'#4caf50', 'Moto':'#9c27b0', 'Bicicleta':'#2196f3' };
+    const freq    = {};
+    haRegistros.forEach(r => { freq[r.tipo_vehiculo] = (freq[r.tipo_vehiculo] || 0) + 1; });
+
+    cont.innerHTML = Object.entries(freq).sort((a,b) => b[1]-a[1]).map(([tipo, count]) => {
+      const pct   = Math.round(count * 100 / haRegistros.length);
+      const color = colores[tipo] || '#888';
+      return `<div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
+          <span style="color:rgba(255,255,255,0.75);">${tipo}</span>
+          <span style="color:rgba(255,255,255,0.45);">${count} visita${count!==1?'s':''} · ${pct}%</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.06);border-radius:30px;height:22px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${color};border-radius:30px;display:flex;align-items:center;padding-left:10px;font-size:11px;font-weight:700;transition:width .5s ease;">
+            ${pct > 12 ? pct+'%' : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    panel.style.display = 'block';
+  }
+
+  function filtrarTablaAdmin() {
+    const q     = (document.getElementById('ha-buscar')?.value || '').toLowerCase();
+    const tipo  = document.getElementById('ha-filtro-tipo')?.value || '';
+    haFiltrados = haRegistros.filter(r => {
+      const matchQ    = !q || (r.nombre_completo||'').toLowerCase().includes(q) || (r.identificador||'').toLowerCase().includes(q);
+      const matchTipo = !tipo || r.tipo_vehiculo === tipo;
+      return matchQ && matchTipo;
+    });
+    haPage = 1;
+    renderTablaAdmin();
+  }
+
+  function renderTablaAdmin() {
+    const totalPags = Math.max(1, Math.ceil(haFiltrados.length / HA_LIMIT));
+    if (haPage > totalPags) haPage = 1;
+    const inicio = (haPage - 1) * HA_LIMIT;
+    const pagina = haFiltrados.slice(inicio, inicio + HA_LIMIT);
+
+    const tbody = document.getElementById('ha-tbody');
+    const count = document.getElementById('ha-count');
+    if (count) count.textContent = `${haFiltrados.length} registro${haFiltrados.length!==1?'s':''}`;
+
+    if (!haFiltrados.length) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;opacity:.4;">
+        <i class="bi bi-search" style="font-size:26px;display:block;margin-bottom:8px;"></i>
+        ${haRegistros.length ? 'Sin resultados para ese filtro' : 'No hubo registros este día'}</td></tr>`;
+      renderPaginAdmin(0, 1);
+      return;
+    }
+
+    const iconoTipo = { 'Carro':'bi-car-front-fill', 'Moto':'bi-bicycle', 'Bicicleta':'bi-bicycle' };
+
+    tbody.innerHTML = pagina.map((r, i) => {
+      const num     = inicio + i + 1;
+      const entrada = fechaColombia(r.fecha_entrada).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+      const salida  = r.fecha_salida ? fechaColombia(r.fecha_salida).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' }) : '—';
+      const dur = r.duracion_min != null
+        ? `${Math.floor(r.duracion_min/60)}h ${r.duracion_min%60}m`
+        : r.estado === 'activo' ? '<span style="color:#a5d6a7;font-size:11px;">En curso</span>' : '—';
+      const badge = r.estado !== 'activo'
+        ? `<span class="badge-status done"><i class="bi bi-check-circle" style="margin-right:3px;"></i>Completado</span>`
+        : `<span class="badge-status active"><i class="bi bi-circle-fill" style="font-size:7px;margin-right:4px;"></i>En curso</span>`;
+
+      return `<tr>
+        <td style="color:rgba(255,255,255,0.3);font-size:11px;">${num}</td>
+        <td><i class="bi bi-person-fill" style="color:var(--brand-color);margin-right:5px;"></i>${r.nombre_completo}</td>
+        <td><i class="bi ${iconoTipo[r.tipo_vehiculo]||'bi-car-front'}" style="color:rgba(255,255,255,0.45);margin-right:4px;"></i>${r.tipo_vehiculo} · <strong>${r.identificador}</strong></td>
+        <td>${r.lado}</td>
+        <td>${entrada}</td>
+        <td>${salida}</td>
+        <td>${dur}</td>
+        <td>${badge}</td>
+      </tr>`;
+    }).join('');
+
+    renderPaginAdmin(haFiltrados.length, totalPags);
+    const info = document.getElementById('ha-page-info');
+    if (info) info.textContent = `Página ${haPage} de ${totalPags}`;
+  }
+
+  function renderPaginAdmin(total, totalPags) {
+    const cont = document.getElementById('ha-page-btns');
+    if (!cont) return;
+    cont.innerHTML = '';
+    if (totalPags <= 1) return;
+
+    const mk = (label, page, disabled, active) => {
+      const b = document.createElement('button');
+      b.innerHTML = label;
+      b.style.cssText = `padding:5px 11px;border-radius:8px;
+        border:1.5px solid rgba(255,255,255,${active?'0.35':'0.12'});
+        background:${active?'var(--brand-color)':'rgba(255,255,255,0.05)'};
+        color:${disabled?'rgba(255,255,255,0.2)':'#fff'};
+        font-family:'Poppins',sans-serif;font-size:12px;font-weight:${active?'600':'400'};
+        cursor:${disabled?'default':'pointer'};`;
+      if (!disabled) b.onclick = () => { haPage = page; renderTablaAdmin(); };
+      return b;
+    };
+
+    cont.appendChild(mk('<i class="bi bi-chevron-left"></i>', haPage-1, haPage===1, false));
+    for (let p=1; p<=totalPags; p++) {
+      if (totalPags>7 && p>2 && p<totalPags-1 && Math.abs(p-haPage)>1) {
+        if (p===3||p===totalPags-2) {
+          const d = document.createElement('span');
+          d.textContent = '…';
+          d.style.cssText = 'padding:0 4px;color:rgba(255,255,255,0.25);';
+          cont.appendChild(d);
+        }
+        continue;
+      }
+      cont.appendChild(mk(p, p, false, p===haPage));
+    }
+    cont.appendChild(mk('<i class="bi bi-chevron-right"></i>', haPage+1, haPage===totalPags, false));
+  }
+
+  function renderDiasRecientes() {
+    const cont = document.getElementById('ha-dias-recientes');
+    if (!cont) return;
+    const hoy = new Date();
+    cont.innerHTML = '';
+
+    for (let i=0; i<14; i++) {
+      const d   = new Date(hoy);
+      d.setDate(hoy.getDate() - i);
+      const iso = d.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+      const lbl = i===0 ? 'Hoy' : i===1 ? 'Ayer'
+        : d.toLocaleDateString('es-CO', { weekday:'short', day:'numeric', month:'short' });
+
+      const btn = document.createElement('button');
+      btn.textContent = lbl;
+      btn.dataset.fecha = iso;
+      btn.style.cssText = `padding:7px 14px;border-radius:9px;
+        border:1.5px solid rgba(255,255,255,0.15);
+        background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);
+        font-family:'Poppins',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;`;
+      btn.onmouseenter = () => { btn.style.background='rgba(255,255,255,0.14)'; btn.style.color='#fff'; };
+      btn.onmouseleave = () => { btn.style.background='rgba(255,255,255,0.06)'; btn.style.color='rgba(255,255,255,0.7)'; };
+      btn.onclick = () => {
+        document.getElementById('hist-admin-fecha').value = iso;
+        cargarDia('custom');
+      };
+      cont.appendChild(btn);
+    }
+  }
+
+  function exportarAdminCSV() {
+    if (!haRegistros.length) { showToast('No hay registros para exportar', 'error'); return; }
+    const cab  = ['Usuario','Tipo vehículo','Identificador','Lado','Fecha','Hora entrada','Hora salida','Duración (min)','Estado'];
+    const rows = haRegistros.map(r => {
+      const fe = fechaColombia(r.fecha_entrada);
+      return [
+        r.nombre_completo, r.tipo_vehiculo, r.identificador, r.lado,
+        fe.toLocaleDateString('es-CO'),
+        fe.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' }),
+        r.fecha_salida ? fechaColombia(r.fecha_salida).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}) : '',
+        r.duracion_min ?? '',
+        r.fecha_salida ? 'completado' : 'en curso'
+      ];
+    });
+    const csv  = [cab,...rows].map(f => f.map(v=>`"${v}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `historial_${haFechaActual || hoyColombia()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV exportado ✓');
+  }
+  </script>
+</body>
+</html>

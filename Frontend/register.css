@@ -1,0 +1,247 @@
+:root {
+  --brand-color:  #e6192d;
+  --brand-hover:  #b30e1f;
+  --bg-dark:      #0b0b0c;
+  --bg-card:      #1a1a1c;
+  --text-muted:   #999999;
+  --glass-bg:     rgba(20, 20, 22, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --white:        #ffffff;
+  --sidebar-w:    230px;
+}
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Animated blobs background ── */
+.background {
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(to bottom, rgba(16, 16, 18, 0.88), rgba(8, 8, 10, 0.98)), url('/Frontend/img/fondo\ del\ login.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.45;
+  animation: float 8s ease-in-out infinite;
+}
+
+.blob1 {
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, #8a041a, #d32f2f);
+  top: -100px;
+  left: -80px;
+  animation-delay: 0s;
+}
+
+.blob2 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, #d32f2f, #f44336);
+  bottom: -80px;
+  right: -60px;
+  animation-delay: -3s;
+}
+
+.blob3 {
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, #b71c1c, #e53935);
+  top: 40%;
+  left: 55%;
+  animation-delay: -5s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-30px) scale(1.06); }
+}
+
+/* ── Card ── */
+.card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 20px;
+  padding: 40px 36px 32px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: slideUp .55s cubic-bezier(.22,.61,.36,1) both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Logo ── */
+.logo {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 20px;
+  letter-spacing: 0.3px;
+}
+
+/* ── Title & subtitle ── */
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #bbdefb;
+  margin-bottom: 24px;
+}
+
+/* ── Form groups ── */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+/* ── Input wrapper with icon ── */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 16px;
+  color: var(--brand-color);
+  pointer-events: none;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 13px 16px 13px 40px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.92);
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.input-wrapper input::placeholder {
+  color: #aaa;
+}
+
+.input-wrapper input:focus {
+  border-color: var(--brand-color);
+  box-shadow: 0 0 0 3px rgba(144,202,249,0.3);
+}
+
+/* ── Password eye toggle ── */
+.password-wrapper input {
+  padding-right: 44px;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  color: #aaa;
+}
+
+.eye-icon:hover i {
+  color: #666;
+}
+
+/* ── Register button ── */
+.btn-register {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  background: var(--brand-color);
+  color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s, transform .15s, box-shadow .2s;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+  margin-top: 8px;
+  margin-bottom: 20px;
+  letter-spacing: 0.3px;
+}
+
+.btn-register:hover {
+  background: var(--brand-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.35);
+}
+
+.btn-register:active {
+  transform: translateY(0);
+}
+
+/* ── Login link ── */
+.login-text {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.login-text a {
+  font-weight: 600;
+  color: #ffffff;
+  text-decoration: none;
+  transition: opacity .2s;
+}
+
+.login-text a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .card {
+    margin: 16px;
+    padding: 32px 24px 28px;
+  }
+}
