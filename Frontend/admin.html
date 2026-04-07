@@ -1320,7 +1320,7 @@
           const qr = r.qr_code || '---';
           const veh = r.tipo_vehiculo ? r.tipo_vehiculo.charAt(0).toUpperCase() + r.tipo_vehiculo.slice(1) : 'Vehículo';
           const tipo = r.estado === 'activo' ? 'in' : 'out';
-          const time = fechaColombia(r.fecha).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+          const time = fechaColombia(r.fecha_accion).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' });
           const vtag = veh==='Carro'?'car':veh==='Moto'?'moto':'bike';
           const evTag = tipo==='in'?'Entrada':'Salida';
           
@@ -1349,7 +1349,7 @@
     function tick() {
       const now = new Date();
       document.getElementById('live-time').textContent =
-        now.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+        now.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', second:'2-digit', timeZone:'America/Bogota' });
     }
     tick(); setInterval(tick, 1000);
   }
@@ -1738,7 +1738,7 @@ async function processQRResult(rawText) {
         <div class="result-vehicle" style="margin-top:6px">${vehHTML}</div>
         <div class="result-status" style="margin-top:6px">
           Estado: <span class="event-badge ${dentro?'in':'out'}">${dentro ? 'Dentro' : 'Fuera'}</span>
-          ${estado_actual ? `· ${estado_actual.lado} · desde ${fechaColombia(estado_actual.fecha_entrada).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}` : ''}
+          ${estado_actual ? `· ${estado_actual.lado} · desde ${fechaColombia(estado_actual.fecha_entrada).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'})}` : ''}
         </div>
       </div>
     </div>
@@ -1833,7 +1833,7 @@ async function adminSalida(id_usuario) {
   // ══ ACTIVIDAD RECIENTE ══
   function addRecentActivity(u, tipo, lado) {
     const now = new Date();
-    const time = now.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+    const time = now.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' });
     const vtag = u.vehiculo==='Carro'?'car':u.vehiculo==='Moto'?'moto':'bike';
     const ladoStr = lado || (u.ladoActual || 'A');
     const badgeLado = `<span class="side-badge ${ladoStr.toLowerCase()}">${ladoStr}</span>`;
@@ -2320,8 +2320,8 @@ async function adminSalida(id_usuario) {
 
     tbody.innerHTML = pagina.map((r, i) => {
       const num     = inicio + i + 1;
-      const entrada = fechaColombia(r.fecha_entrada).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
-      const salida  = r.fecha_salida ? fechaColombia(r.fecha_salida).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' }) : '—';
+      const entrada = fechaColombia(r.fecha_entrada).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' });
+      const salida  = r.fecha_salida ? fechaColombia(r.fecha_salida).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' }) : '—';
       const dur = r.duracion_min != null
         ? `${Math.floor(r.duracion_min/60)}h ${r.duracion_min%60}m`
         : r.estado === 'activo' ? '<span style="color:#a5d6a7;font-size:11px;">En curso</span>' : '—';
@@ -2419,8 +2419,8 @@ async function adminSalida(id_usuario) {
       return [
         r.nombre_completo, r.tipo_vehiculo, r.identificador, r.lado,
         fe.toLocaleDateString('es-CO'),
-        fe.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' }),
-        r.fecha_salida ? fechaColombia(r.fecha_salida).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}) : '',
+        fe.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' }),
+        r.fecha_salida ? fechaColombia(r.fecha_salida).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'}) : '',
         r.duracion_min ?? '',
         r.fecha_salida ? 'completado' : 'en curso'
       ];

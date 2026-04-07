@@ -5,6 +5,29 @@ const { authMiddleware, requireRol } = require('../middlewares/auth');
 
 router.use(authMiddleware);
 
+function toColombiaIso(dateVal) {
+  if (!dateVal) return null;
+  const d = new Date(dateVal);
+  if (Number.isNaN(d.getTime())) return null;
+  const pad = (n) => String(n).padStart(2, '0');
+  const y = d.getUTCFullYear();
+  const m = pad(d.getUTCMonth() + 1);
+  const day = pad(d.getUTCDate());
+  const h = pad(d.getUTCHours());
+  const min = pad(d.getUTCMinutes());
+  const s = pad(d.getUTCSeconds());
+  return `${y}-${m}-${day}T${h}:${min}:${s}-05:00`;
+}
+
+function normalizeRegistroFechas(row) {
+  return {
+    ...row,
+    fecha_entrada: toColombiaIso(row.fecha_entrada),
+    fecha_salida: toColombiaIso(row.fecha_salida),
+    fecha_accion: toColombiaIso(row.fecha_accion),
+  };
+}
+
 // ── GET /api/parqueadero/cupos  —  ocupación actual ───────────────────
 router.get('/cupos', async (req, res) => {
   try {
@@ -49,11 +72,7 @@ router.get('/historial', async (req, res) => {
       { uid: req.user.id_usuario }
     );
 
-    const data = result.recordset.map(r => ({
-      ...r,
-      fecha_entrada: r.fecha_entrada ? new Date(r.fecha_entrada.getTime() - (5 * 60 * 60 * 1000)).toISOString() : null,
-      fecha_salida: r.fecha_salida ? new Date(r.fecha_salida.getTime() - (5 * 60 * 60 * 1000)).toISOString() : null
-    }));
+    const data = result.recordset.map(normalizeRegistroFechas);
 
     return res.json({
       ok: true,
@@ -156,7 +175,7 @@ router.get('/estado-actual', async (req, res) => {
     return res.json({
       ok: true,
       dentro: result.recordset.length > 0,
-      data: result.recordset[0] || null,
+      data: result.recordset[0] ? normalizeRegistroFechas(result.recordset[0]) : null,
     });
   } catch (err) {
     console.error(err);
@@ -248,10 +267,7 @@ router.get('/reciente', requireRol('admin'), async (req, res) => {
        ORDER BY fecha_accion DESC`,
       { hoy }
     );
-    const data = result.recordset.map(r => ({
-      ...r,
-      fecha_accion: r.fecha_accion ? new Date(r.fecha_accion.getTime() - (5 * 60 * 60 * 1000)).toISOString() : null
-    }));
+    const data = result.recordset.map(normalizeRegistroFechas);
     return res.json({ ok: true, data });
   } catch (err) {
     console.error(err);
@@ -329,13 +345,7 @@ router.get('/historial-admin', requireRol('admin'), async (req, res) => {
        ORDER BY r.fecha_entrada DESC`,
       { fecha }
     );
-    // Convertir las fechas a ISO string con zona horaria de Colombia (UTC-5)
-    // Esto asegura que el frontend las interprete correctamente
-    const data = result.recordset.map(r => ({
-      ...r,
-      fecha_entrada: r.fecha_entrada ? new Date(r.fecha_entrada.getTime() - (5 * 60 * 60 * 1000)).toISOString() : null,
-      fecha_salida: r.fecha_salida ? new Date(r.fecha_salida.getTime() - (5 * 60 * 60 * 1000)).toISOString() : null
-    }));
+    const data = result.recordset.map(normalizeRegistroFechas);
     return res.json({ ok: true, data });
   } catch (err) {
     console.error(err);
@@ -384,7 +394,7 @@ router.post('/escanear', requireRol('admin'), async (req, res) => {
       ok: true, usuario,
       vehiculos: vResult.recordset,
       dentro: estadoResult.recordset.length > 0,
-      estado_actual: estadoResult.recordset[0] || null,
+      estado_actual: estadoResult.recordset[0] ? normalizeRegistroFechas(estadoResult.recordset[0]) : null,
     });
   } catch (err) { console.error(err); return res.status(500).json({ ok: false, message: 'Error interno.' }); }
 });

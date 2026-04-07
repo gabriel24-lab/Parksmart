@@ -725,8 +725,8 @@
           return;
         }
         tbody.innerHTML = data.data.map(r => {
-          const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
-          const salida = r.fecha_salida ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : '—';
+          const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
+          const salida = r.fecha_salida ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }) : '—';
           const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : '—';
           const badge = r.estado === 'completado'
             ? `<span class="badge-status done">Completado</span>`
@@ -798,8 +798,8 @@
 
       tbody.innerHTML = pagina.map((r, i) => {
         const num     = inicio + i + 1;
-        const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
-        const salida  = r.fecha_salida ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : '—';
+        const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
+        const salida  = r.fecha_salida ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }) : '—';
         const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : '—';
 
         const tipoIcon = r.tipo_vehiculo === 'Carro' ? 'bi-car-front-fill'
@@ -862,8 +862,8 @@
       const body  = document.getElementById('hist-detail-body');
       if (!panel || !body) return;
 
-      const entrada  = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' });
-      const salida   = r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' }) : 'Aún en el parqueadero';
+      const entrada  = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' });
+      const salida   = r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' }) : 'Aún en el parqueadero';
       const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : 'En progreso';
 
       const campo = (icon, label, val) => `
@@ -893,9 +893,9 @@
       const cabecera = ['ID','Fecha entrada','Vehículo','Identificador','Color','Lado','Fecha salida','Duración (min)','Estado'];
       const filas = histTodosLosRegistros.map(r => [
         r.id_registro,
-        new Date(r.fecha_entrada).toLocaleString('es-CO'),
+        new Date(r.fecha_entrada).toLocaleString('es-CO', { timeZone: 'America/Bogota' }),
         r.tipo_vehiculo, r.identificador, r.color || '', r.lado || '',
-        r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO') : '',
+        r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : '',
         r.duracion_min ?? '', r.estado
       ]);
       const csv = [cabecera, ...filas].map(f => f.map(v => `"${v}"`).join(',')).join('\n');
