@@ -24,7 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Servir el frontend (HTML/CSS/JS)
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '../Frontend')));
 
 // ── Rutas API ─────────────────────────────────────────────────────────
 app.use('/api/auth',        require('./src/routes/auth'));
@@ -54,8 +54,8 @@ async function start() {
   try {
     await getPool();   // Conectar a SQL Server al arrancar
     app.listen(PORT, () => {
-      console.log(` WIII servidor conectado en http://localhost:${1433}`);
-      console.log(` API disponible en  http://localhost:${1433}/api`);
+      console.log(`Servidor conectado en http://localhost:${PORT}`);
+      console.log(`API disponible en http://localhost:${PORT}/api`);
     });
   } catch (err) {
     console.error('No se pudo conectar a la base de datos:', JSON.stringify(err, null, 2));

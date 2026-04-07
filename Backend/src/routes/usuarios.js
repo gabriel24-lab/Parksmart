@@ -90,6 +90,9 @@ router.put('/cambiar-password',
         `SELECT password_hash FROM dbo.Usuarios WHERE id_usuario = @uid`,
         { uid: req.user.id_usuario }
       );
+      if (!result.recordset.length) {
+        return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+      }
       const valid = await bcrypt.compare(password_actual, result.recordset[0].password_hash);
       if (!valid) return res.status(401).json({ ok: false, message: 'Contraseña actual incorrecta.' });
 

@@ -62,6 +62,7 @@ async function tryRefresh() {
 // ── Helpers ───────────────────────────────────────────────────────────
 async function apiGet(endpoint) {
   const res  = await apiFetch(endpoint);
+  if (!res) return { ok: false, message: 'Sesión expirada.' };
   return res.json();
 }
 
@@ -70,6 +71,7 @@ async function apiPost(endpoint, body) {
     method: 'POST',
     body:   JSON.stringify(body),
   });
+  if (!res) return { ok: false, message: 'Sesión expirada.' };
   return res.json();
 }
 
@@ -78,15 +80,18 @@ async function apiPut(endpoint, body) {
     method: 'PUT',
     body:   JSON.stringify(body),
   });
+  if (!res) return { ok: false, message: 'Sesión expirada.' };
   return res.json();
 }
 
 async function apiDelete(endpoint) {
   const res = await apiFetch(endpoint, { method: 'DELETE' });
+  if (!res) return { ok: false, message: 'Sesión expirada.' };
   return res.json();
 }
 
 async function apiPostForm(endpoint, formData) {
   const res = await apiFetch(endpoint, { method: 'POST', body: formData });
+  if (!res) return { ok: false, message: 'Sesión expirada.' };
   return res.json();
 }

@@ -156,7 +156,8 @@ router.delete('/:id', async (req, res) => {
     // Eliminar foto si existe
     const foto = check.recordset[0].foto_url;
     if (foto) {
-      const filePath = path.join(__dirname, '../..', foto);
+      const relativeFoto = foto.replace(/^\/+/, '');
+      const filePath = path.join(__dirname, '../..', relativeFoto);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
 
