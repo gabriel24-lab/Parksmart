@@ -337,7 +337,11 @@ body {
   transition: transform .2s,box-shadow .2s;
 }
 
-.stat-card::before { content:''; position:absolute; inset:0; border-radius:16px; opacity:0.07; }
+.stat-card::before { 
+  content:''; 
+  position: absolute; 
+  inset: 0; 
+  border-radius: 16px; opacity:0.07; }
 .stat-card.green::before { background:#4caf50; }
 .stat-card.red::before   { background:#f44336; }
 .stat-card.blue::before  { background:#2196f3; }
