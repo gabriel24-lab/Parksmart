@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inicio sesion - Parksmart</title>
+  <link rel="stylesheet" href="login.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <script src="api.js"></script>
+</head>
+<body>
+  <div class="background">
+  </div>
+
+  <div class="card">
+    <div class="logo">
+      <img src="/Frontend/img/logotipo-Photoroom.png" alt="Parksmart Logo" />
+    </div>
+
+    <h1 class="title">Inicia sesion</h1>
+
+    <div class="form-group">
+      <label for="email">Número de identificacion</label>
+      <input type="text" id="numero_id" placeholder="123343333" />
+    </div>
+
+    <div class="form-group">
+      <label for="password">Contraseña</label>
+      <div class="password-wrapper">
+        <input type="password" id="password" placeholder="Contraseña" />
+        <span class="eye-icon" onclick="togglePassword()">
+          <i id="eye-icon" class="bi bi-eye"></i>
+        </span>
+      </div>
+    </div>
+
+    <div class="forgot">
+      <a href="#">Olvido su contraseña?</a>
+    </div>
+
+    <button class="btn-signin" onclick="handleLogin()">Inicia sesion</button>
+
+    <p id="login-error" style="display:none;color:#ffb3b3;font-size:13px;text-align:center;margin-top:-10px;margin-bottom:8px;"></p>
+
+    <p class="register-text">No tienes una cuenta? <a href="register.html">Registrate</a></p>
+  </div>
+
+ <script>
+  if (Auth.isLogged()) window.location.href = 'dashboard.html';
+
+  function togglePassword() {
+    const input = document.getElementById('password');
+    const icon  = document.getElementById('eye-icon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+  }
+
+  async function handleLogin() {
+    const numero_id = document.getElementById('numero_id').value.trim();
+    const password  = document.getElementById('password').value;
+    const errEl     = document.getElementById('login-error');
+    const btn       = document.querySelector('.btn-signin');
+
+    errEl.style.display = 'none';
+
+    if (!numero_id || !password) {
+      errEl.textContent   = 'Por favor completa todos los campos.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Ingresando...';
+
+    try {
+      const data = await apiPost('/auth/login', { numero_id, password });
+
+      if (!data.ok) {
+        errEl.textContent   = data.message || 'Credenciales incorrectas.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      Auth.save(data);
+      if (data.user.rol === 'admin') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+
+    } catch {
+      errEl.textContent   = 'No se pudo conectar al servidor. Verifica que el backend esté corriendo.';
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Sign in';
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleLogin();
+  });
+</script>
+</body>
+</html>
