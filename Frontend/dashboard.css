@@ -18,7 +18,7 @@
 
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   min-height: 100vh;
   color: var(--white);
   overflow-x: hidden;
@@ -100,6 +100,7 @@ body {
   display: flex; 
   align-items: center; 
   gap: 10px;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 20px; 
   font-weight: 800; 
   color: var(--white);
@@ -108,9 +109,11 @@ body {
 }
 
 .nav-logo-img {
-  height: 32px; /* Tamaño ideal para el sidebar */
+  height: 48px;              /* Logo visible más grande */
   width: auto;
   object-fit: contain;
+  mix-blend-mode: lighten;   /* Blanco desaparece en fondos oscuros */
+  filter: drop-shadow(0 0 2px rgba(230,25,45,0.3));
 }
 
 .sidebar-nav { 
@@ -129,7 +132,7 @@ body {
   border: none;
   background: transparent; 
   color: rgba(255,255,255,0.68);
-  font-family: 'Inter',sans-serif; 
+  font-family: 'DM Sans', sans-serif; 
   font-size: 14px; 
   font-weight: 500;
   cursor: pointer; 
@@ -191,7 +194,7 @@ body {
 }
 
 .topbar-logo-wrap .nav-logo-img {
-  height: 28px; /* Un poco más pequeño para el móvil */
+  height: 40px;
 }
 
 .hamburger { 
@@ -267,6 +270,7 @@ body {
 }
 
 .section-header h1 { 
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 28px; 
   font-weight: 800; 
 }
@@ -341,6 +345,7 @@ body {
 }
 
 .stat-number { 
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 32px; 
   font-weight: 800; 
   line-height: 1; 
@@ -1202,4 +1207,63 @@ body {
 
 #hist-page-btns button:hover {
   background: rgba(255,255,255,0.12) !important;
+}
+
+/* ══ PARQUEADERO — TABS LADO A / LADO B ══ */
+.dash-lado-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dash-lado-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.65);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.3;
+}
+
+.dash-lado-tab i {
+  font-size: 16px;
+}
+
+.dash-lado-tab:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--white);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.dash-lado-tab.active {
+  background: var(--brand-color);
+  border-color: var(--brand-color);
+  color: var(--white);
+}
+
+.side-tab-sub {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: .7;
+}
+
+/* Soporte para 4 columnas en .cards-row */
+.cards-row.four {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 900px) {
+  .cards-row.four {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

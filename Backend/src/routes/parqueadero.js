@@ -39,10 +39,67 @@ router.get('/cupos', async (req, res) => {
   }
 });
 
+// ── GET /api/parqueadero/ocupacion-rol  —  ocupación filtrada por rol ─
+router.get('/ocupacion-rol', async (req, res) => {
+  try {
+    const rol = req.user.rol;
+
+    // Una sola consulta: todos los activos, agrupados por lado y tipo
+    // No filtramos por l.nombre para evitar problemas de casing o formato
+    const result = await query(
+      `SELECT l.id_lado, l.nombre AS lado, tv.nombre AS tipo, COUNT(*) AS cantidad
+       FROM dbo.RegistrosUso r
+       JOIN dbo.Vehiculos     v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN dbo.TiposVehiculo tv ON tv.id_tipo    = v.id_tipo
+       JOIN dbo.Lados         l  ON l.id_lado     = r.id_lado
+       WHERE r.estado = 'activo'
+       GROUP BY l.id_lado, l.nombre, tv.nombre
+       ORDER BY l.id_lado, tv.nombre`
+    );
+
+    // Agrupar en mapa { id_lado -> { tipo: cantidad } }
+    const grupos = {};
+    result.recordset.forEach(row => {
+      if (!grupos[row.id_lado]) grupos[row.id_lado] = {};
+      grupos[row.id_lado][row.tipo.toLowerCase()] = Number(row.cantidad);
+    });
+
+    // Los id_lado ordenados: el menor = Lado A, el mayor = Lado B
+    const ids = Object.keys(grupos).map(Number).sort((a, b) => a - b);
+    const mapA = grupos[ids[0]] || {};
+    const mapB = grupos[ids[1]] || {};
+
+    const totalA = Object.values(mapA).reduce((s, v) => s + v, 0);
+    const totalB = Object.values(mapB).reduce((s, v) => s + v, 0);
+    const CAPACIDAD_B = 20;
+
+    const response = {
+      rol,
+      vista: rol === 'aprendiz' ? 'aprendiz' : 'funcionario',
+      lado_a: {
+        carros:     mapA['carro']     || 0,
+        motos:      mapA['moto']      || 0,
+        bicicletas: mapA['bicicleta'] || 0,
+        total:      totalA,
+      },
+      lado_b: {
+        ocupados:    totalB,
+        capacidad:   CAPACIDAD_B,
+        disponibles: Math.max(0, CAPACIDAD_B - totalB),
+      },
+    };
+
+    return res.json({ ok: true, data: response });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
 // ── GET /api/parqueadero/historial  —  mis registros de uso ───────────
 router.get('/historial', async (req, res) => {
-  const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.min(50, parseInt(req.query.limit) || 10);
+  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit = Math.min(200, parseInt(req.query.limit) || 10);  // subido a 200
   const offset = (page - 1) * limit;
 
   try {
@@ -237,6 +294,68 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
       data: {
         ...stats.recordset[0],
         por_hora: porHora.recordset,
+        por_semana: porSemana.recordset,
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+// ── GET /api/parqueadero/stats-lado  —  estadísticas por lado (A o B) ─
+// Query param: ?id_lado=1  (1=Lado A, 2=Lado B)
+router.get('/stats-lado', requireRol('admin'), async (req, res) => {
+  try {
+    const id_lado = parseInt(req.query.id_lado);
+    if (!id_lado) return res.status(400).json({ ok: false, message: 'id_lado requerido.' });
+
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+
+    // Flujo por hora hoy, filtrado por lado
+    const porHora = await query(
+      `SELECT
+         DATEPART(HOUR, r.fecha_entrada) AS hora,
+         COUNT(*) AS entradas,
+         SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
+       FROM dbo.RegistrosUso r
+       WHERE CAST(r.fecha_entrada AS DATE) = @hoy
+         AND r.id_lado = @id_lado
+       GROUP BY DATEPART(HOUR, r.fecha_entrada)
+       ORDER BY hora`,
+      { hoy, id_lado }
+    );
+
+    // Distribución por tipo — todos los que entraron HOY en ese lado (salieron o no)
+    const porTipo = await query(
+      `SELECT tv.nombre AS tipo, COUNT(*) AS cantidad
+       FROM dbo.RegistrosUso r
+       JOIN dbo.Vehiculos     v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN dbo.TiposVehiculo tv ON tv.id_tipo    = v.id_tipo
+       WHERE CAST(r.fecha_entrada AS DATE) = @hoy
+         AND r.id_lado = @id_lado
+       GROUP BY tv.nombre`,
+      { hoy, id_lado }
+    );
+
+    // Ingresos últimos 7 días por lado
+    const porSemana = await query(
+      `SELECT
+         DATEPART(WEEKDAY, r.fecha_entrada) AS dia_semana,
+         COUNT(*) AS ingresos
+       FROM dbo.RegistrosUso r
+       WHERE r.fecha_entrada >= DATEADD(DAY, -6, CAST(GETDATE() AS DATE))
+         AND r.id_lado = @id_lado
+       GROUP BY DATEPART(WEEKDAY, r.fecha_entrada)
+       ORDER BY dia_semana`,
+      { id_lado }
+    );
+
+    return res.json({
+      ok: true,
+      data: {
+        por_hora:   porHora.recordset,
+        por_tipo:   porTipo.recordset,
         por_semana: porSemana.recordset,
       }
     });

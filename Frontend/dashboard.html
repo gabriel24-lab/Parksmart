@@ -6,8 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Parqueadero SENA — Dashboard</title>
   <link rel="stylesheet" href="dashboard.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="api.js"></script>
@@ -16,20 +15,23 @@
 <body>
 
   <div class="background">
-    
-    
-    
+
+
+
   </div>
 
   <!-- ═══ SIDEBAR ═══ -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <img src="/Frontend/img/logo -Photoroom.png" alt="Logo" class="nav-logo-img">
+      <img src="/Frontend/img/logo-icon-cropped.png" alt="Logo" class="nav-logo-img">
       <span>Parksmart</span>
     </div>
     <nav class="sidebar-nav">
       <button class="nav-item active" onclick="showSection('dashboard',this)">
         <i class="bi bi-grid-1x2-fill"></i><span>Inicio</span>
+      </button>
+      <button class="nav-item" onclick="showSection('parqueadero',this)">
+        <i class="bi bi-p-square-fill"></i><span>Parqueadero</span>
       </button>
       <button class="nav-item" onclick="showSection('perfil',this)">
         <i class="bi bi-person-circle"></i><span>Perfil</span>
@@ -41,7 +43,7 @@
         <i class="bi bi-clock-history"></i><span>Historial</span>
       </button>
     </nav>
-<button class="nav-item logout" onclick="handleLogout()">
+    <button class="nav-item logout" onclick="handleLogout()">
       <i class="bi bi-box-arrow-left"></i><span>Cerrar sesión</span>
     </button>
   </aside>
@@ -50,7 +52,7 @@
   <div class="topbar">
     <button class="hamburger" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
     <div class="topbar-logo-wrap">
-      <img src="/Frontend/img/logo -Photoroom.png" alt="Logo" class="nav-logo-img">
+      <img src="/Frontend/img/logo-icon-cropped.png" alt="Logo" class="nav-logo-img">
       <span class="topbar-title">Parksmart</span>
     </div>
     <div class="topbar-avatar" id="topbar-av">U</div>
@@ -64,35 +66,80 @@
       <div class="section-header">
         <div>
           <h1>Bienvenido, <span class="name-highlight" id="dash-name">Usuario</span> 👋</h1>
-          <p class="section-sub">Sistema de gestion para el parqueadero del Sena(CIGEC).</p>
+          <p class="section-sub">Sistema de gestion para el parqueadero del Sena (CIGEC)</p>
         </div>
       </div>
 
-      <div class="cards-row">
-        <div class="stat-card available">
-          <div class="stat-icon"><i class="bi bi-car-front"></i></div>
-          <div class="stat-info"><span class="stat-number">18</span><span class="stat-label">Cupos disponibles</span>
+      <!-- ── LADO A ── -->
+      <div class="panel-title" style="margin-bottom:10px;margin-top:4px;"><i class="bi bi-p-square-fill"></i> Lado A
+        <span style="font-size:11px;font-weight:400;opacity:.55;">(tiempo real · vehículos activos)</span></div>
+      <div class="cards-row" id="cards-lado-a">
+        <!-- Aprendiz: solo bicicletas -->
+        <div class="stat-card available" id="card-bicis-a" style="display:none">
+          <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="num-bicis-a">—</span>
+            <span class="stat-label">Bicicletas activas</span>
           </div>
-          <div class="stat-badge green">Abierto</div>
+          <div class="stat-badge green">Lado A</div>
         </div>
+        <!-- Funcionario / Instructor: carros -->
+        <div class="stat-card available" id="card-carros-a" style="display:none">
+          <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="num-carros-a">—</span>
+            <span class="stat-label">Carros activos</span>
+          </div>
+          <div class="stat-badge green">Lado A</div>
+        </div>
+        <!-- Funcionario / Instructor: motos -->
+        <div class="stat-card occupied" id="card-motos-a" style="display:none">
+          <div class="stat-icon"><i class="bi bi-scooter"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="num-motos-a">—</span>
+            <span class="stat-label">Motos activas</span>
+          </div>
+          <div class="stat-badge red">Lado A</div>
+        </div>
+      </div>
+
+      <!-- ── LADO B ── -->
+      <div id="inicio-ladob-titulo" class="panel-title" style="margin-bottom:10px;margin-top:18px;"><i class="bi bi-p-square"></i> Lado B <span
+          style="font-size:11px;font-weight:400;opacity:.55;">(máx. 20 cupos)</span></div>
+      <div class="cards-row" id="inicio-ladob-cards">
         <div class="stat-card occupied">
           <div class="stat-icon"><i class="bi bi-slash-circle"></i></div>
-          <div class="stat-info"><span class="stat-number">32</span><span class="stat-label">Cupos ocupados</span></div>
-          <div class="stat-badge red">64%</div>
+          <div class="stat-info">
+            <span class="stat-number" id="num-ocup-b">—</span>
+            <span class="stat-label">Vehículos adentro</span>
+          </div>
+          <div class="stat-badge red" id="badge-pct-b">0%</div>
+        </div>
+        <div class="stat-card available">
+          <div class="stat-icon"><i class="bi bi-sign-parking"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="num-disp-b">—</span>
+            <span class="stat-label">Cupos disponibles</span>
+          </div>
+          <div class="stat-badge green">Lado B</div>
         </div>
         <div class="stat-card total">
           <div class="stat-icon"><i class="bi bi-grid-3x3-gap"></i></div>
-          <div class="stat-info"><span class="stat-number">50</span><span class="stat-label">Cupos totales</span></div>
-          <div class="stat-badge blue">Total</div>
+          <div class="stat-info">
+            <span class="stat-number">20</span>
+            <span class="stat-label">Capacidad máxima</span>
+          </div>
+          <div class="stat-badge blue">Total B</div>
         </div>
       </div>
 
-      <div class="glass-panel">
-        <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Ocupación en tiempo real</div>
+      <!-- Barra de ocupación Lado B -->
+      <div class="glass-panel" id="inicio-ladob-barra" style="margin-top:18px;">
+        <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Ocupación Lado B en tiempo real</div>
         <div class="progress-bar-wrap">
-          <div class="progress-bar-fill" style="width:64%"><span>64%</span></div>
+          <div class="progress-bar-fill" id="bar-fill-b" style="width:0%"><span id="bar-pct-b">0%</span></div>
         </div>
-        <div class="progress-labels"><span>0</span><span>25</span><span>50</span></div>
+        <div class="progress-labels"><span>0</span><span>10</span><span>20</span></div>
       </div>
 
       <div class="glass-panel qr-panel">
@@ -132,37 +179,170 @@
                 <th>Estado</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="dash-history-tbody">
               <tr>
-                <td>19 Mar 2026</td>
-                <td>07:45 AM</td>
-                <td>12:30 PM</td>
-                <td>4h 45m</td>
-                <td><span class="badge-status done">Completado</span></td>
-              </tr>
-              <tr>
-                <td>18 Mar 2026</td>
-                <td>08:00 AM</td>
-                <td>05:10 PM</td>
-                <td>9h 10m</td>
-                <td><span class="badge-status done">Completado</span></td>
-              </tr>
-              <tr>
-                <td>17 Mar 2026</td>
-                <td>09:15 AM</td>
-                <td>01:00 PM</td>
-                <td>3h 45m</td>
-                <td><span class="badge-status done">Completado</span></td>
-              </tr>
-              <tr>
-                <td>19 Mar 2026</td>
-                <td>01:00 PM</td>
-                <td>—</td>
-                <td>—</td>
-                <td><span class="badge-status active">En curso</span></td>
+                <td colspan="5" style="text-align:center;padding:28px;opacity:.4;">
+                  <i class="bi bi-hourglass" style="font-size:20px;display:block;margin-bottom:8px;"></i>
+                  Cargando registros...
+                </td>
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PARQUEADERO ─── -->
+    <section id="section-parqueadero" class="section">
+      <div class="section-header">
+        <div>
+          <h1><i class="bi bi-p-square-fill" style="color:var(--brand-color);margin-right:8px;"></i>Estado del <span
+              class="name-highlight">Parqueadero</span></h1>
+          <p class="section-sub">Ocupación en tiempo real · Solo visualización</p>
+        </div>
+        <button class="btn-download" onclick="loadCupos()" style="align-self:flex-start">
+          <i class="bi bi-arrow-clockwise"></i> Actualizar
+        </button>
+      </div>
+
+      <!-- Tabs Lado A / Lado B -->
+      <div class="dash-lado-tabs" style="margin-bottom:20px;">
+        <button class="dash-lado-tab active" id="park-tab-a" onclick="switchParkLado('A',this)">
+          <i class="bi bi-sign-turn-right-fill"></i> Lado A
+          <span class="side-tab-sub">Espacio abierto</span>
+        </button>
+        <button class="dash-lado-tab" id="park-tab-b" onclick="switchParkLado('B',this)">
+          <i class="bi bi-buildings-fill"></i> Lado B
+          <span class="side-tab-sub">Espacios controlados</span>
+        </button>
+      </div>
+
+      <!-- ══ PANEL LADO A ══ -->
+      <div id="park-panel-A">
+        <!-- Banner -->
+        <div class="lado-banner lado-a-banner"
+          style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-radius:14px;background:linear-gradient(135deg,rgba(21,101,192,.35),rgba(21,101,192,.1));border:1px solid rgba(21,101,192,.3);margin-bottom:18px;">
+          <i class="bi bi-sign-turn-right-fill" style="font-size:28px;color:#64b5f6;"></i>
+          <div>
+            <strong style="font-size:15px;">Lado A — Espacio Abierto</strong>
+            <span style="display:block;font-size:12px;opacity:.65;margin-top:2px;">Carros, motos y bicicletas · Acceso
+              general · Sin cupos fijos</span>
+          </div>
+        </div>
+
+        <!-- Nota informativa -->
+        <div class="rol-info-box info" style="margin-bottom:18px;">
+          <i class="bi bi-info-circle-fill"></i>
+          El Lado A es un espacio abierto sin distribución fija. Solo se lleva conteo por tipo de vehículo.
+        </div>
+
+        <!-- Tarjetas por tipo (todas visibles) -->
+        <div class="cards-row" id="park-a-cards">
+          <div class="stat-card available" id="park-a-carros-card">
+            <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="park-a-carros">—</span>
+              <span class="stat-label">Carros dentro</span>
+            </div>
+            <div class="stat-badge green">Lado A</div>
+          </div>
+          <div class="stat-card occupied" id="park-a-motos-card">
+            <div class="stat-icon"><i class="bi bi-scooter"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="park-a-motos">—</span>
+              <span class="stat-label">Motos dentro</span>
+            </div>
+            <div class="stat-badge red">Lado A</div>
+          </div>
+          <div class="stat-card total">
+            <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="park-a-bicis">—</span>
+              <span class="stat-label">Bicicletas dentro</span>
+            </div>
+            <div class="stat-badge blue">Lado A</div>
+          </div>
+          <div class="stat-card" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
+            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="park-a-total">—</span>
+              <span class="stat-label">Total dentro</span>
+            </div>
+            <div class="stat-badge" style="background:rgba(255,255,255,0.15);color:#fff;">Total A</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PANEL LADO B ══ -->
+      <div id="park-panel-B" style="display:none;">
+        <!-- Banner -->
+        <div class="lado-banner lado-b-banner"
+          style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-radius:14px;background:linear-gradient(135deg,rgba(106,27,154,.35),rgba(106,27,154,.1));border:1px solid rgba(106,27,154,.3);margin-bottom:18px;">
+          <i class="bi bi-buildings-fill" style="font-size:28px;color:#ce93d8;"></i>
+          <div>
+            <strong style="font-size:15px;">Lado B — Espacios Controlados</strong>
+            <span style="display:block;font-size:12px;opacity:.65;margin-top:2px;">Mayormente carros · Capacidad máxima:
+              20 cupos</span>
+          </div>
+        </div>
+
+        <!-- Tarjetas Lado B -->
+        <div class="cards-row">
+          <div class="stat-card available">
+            <div class="stat-icon"><i class="bi bi-p-circle-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="park-b-disp">—</span>
+              <span class="stat-label">Cupos disponibles</span>
+            </div>
+            <div class="stat-badge green">Libre</div>
+          </div>
+          <div class="stat-card occupied">
+            <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="park-b-ocup">—</span>
+              <span class="stat-label">Vehículos dentro</span>
+            </div>
+            <div class="stat-badge red" id="park-b-pct-badge">0%</div>
+          </div>
+          <div class="stat-card total">
+            <div class="stat-icon"><i class="bi bi-grid-3x3-gap"></i></div>
+            <div class="stat-info">
+              <span class="stat-number">20</span>
+              <span class="stat-label">Capacidad máxima</span>
+            </div>
+            <div class="stat-badge blue">Total B</div>
+          </div>
+        </div>
+
+        <!-- Barra ocupación -->
+        <div class="glass-panel" style="margin-top:18px;">
+          <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Ocupación Lado B</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="park-b-bar" style="width:0%"><span id="park-b-bar-pct">0%</span></div>
+          </div>
+          <div class="progress-labels"><span>0</span><span>10</span><span>20</span></div>
+        </div>
+
+        <!-- Mapa de cupos -->
+        <div class="glass-panel" style="margin-top:18px;">
+          <div class="panel-title"><i class="bi bi-map-fill"></i> Mapa de espacios — Lado B <span
+              style="font-size:11px;font-weight:400;opacity:.5;">(solo lectura)</span></div>
+          <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
+            <span style="font-size:12px;display:flex;align-items:center;gap:5px;"><i class="bi bi-square-fill"
+                style="color:#4caf50;"></i> Libre</span>
+            <span style="font-size:12px;display:flex;align-items:center;gap:5px;"><i class="bi bi-square-fill"
+                style="color:#ef5350;"></i> Ocupado</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <div style="min-width:300px;">
+              <div style="font-size:11px;opacity:.5;text-align:center;margin-bottom:8px;">&#8593; Entrada / Salida</div>
+              <div style="margin-bottom:6px;font-size:11px;opacity:.55;">Fila 1</div>
+              <div id="park-b-grid-row1" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+              <div style="height:10px;background:rgba(255,255,255,0.07);border-radius:4px;margin-bottom:14px;"></div>
+              <div style="margin-bottom:6px;font-size:11px;opacity:.55;">Fila 2</div>
+              <div id="park-b-grid-row2" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -263,7 +443,8 @@
             <input type="password" id="p-pass-new" placeholder="Mínimo 8 caracteres" />
           </div>
         </div>
-        <button class="btn-save" onclick="changePassword()" style="background:var(--brand-color);"><i class="bi bi-lock-fill"></i> Cambiar contraseña</button>
+        <button class="btn-save" onclick="changePassword()" style="background:var(--brand-color);"><i
+            class="bi bi-lock-fill"></i> Cambiar contraseña</button>
       </div>
 
       <!-- Vehículos registrados -->
@@ -415,7 +596,8 @@
       <div class="section-header">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
           <div>
-            <h1><i class="bi bi-clock-history" style="color:var(--brand-color);margin-right:8px;"></i>Historial de Uso</h1>
+            <h1><i class="bi bi-clock-history" style="color:var(--brand-color);margin-right:8px;"></i>Historial de Uso
+            </h1>
             <p class="section-sub">Consulta todos tus registros de entrada y salida del parqueadero</p>
           </div>
           <button class="btn-download" onclick="exportarHistorial()">
@@ -513,16 +695,19 @@
               </tr>
             </thead>
             <tbody id="hist-tbody">
-              <tr><td colspan="7" style="text-align:center;padding:40px;opacity:.45;">
-                <i class="bi bi-hourglass" style="font-size:24px;display:block;margin-bottom:10px;"></i>
-                Cargando registros...
-              </td></tr>
+              <tr>
+                <td colspan="7" style="text-align:center;padding:40px;opacity:.45;">
+                  <i class="bi bi-hourglass" style="font-size:24px;display:block;margin-bottom:10px;"></i>
+                  Cargando registros...
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
 
         <!-- Paginación -->
-        <div id="hist-pagination" style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:12px;">
+        <div id="hist-pagination"
+          style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:12px;">
           <span id="hist-page-info" style="font-size:12px;color:rgba(255,255,255,0.45);"></span>
           <div style="display:flex;gap:8px;" id="hist-page-btns"></div>
         </div>
@@ -531,7 +716,8 @@
       <!-- Detalle de registro (panel expandible) -->
       <div class="glass-panel" id="hist-detail-panel" style="display:none;">
         <div class="panel-title"><i class="bi bi-info-circle-fill"></i> Detalle del registro</div>
-        <div id="hist-detail-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;"></div>
+        <div id="hist-detail-body"
+          style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;"></div>
       </div>
     </section>
 
@@ -587,13 +773,15 @@
       const user = Auth.getUser();
       if (user) applyUserToUI(user);
 
-      // Cargar cupos e historial en paralelo (no bloquean la UI principal)
-      loadCupos();
+      // Historial no depende del rol: carga en paralelo
       loadHistorial();
 
-      // Perfil y vehículos deben cargarse antes de renderizar
+      // Perfil y vehículos primero — necesitamos el ROL antes de loadCupos
       await loadPerfil();
       await loadVehiculos();
+
+      // Ahora sí cargamos cupos (el rol ya está disponible en localStorage)
+      loadCupos();
 
       // Renderizar vehículos y sección de rol
       renderVehicleList();
@@ -696,29 +884,124 @@
       }
     }
 
-    // ════════ CUPOS ════════
+    // ════════ CUPOS (por rol) ════════
     async function loadCupos() {
       try {
-        const data = await apiGet('/parqueadero/cupos');
+        const user = Auth.getUser();
+        const rol = user?.rol || '';
+
+        const data = await apiGet('/parqueadero/ocupacion-rol');
         if (!data.ok) return;
+        const d = data.data;
 
-        let totalCap = 0, totalOcup = 0;
-        data.data.forEach(lado => {
-          totalCap += lado.capacidad;
-          totalOcup += lado.ocupados;
-        });
-        const disponibles = totalCap - totalOcup;
-        const pct = totalCap > 0 ? Math.round(totalOcup * 100 / totalCap) : 0;
+        // ── Tarjetas del inicio: filtradas por rol ─────────────────────
+        const cardBicis = document.getElementById('card-bicis-a');
+        const cardCarros = document.getElementById('card-carros-a');
+        const cardMotos = document.getElementById('card-motos-a');
 
-        document.querySelector('.stat-card.available .stat-number').textContent = disponibles;
-        document.querySelector('.stat-card.occupied  .stat-number').textContent = totalOcup;
-        document.querySelector('.stat-card.total     .stat-number').textContent = totalCap;
-        document.querySelector('.stat-badge.red').textContent = pct + '%';
-        document.querySelector('.progress-bar-fill').style.width = pct + '%';
-        document.querySelector('.progress-bar-fill span').textContent = pct + '%';
-        document.querySelector('.progress-labels span:last-child').textContent = totalCap;
+        if (rol === 'aprendiz') {
+          if (cardBicis) { cardBicis.style.display = ''; document.getElementById('num-bicis-a').textContent = d.lado_a.bicicletas ?? 0; }
+          if (cardCarros) cardCarros.style.display = 'none';
+          if (cardMotos) cardMotos.style.display = 'none';
+
+          // Aprendices: ocultar toda la sección de Lado B en el Inicio
+          const hide = id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
+          hide('inicio-ladob-titulo');
+          hide('inicio-ladob-cards');
+          hide('inicio-ladob-barra');
+        } else {
+          if (cardBicis) cardBicis.style.display = 'none';
+          if (cardCarros) { cardCarros.style.display = ''; document.getElementById('num-carros-a').textContent = d.lado_a.carros ?? 0; }
+          if (cardMotos) { cardMotos.style.display = ''; document.getElementById('num-motos-a').textContent = d.lado_a.motos ?? 0; }
+
+          // Funcionarios/instructores: asegurarse que Lado B sea visible
+          const show = id => { const el = document.getElementById(id); if (el) el.style.display = ''; };
+          show('inicio-ladob-titulo');
+          show('inicio-ladob-cards');
+          show('inicio-ladob-barra');
+        }
+
+        // ── Barra/tarjetas Lado B del inicio (solo para no-aprendices) ──
+        const ocup = d.lado_b.ocupados ?? 0;
+        const disp = d.lado_b.disponibles ?? 0;
+        const pct = d.lado_b.capacidad > 0 ? Math.round(ocup * 100 / d.lado_b.capacidad) : 0;
+
+        const elOcup = document.getElementById('num-ocup-b');
+        const elDisp = document.getElementById('num-disp-b');
+        const elPct = document.getElementById('badge-pct-b');
+        const elBar = document.getElementById('bar-fill-b');
+        const elBarPct = document.getElementById('bar-pct-b');
+
+        if (elOcup) elOcup.textContent = ocup;
+        if (elDisp) elDisp.textContent = disp;
+        if (elPct) elPct.textContent = pct + '%';
+        if (elBar) elBar.style.width = pct + '%';
+        if (elBarPct) elBarPct.textContent = pct + '%';
+
+        // ── Sección "Parqueadero" — Lado A completo ────────────────────
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        set('park-a-carros', d.lado_a.carros ?? 0);
+        set('park-a-motos', d.lado_a.motos ?? 0);
+        set('park-a-bicis', d.lado_a.bicicletas ?? 0);
+        set('park-a-total', d.lado_a.total ?? 0);
+
+        // ── Sección "Parqueadero" — Lado B ────────────────────────────
+        set('park-b-disp', disp);
+        set('park-b-ocup', ocup);
+        const pb = document.getElementById('park-b-pct-badge');
+        if (pb) pb.textContent = pct + '%';
+        const pbBar = document.getElementById('park-b-bar');
+        const pbBarPct = document.getElementById('park-b-bar-pct');
+        if (pbBar) pbBar.style.width = pct + '%';
+        if (pbBarPct) pbBarPct.textContent = pct + '%';
+
+        // ── Mapa de cupos Lado B (20 espacios: fila1=10, fila2=10) ────
+        renderParkBGrid(ocup, d.lado_b.capacidad ?? 20);
+
       } catch (e) { console.warn('loadCupos:', e); }
     }
+
+    // Genera visualmente el mapa de cupos del Lado B
+    function renderParkBGrid(ocupados, total) {
+      const row1 = document.getElementById('park-b-grid-row1');
+      const row2 = document.getElementById('park-b-grid-row2');
+      if (!row1 || !row2) return;
+
+      const mitad = Math.ceil(total / 2);
+      const mkSlot = (num, ocupado) => {
+        const div = document.createElement('div');
+        div.style.cssText = `
+          width:44px;height:54px;border-radius:8px;display:flex;flex-direction:column;
+          align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;
+          border:1.5px solid ${ocupado ? 'rgba(239,83,80,.5)' : 'rgba(76,175,80,.4)'};
+          background:${ocupado ? 'rgba(239,83,80,.18)' : 'rgba(76,175,80,.12)'};
+          color:${ocupado ? '#ef9a9a' : '#a5d6a7'};cursor:default;transition:all .2s;`;
+        div.innerHTML = `<i class="bi ${ocupado ? 'bi-car-front-fill' : 'bi-p-circle'}" style="font-size:16px;"></i><span>${num}</span>`;
+        div.title = ocupado ? `Espacio ${num}: Ocupado` : `Espacio ${num}: Libre`;
+        return div;
+      };
+
+      row1.innerHTML = '';
+      row2.innerHTML = '';
+      for (let i = 1; i <= total; i++) {
+        const ocupado = i <= ocupados;
+        const el = mkSlot(i, ocupado);
+        if (i <= mitad) row1.appendChild(el);
+        else row2.appendChild(el);
+      }
+    }
+
+    // ════════ SWITCH TABS PARQUEADERO ════════
+    function switchParkLado(lado, btn) {
+      document.querySelectorAll('.dash-lado-tab').forEach(t => {
+        // Solo afectar los tabs de la sección parqueadero
+        if (t.id === 'park-tab-a' || t.id === 'park-tab-b') t.classList.remove('active');
+      });
+      if (btn) btn.classList.add('active');
+      document.getElementById('park-panel-A').style.display = lado === 'A' ? '' : 'none';
+      document.getElementById('park-panel-B').style.display = lado === 'B' ? '' : 'none';
+    }
+
 
     // ════════ HISTORIAL (sección completa) ════════
     let histPage = 1;
@@ -739,20 +1022,31 @@
       try {
         const data = await apiGet(`/parqueadero/historial?page=1&limit=4`);
         if (!data.ok) return;
-        const tbody = document.querySelector('#section-dashboard .history-table tbody');
+        const tbody = document.getElementById('dash-history-tbody');
         if (!tbody) return;
         if (!data.data.length) {
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;opacity:.5;padding:20px">Sin registros aún</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;opacity:.5;padding:20px;">
+            <i class="bi bi-inbox" style="display:block;font-size:22px;margin-bottom:6px;"></i>
+            Sin registros aún
+          </td></tr>`;
           return;
         }
         tbody.innerHTML = data.data.map(r => {
           const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
-          const salida = r.fecha_salida ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }) : '—';
+          const salida  = r.fecha_salida
+            ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' })
+            : '—';
           const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : '—';
           const badge = r.estado === 'completado'
             ? `<span class="badge-status done">Completado</span>`
-            : `<span class="badge-status active">En curso</span>`;
-          return `<tr><td>${entrada}</td><td>${r.tipo_vehiculo} · ${r.identificador}</td><td>${salida}</td><td>${duracion}</td><td>${badge}</td></tr>`;
+            : `<span class="badge-status active" style="animation:pulse 1.5s infinite;">En curso</span>`;
+          return `<tr>
+            <td>${entrada}</td>
+            <td>${r.tipo_vehiculo} · ${r.identificador}</td>
+            <td>${salida}</td>
+            <td>${duracion}</td>
+            <td>${badge}</td>
+          </tr>`;
         }).join('');
       } catch (e) { console.warn('loadHistorialDash:', e); }
     }
@@ -768,30 +1062,30 @@
       const promM = promMin % 60;
 
       const elTotal = document.getElementById('hist-total');
-      const elProm  = document.getElementById('hist-promedio');
-      const elAct   = document.getElementById('hist-activos');
+      const elProm = document.getElementById('hist-promedio');
+      const elAct = document.getElementById('hist-activos');
       if (elTotal) elTotal.textContent = total;
-      if (elProm)  elProm.textContent  = promH > 0 ? `${promH}h ${promM}m` : `${promM}m`;
-      if (elAct)   elAct.textContent   = activos;
+      if (elProm) elProm.textContent = promH > 0 ? `${promH}h ${promM}m` : `${promM}m`;
+      if (elAct) elAct.textContent = activos;
     }
 
     function aplicarFiltros() {
-      const ini    = document.getElementById('hist-fecha-ini')?.value;
-      const fin    = document.getElementById('hist-fecha-fin')?.value;
-      const tipo   = document.getElementById('hist-tipo')?.value;
+      const ini = document.getElementById('hist-fecha-ini')?.value;
+      const fin = document.getElementById('hist-fecha-fin')?.value;
+      const tipo = document.getElementById('hist-tipo')?.value;
       const estado = document.getElementById('hist-estado')?.value;
 
       let filtrados = [...histTodosLosRegistros];
-      if (ini)    filtrados = filtrados.filter(r => new Date(r.fecha_entrada) >= new Date(ini));
-      if (fin)    filtrados = filtrados.filter(r => new Date(r.fecha_entrada) <= new Date(fin + 'T23:59:59'));
-      if (tipo)   filtrados = filtrados.filter(r => r.tipo_vehiculo?.toLowerCase().includes(tipo.toLowerCase()));
+      if (ini) filtrados = filtrados.filter(r => new Date(r.fecha_entrada) >= new Date(ini));
+      if (fin) filtrados = filtrados.filter(r => new Date(r.fecha_entrada) <= new Date(fin + 'T23:59:59'));
+      if (tipo) filtrados = filtrados.filter(r => r.tipo_vehiculo?.toLowerCase().includes(tipo.toLowerCase()));
       if (estado) filtrados = filtrados.filter(r => estado === 'activo' ? r.estado !== 'completado' : r.estado === estado);
 
       renderTablaHistorial(filtrados);
     }
 
     function limpiarFiltros() {
-      const ids = ['hist-fecha-ini','hist-fecha-fin','hist-tipo','hist-estado'];
+      const ids = ['hist-fecha-ini', 'hist-fecha-fin', 'hist-tipo', 'hist-estado'];
       ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
       aplicarFiltros();
     }
@@ -818,20 +1112,20 @@
       }
 
       tbody.innerHTML = pagina.map((r, i) => {
-        const num     = inicio + i + 1;
+        const num = inicio + i + 1;
         const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
-        const salida  = r.fecha_salida ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }) : '—';
+        const salida = r.fecha_salida ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }) : '—';
         const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : '—';
 
         const tipoIcon = r.tipo_vehiculo === 'Carro' ? 'bi-car-front-fill'
-                       : r.tipo_vehiculo === 'Moto'  ? 'bi-bicycle'
-                       : 'bi-bicycle';
+          : r.tipo_vehiculo === 'Moto' ? 'bi-bicycle'
+            : 'bi-bicycle';
 
         const badge = r.estado === 'completado'
           ? `<span class="badge-status done"><i class="bi bi-check-circle" style="margin-right:3px;"></i>Completado</span>`
           : `<span class="badge-status active"><i class="bi bi-circle-fill" style="font-size:7px;margin-right:4px;"></i>En curso</span>`;
 
-        return `<tr style="cursor:pointer;" onclick="verDetalle(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+        return `<tr style="cursor:pointer;" onclick="verDetalle(${JSON.stringify(r).replace(/"/g, '&quot;')})">
           <td style="color:rgba(255,255,255,0.35);font-size:12px;">${num}</td>
           <td>${entrada}</td>
           <td><i class="bi ${tipoIcon}" style="color:var(--brand-color);margin-right:5px;"></i>${r.tipo_vehiculo} · <strong>${r.identificador}</strong>${r.color ? ` <span style="font-size:11px;opacity:.6;">· ${r.color}</span>` : ''}</td>
@@ -858,10 +1152,10 @@
       const mkBtn = (label, page, disabled, active) => {
         const b = document.createElement('button');
         b.innerHTML = label;
-        b.style.cssText = `padding:6px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,${active?'0.4':'0.15'});
+        b.style.cssText = `padding:6px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,${active ? '0.4' : '0.15'});
           background:${active ? 'var(--brand-color)' : 'rgba(255,255,255,0.06)'};
           color:${disabled ? 'rgba(255,255,255,0.25)' : '#fff'};
-          font-family:'Inter',sans-serif;font-size:13px;font-weight:${active?'600':'400'};
+          font-family:'Inter',sans-serif;font-size:13px;font-weight:${active ? '600' : '400'};
           cursor:${disabled ? 'default' : 'pointer'};`;
         if (!disabled) b.onclick = () => { histPage = page; aplicarFiltros(); };
         return b;
@@ -870,7 +1164,7 @@
       cont.appendChild(mkBtn('<i class="bi bi-chevron-left"></i>', histPage - 1, histPage === 1, false));
       for (let p = 1; p <= totalPags; p++) {
         if (totalPags > 7 && p > 2 && p < totalPags - 1 && Math.abs(p - histPage) > 1) {
-          if (p === 3 || p === totalPags - 2) { const d = document.createElement('span'); d.textContent='…'; d.style.cssText='padding:0 4px;color:rgba(255,255,255,0.3);'; cont.appendChild(d); }
+          if (p === 3 || p === totalPags - 2) { const d = document.createElement('span'); d.textContent = '…'; d.style.cssText = 'padding:0 4px;color:rgba(255,255,255,0.3);'; cont.appendChild(d); }
           continue;
         }
         cont.appendChild(mkBtn(p, p, false, p === histPage));
@@ -880,11 +1174,11 @@
 
     function verDetalle(r) {
       const panel = document.getElementById('hist-detail-panel');
-      const body  = document.getElementById('hist-detail-body');
+      const body = document.getElementById('hist-detail-body');
       if (!panel || !body) return;
 
-      const entrada  = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' });
-      const salida   = r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' }) : 'Aún en el parqueadero';
+      const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' });
+      const salida = r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' }) : 'Aún en el parqueadero';
       const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : 'En progreso';
 
       const campo = (icon, label, val) => `
@@ -896,14 +1190,14 @@
         </div>`;
 
       body.innerHTML =
-        campo('bi-hash',           'ID registro',   `#${r.id_registro}`) +
-        campo('bi-car-front-fill', 'Vehículo',      `${r.tipo_vehiculo} · ${r.identificador}`) +
-        campo('bi-palette2',       'Color',          r.color || '—') +
-        campo('bi-geo-alt-fill',   'Lado',          r.lado || '—') +
-        campo('bi-box-arrow-in-right', 'Entrada',   entrada) +
-        campo('bi-box-arrow-right','Salida',         salida) +
-        campo('bi-stopwatch-fill', 'Duración',      duracion) +
-        campo('bi-check2-circle',  'Estado',        r.estado === 'completado' ? 'Completado' : 'En curso');
+        campo('bi-hash', 'ID registro', `#${r.id_registro}`) +
+        campo('bi-car-front-fill', 'Vehículo', `${r.tipo_vehiculo} · ${r.identificador}`) +
+        campo('bi-palette2', 'Color', r.color || '—') +
+        campo('bi-geo-alt-fill', 'Lado', r.lado || '—') +
+        campo('bi-box-arrow-in-right', 'Entrada', entrada) +
+        campo('bi-box-arrow-right', 'Salida', salida) +
+        campo('bi-stopwatch-fill', 'Duración', duracion) +
+        campo('bi-check2-circle', 'Estado', r.estado === 'completado' ? 'Completado' : 'En curso');
 
       panel.style.display = 'block';
       panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -911,7 +1205,7 @@
 
     function exportarHistorial() {
       if (!histTodosLosRegistros.length) { showToast('No hay registros para exportar', 'error'); return; }
-      const cabecera = ['ID','Fecha entrada','Vehículo','Identificador','Color','Lado','Fecha salida','Duración (min)','Estado'];
+      const cabecera = ['ID', 'Fecha entrada', 'Vehículo', 'Identificador', 'Color', 'Lado', 'Fecha salida', 'Duración (min)', 'Estado'];
       const filas = histTodosLosRegistros.map(r => [
         r.id_registro,
         new Date(r.fecha_entrada).toLocaleString('es-CO', { timeZone: 'America/Bogota' }),
@@ -921,9 +1215,9 @@
       ]);
       const csv = [cabecera, ...filas].map(f => f.map(v => `"${v}"`).join(',')).join('\n');
       const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href = url; a.download = `historial_parqueadero_${new Date().toISOString().slice(0,10)}.csv`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `historial_parqueadero_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click(); URL.revokeObjectURL(url);
       showToast('CSV exportado correctamente', 'success');
     }
@@ -1054,7 +1348,7 @@
 
         // Mapear "saveProfile();" por error recursivo anterior (eliminado por loop)
         // en lugar de eso llamaremos a loadPerfil() si fuera necesario, pero la actualizamos acá mismo
-        
+
         // Actualizar user en localStorage
         const user = Auth.getUser();
         Auth.save({
@@ -1077,9 +1371,9 @@
 
       try {
         const data = await apiPut('/usuarios/cambiar-password', { password_actual: actual, password_nuevo: nuevo });
-        if (!data.ok) { 
-           showToast(data.message || (data.errors && data.errors[0].msg) || 'Error al cambiar contraseña.', 'error'); 
-           return; 
+        if (!data.ok) {
+          showToast(data.message || (data.errors && data.errors[0].msg) || 'Error al cambiar contraseña.', 'error');
+          return;
         }
         document.getElementById('p-pass-act').value = '';
         document.getElementById('p-pass-new').value = '';
@@ -1274,6 +1568,7 @@
       document.getElementById('overlay').classList.remove('show');
       if (name === 'vehiculo') applyRolToVehicleSection();
       if (name === 'historial') { histPage = 1; loadHistorial(); }
+      if (name === 'parqueadero') loadCupos();
     }
 
     function toggleSidebar() {
@@ -1302,6 +1597,7 @@
       toast._timer = setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; }, 3200);
     }
   </script>
+  <script src="bg-animation.js"></script>
 </body>
 
 </html>

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin — Parqueadero</title>
   <link rel="stylesheet" href="/Frontend/admin.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -24,7 +24,7 @@
   <!-- ═══ SIDEBAR ═══ -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <img src="/Frontend/img/logo -Photoroom.png" alt="Logo" class="nav-logo-img">
+      <img src="/Frontend/img/logo-icon-cropped.png" alt="Logo" class="nav-logo-img">
       <span>Parksmart - Admin</span>
     </div>
     <div class="sidebar-role-badge">Administrador</div>
@@ -66,7 +66,7 @@
   <div class="topbar">
     <button class="hamburger" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
     <div class="topbar-logo-wrap">
-      <img src="/Frontend/img/logo -Photoroom.png" alt="Logo" class="nav-logo-img">
+      <img src="/Frontend/img/logo-icon-cropped.png" alt="Logo" class="nav-logo-img">
       <span class="topbar-title">Parksmart - Admin</span>
     </div>
     <div class="topbar-avatar admin-av">AD</div>
@@ -80,7 +80,7 @@
       <div class="section-header">
         <div>
           <h1>Panel de <span class="hl">Control</span></h1>
-          <p class="section-sub">Resumen en tiempo real - Parqueadero del Sena(CIGEC).</p>
+          <p class="section-sub">Resumen en tiempo real - Parqueadero del Sena (CIGEC)</p>
         </div>
         <div class="header-time" id="live-time"></div>
       </div>
@@ -1217,8 +1217,17 @@
       if (!res) return;
       const data = await res.json();
       if (data.ok && data.data) {
-        renderChartHora(data.data.por_hora || []);
-        renderChartSemana(data.data.por_semana || []);
+        const d = data.data;
+
+        // ── Entradas y salidas del día completo (historial real) ────────
+        const elEnt = document.getElementById('stat-entradas');
+        const elSal = document.getElementById('stat-salidas');
+        if (elEnt) elEnt.textContent = d.entradas_hoy ?? 0;
+        if (elSal) elSal.textContent = d.salidas_hoy  ?? 0;
+
+        // ── Gráficas del panel global ───────────────────────────────────
+        renderChartHora(d.por_hora   || []);
+        renderChartSemana(d.por_semana || []);
       }
     } catch(e) { console.warn('Error stats:', e); }
   }
@@ -1273,44 +1282,39 @@
       const data = await res.json();
       if (!data.ok || !data.data) return;
 
-      // Reiniciar contadores a cero antes de repoblar
-      ladoA.carros.dentro = 0; ladoA.carros.entradas = 0; ladoA.carros.salidas = 0;
-      ladoA.motos.dentro  = 0; ladoA.motos.entradas  = 0; ladoA.motos.salidas  = 0;
-      ladoA.bicis.dentro  = 0; ladoA.bicis.entradas  = 0; ladoA.bicis.salidas  = 0;
+      // vw_OcupacionActual devuelve: lado (nombre), capacidad, ocupados, disponibles, porcentaje_ocupacion
+      // NO tiene columnas: tipo, dentro, entradas, salidas
+      // Reiniciar contadores de estado actual (dentro)
+      ladoA.carros.dentro = 0;
+      ladoA.motos.dentro  = 0;
+      ladoA.bicis.dentro  = 0;
       ladoB.ocupados      = 0;
 
-      // data.data viene de vw_OcupacionActual — adaptar según las columnas reales
       data.data.forEach(row => {
-        const lado  = (row.lado  || row.Lado  || '').toString().toUpperCase();
-        const tipo  = (row.tipo  || row.Tipo  || row.tipo_vehiculo || '').toString().toLowerCase();
-        const dentro   = parseInt(row.dentro   || row.Dentro   || 0);
-        const entradas = parseInt(row.entradas || row.Entradas || 0);
-        const salidas  = parseInt(row.salidas  || row.Salidas  || 0);
+        // El campo 'lado' contiene el nombre tal como está en la DB (ej: 'Lado A', 'Lado B')
+        const ladoNombre = (row.lado || row.Lado || '').toString().toUpperCase().trim();
+        const ocup = parseInt(row.ocupados ?? row.Ocupados ?? 0);
 
-        if (lado === 'A' || lado === 'LADO A') {
-          if (tipo.includes('carro'))  { ladoA.carros.dentro += dentro; ladoA.carros.entradas += entradas; ladoA.carros.salidas += salidas; }
-          if (tipo.includes('moto'))   { ladoA.motos.dentro  += dentro; ladoA.motos.entradas  += entradas; ladoA.motos.salidas  += salidas; }
-          if (tipo.includes('bici'))   { ladoA.bicis.dentro  += dentro; ladoA.bicis.entradas  += entradas; ladoA.bicis.salidas  += salidas; }
+        const esA = ladoNombre.includes('A') && !ladoNombre.includes('B');
+        const esB = ladoNombre.includes('B');
+
+        if (esA) {
+          // Para Lado A: sin separación por tipo en la vista, asignamos el total a carros como proxy
+          // Las estadísticas detalladas por tipo se muestran en la sección de gestión de cupos
+          // Los contadores dentro de ladoA serán actualizados por el sistema de registro en tiempo real
+          ladoA.carros.dentro = ocup; // total lado A visible en dashboard global
         }
-        if (lado === 'B' || lado === 'LADO B') {
-          ladoB.ocupados += dentro;
-          // Entradas/salidas Lado B van a los contadores del dashboard
-          const el = document.getElementById('dB-entradas');
-          const es = document.getElementById('dB-salidas');
-          if (el) el.textContent = parseInt(el.textContent || 0) + entradas;
-          if (es) es.textContent = parseInt(es.textContent || 0) + salidas;
+        if (esB) {
+          ladoB.ocupados = ocup;
+          ladoB.total   = parseInt(row.capacidad ?? row.Capacidad ?? 20);
+          // Actualizar elementos del dashboard Lado B
+          const elDisp = document.getElementById('dB-disponibles');
+          const elOcup = document.getElementById('dB-ocupados');
+          const disp   = parseInt(row.disponibles ?? row.Disponibles ?? 0);
+          if (elDisp) elDisp.textContent = disp;
+          if (elOcup) elOcup.textContent = ocup;
         }
       });
-
-      // Actualizar entradas/salidas globales de hoy (suma total)
-      const totalEnt = ladoA.carros.entradas + ladoA.motos.entradas + ladoA.bicis.entradas
-                     + parseInt(document.getElementById('dB-entradas')?.textContent || 0);
-      const totalSal = ladoA.carros.salidas  + ladoA.motos.salidas  + ladoA.bicis.salidas
-                     + parseInt(document.getElementById('dB-salidas')?.textContent  || 0);
-      const elEnt = document.getElementById('stat-entradas');
-      const elSal = document.getElementById('stat-salidas');
-      if (elEnt) elEnt.textContent = totalEnt;
-      if (elSal) elSal.textContent = totalSal;
 
       updateCuposUI();
     } catch (err) {
@@ -1600,7 +1604,10 @@
     showToast(`${u.nombre} → Entrada registrada (Lado ${ladoNombre}) ✓`);
   }
 
-  // ══ DASHBOARD LADO TABS ══
+  // ── Instancias de gráficas de lados A / B (para poder destruirlas y re-renderizar)
+  let _chartHoraAInst = null, _chartTipoAInst = null;
+  let _chartHoraBInst = null, _chartSemanaBInst = null;
+
   function switchDashLado(lado, btn) {
     document.querySelectorAll('.dash-lado-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -1608,46 +1615,108 @@
     const panelId = lado === 'global' ? 'dash-panel-global' : 'dash-panel-' + lado;
     const panel = document.getElementById(panelId);
     if (panel) panel.style.display = '';
-    if (lado === 'A' && !window._chartAInit) { renderChartHoraA(); renderChartTipoA(); window._chartAInit = true; }
-    if (lado === 'B' && !window._chartBInit) { renderChartHoraB(); renderChartSemanaB(); window._chartBInit = true; }
+    // Siempre recargar gráficas con datos frescos al cambiar de tab
+    if (lado === 'A') cargarStatsLado(1);
+    if (lado === 'B') cargarStatsLado(2);
   }
 
-  function renderChartHoraA() {
+  async function cargarStatsLado(id_lado) {
+    try {
+      const res = await apiFetch(`/parqueadero/stats-lado?id_lado=${id_lado}`);
+      if (!res) return;
+      const data = await res.json();
+      if (!data.ok || !data.data) return;
+      const { por_hora, por_tipo, por_semana } = data.data;
+      if (id_lado === 1) {
+        renderChartHoraA(por_hora);
+        renderChartTipoA(por_tipo);
+      } else {
+        renderChartHoraB(por_hora);
+        renderChartSemanaB(por_semana);
+      }
+    } catch(e) { console.warn('Error stats-lado:', e); }
+  }
+
+  function renderChartHoraA(porHora = []) {
+    if (_chartHoraAInst) { _chartHoraAInst.destroy(); _chartHoraAInst = null; }
     const ctx = document.getElementById('chartHoraA');
     if (!ctx) return;
-    new Chart(ctx, { type:'bar', data:{ labels:['6h','7h','8h','9h','10h','11h','12h','13h','14h','15h','16h','17h'], datasets:[
-      { label:'Entradas A', data:[2,5,9,12,8,6,10,7,4,5,3,1], backgroundColor:'rgba(99,179,237,0.7)', borderRadius:4 },
-      { label:'Salidas A',  data:[0,1,3,5,7,5,8,6,3,4,2,1],  backgroundColor:'rgba(252,129,74,0.7)',  borderRadius:4 }
-    ]}, options:{ ...chartDefaults(), plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
+    const labels = [], entradas = [], salidas = [];
+    for (let h = 6; h <= 18; h++) {
+      const strH = h > 12 ? (h-12)+'PM' : (h === 12 ? '12PM' : h+'AM');
+      labels.push(strH);
+      const obj = porHora.find(x => x.hora === h) || { entradas: 0, salidas: 0 };
+      entradas.push(obj.entradas);
+      salidas.push(obj.salidas);
+    }
+    _chartHoraAInst = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
+      { label:'Entradas A', data:entradas, backgroundColor:'rgba(99,179,237,0.75)', borderRadius:4 },
+      { label:'Salidas A',  data:salidas,  backgroundColor:'rgba(252,129,74,0.7)',  borderRadius:4 }
+    ]}, options:{ ...chartDefaults(), responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
   }
 
-  function renderChartTipoA() {
+  function renderChartTipoA(porTipo = []) {
+    if (_chartTipoAInst) { _chartTipoAInst.destroy(); _chartTipoAInst = null; }
     const ctx = document.getElementById('chartTipoA');
     if (!ctx) return;
-    new Chart(ctx, { type:'doughnut', data:{ labels:['Carros','Motos','Bicicletas'], datasets:[{
-      data:[ladoA.carros.dentro, ladoA.motos.dentro, ladoA.bicis.dentro],
-      backgroundColor:['rgba(99,179,237,0.8)','rgba(252,211,77,0.8)','rgba(72,187,120,0.8)'],
+    // Muestra todos los vehículos que ingresaron hoy (hayan salido o no)
+    const tipos   = ['carro', 'moto', 'bicicleta'];
+    const labels  = ['Carros', 'Motos', 'Bicicletas'];
+    const colors  = ['rgba(99,179,237,0.85)', 'rgba(252,211,77,0.85)', 'rgba(72,187,120,0.85)'];
+    const valores = tipos.map(t => {
+      const row = porTipo.find(r => r.tipo && r.tipo.toLowerCase() === t);
+      return row ? Number(row.cantidad) : 0;
+    });
+    const total = valores.reduce((s, v) => s + v, 0);
+    _chartTipoAInst = new Chart(ctx, { type:'doughnut', data:{ labels, datasets:[{
+      data: valores,
+      backgroundColor: colors,
       borderColor:'rgba(255,255,255,0.1)', borderWidth:2
-    }]}, options:{ plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:12 } } } }, cutout:'65%' } });
+    }]}, options:{
+      plugins:{
+        legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:12 } } },
+        tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${ctx.raw} (${total > 0 ? Math.round(ctx.raw*100/total) : 0}%)` } }
+      },
+      cutout:'65%', responsive:true, maintainAspectRatio:false
+    } });
   }
 
-  function renderChartHoraB() {
+  function renderChartHoraB(porHora = []) {
+    if (_chartHoraBInst) { _chartHoraBInst.destroy(); _chartHoraBInst = null; }
     const ctx = document.getElementById('chartHoraB');
     if (!ctx) return;
-    new Chart(ctx, { type:'bar', data:{ labels:['6h','7h','8h','9h','10h','11h','12h','13h','14h','15h','16h','17h'], datasets:[
-      { label:'Entradas B', data:[0,1,3,4,2,1,2,1,0,0,0,0], backgroundColor:'rgba(159,122,234,0.7)', borderRadius:4 },
-      { label:'Salidas B',  data:[0,0,1,2,1,0,1,1,0,0,0,0], backgroundColor:'rgba(237,137,54,0.7)',  borderRadius:4 }
-    ]}, options:{ ...chartDefaults(), plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
+    const labels = [], entradas = [], salidas = [];
+    for (let h = 6; h <= 18; h++) {
+      const strH = h > 12 ? (h-12)+'PM' : (h === 12 ? '12PM' : h+'AM');
+      labels.push(strH);
+      const obj = porHora.find(x => x.hora === h) || { entradas: 0, salidas: 0 };
+      entradas.push(obj.entradas);
+      salidas.push(obj.salidas);
+    }
+    _chartHoraBInst = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
+      { label:'Entradas B', data:entradas, backgroundColor:'rgba(159,122,234,0.75)', borderRadius:4 },
+      { label:'Salidas B',  data:salidas,  backgroundColor:'rgba(237,137,54,0.7)',  borderRadius:4 }
+    ]}, options:{ ...chartDefaults(), responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
   }
 
-  function renderChartSemanaB() {
+  function renderChartSemanaB(porSemana = []) {
+    if (_chartSemanaBInst) { _chartSemanaBInst.destroy(); _chartSemanaBInst = null; }
     const ctx = document.getElementById('chartSemanaB');
     if (!ctx) return;
-    const days = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-    new Chart(ctx, { type:'line', data:{ labels:days, datasets:[{ label:'Ingresos Lado B', data:[8,11,9,14,10,3,0],
+    const weekMap = { 2:'Lun', 3:'Mar', 4:'Mié', 5:'Jue', 6:'Vie', 7:'Sáb', 1:'Dom' };
+    const dias = [2, 3, 4, 5, 6, 7, 1];
+    const labels  = dias.map(d => weekMap[d]);
+    const ingresos = dias.map(d => {
+      const obj = porSemana.find(x => x.dia_semana === d);
+      return obj ? obj.ingresos : 0;
+    });
+    _chartSemanaBInst = new Chart(ctx, { type:'line', data:{ labels, datasets:[{ label:'Ingresos Lado B', data:ingresos,
       borderColor:'rgba(159,122,234,0.9)', backgroundColor:'rgba(159,122,234,0.15)',
       tension:0.4, fill:true, pointBackgroundColor:'rgba(159,122,234,1)', pointRadius:4
-    }]}, options:{ ...chartDefaults(), plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
+    }]}, options:{ ...chartDefaults(), responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
   }
 
   // ══ ESCÁNER QR ══
@@ -2537,5 +2606,6 @@ async function adminSalida(id_usuario) {
     showToast('CSV exportado ✓');
   }
   </script>
+  <script src="bg-animation.js"></script>
 </body>
 </html>
