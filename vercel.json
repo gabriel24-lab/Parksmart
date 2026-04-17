@@ -7,6 +7,13 @@
     }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "Frontend/$1" }
+    {
+      "src": "/",
+      "dest": "Frontend/login.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "Frontend/$1"
+    }
   ]
 }
