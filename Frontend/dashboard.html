@@ -6,10 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Parqueadero SENA — Dashboard</title>
   <link rel="stylesheet" href="dashboard.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="api.js"></script>
+  <script>
+    // URL del backend en Render — se sincroniza con api.js
+    window.BACKEND_URL = typeof API !== "undefined"
+      ? API.replace(/\/api$/, "")
+      : "https://parksmart-ggt8.onrender.com";
+  </script>
 </head>
 
 <body>
@@ -72,7 +80,8 @@
 
       <!-- ── LADO A ── -->
       <div class="panel-title" style="margin-bottom:10px;margin-top:4px;"><i class="bi bi-p-square-fill"></i> Lado A
-        <span style="font-size:11px;font-weight:400;opacity:.55;">(tiempo real · vehículos activos)</span></div>
+        <span style="font-size:11px;font-weight:400;opacity:.55;">(tiempo real · vehículos activos)</span>
+      </div>
       <div class="cards-row" id="cards-lado-a">
         <!-- Aprendiz: solo bicicletas -->
         <div class="stat-card available" id="card-bicis-a" style="display:none">
@@ -104,8 +113,9 @@
       </div>
 
       <!-- ── LADO B ── -->
-      <div id="inicio-ladob-titulo" class="panel-title" style="margin-bottom:10px;margin-top:18px;"><i class="bi bi-p-square"></i> Lado B <span
-          style="font-size:11px;font-weight:400;opacity:.55;">(máx. 20 cupos)</span></div>
+      <div id="inicio-ladob-titulo" class="panel-title" style="margin-bottom:10px;margin-top:18px;"><i
+          class="bi bi-p-square"></i> Lado B <span style="font-size:11px;font-weight:400;opacity:.55;">(máx. 20
+          cupos)</span></div>
       <div class="cards-row" id="inicio-ladob-cards">
         <div class="stat-card occupied">
           <div class="stat-icon"><i class="bi bi-slash-circle"></i></div>
@@ -1033,7 +1043,7 @@
         }
         tbody.innerHTML = data.data.map(r => {
           const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
-          const salida  = r.fecha_salida
+          const salida = r.fecha_salida
             ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' })
             : '—';
           const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : '—';
@@ -1501,7 +1511,7 @@
     <div class="vehicle-card">
       <div class="vc-left">
         ${v.foto_url
-          ? `<img class="vc-thumb" src="http://localhost:3000${v.foto_url}" alt="foto"/>`
+          ? `<img class="vc-thumb" src="${window.BACKEND_URL}${v.foto_url}" alt="foto"/>`
           : `<div class="vc-icon-box tipo-${v.tipo}"><i class="bi ${TIPO_ICONS[v.tipo] || 'bi-car-front-fill'}"></i></div>`
         }
       </div>

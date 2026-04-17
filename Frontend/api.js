@@ -1,19 +1,23 @@
 // api.js  —  Cliente API compartido por todos los HTML
-
-const API = 'http://localhost:3000/api';
+// ─────────────────────────────────────────────────────────────────────
+//  ⚠️  IMPORTANTE: reemplaza la URL de abajo con la URL real de Render
+//     una vez que hayas desplegado el backend.
+//     Ejemplo: 'https://parqueadero-api.onrender.com/api'
+// ─────────────────────────────────────────────────────────────────────
+const API = 'https://parksmart-ggt8.onrender.com';
 
 // ── Tokens ────────────────────────────────────────────────────────────
 const Auth = {
   save(data) {
-    localStorage.setItem('access_token',  data.access_token);
+    localStorage.setItem('access_token', data.access_token);
     localStorage.setItem('refresh_token', data.refresh_token);
-    localStorage.setItem('user',          JSON.stringify(data.user));
+    localStorage.setItem('user', JSON.stringify(data.user));
   },
-  getToken()        { return localStorage.getItem('access_token'); },
+  getToken() { return localStorage.getItem('access_token'); },
   getRefreshToken() { return localStorage.getItem('refresh_token'); },
-  getUser()         { const u = localStorage.getItem('user'); return u ? JSON.parse(u) : null; },
-  clear()           { localStorage.removeItem('access_token'); localStorage.removeItem('refresh_token'); localStorage.removeItem('user'); },
-  isLogged()        { return !!this.getToken(); },
+  getUser() { const u = localStorage.getItem('user'); return u ? JSON.parse(u) : null; },
+  clear() { localStorage.removeItem('access_token'); localStorage.removeItem('refresh_token'); localStorage.removeItem('user'); },
+  isLogged() { return !!this.getToken(); },
 };
 
 // ── Fetch con token automático y refresh ─────────────────────────────
@@ -22,12 +26,10 @@ async function apiFetch(endpoint, options = {}) {
   const token = Auth.getToken();
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  // Si el body es FormData, eliminar Content-Type para que el browser lo ponga con boundary
   if (options.body instanceof FormData) delete headers['Content-Type'];
 
   let res = await fetch(`${API}${endpoint}`, { ...options, headers });
 
-  // Token expirado → intentar renovar una vez
   if (res.status === 401) {
     const refreshed = await tryRefresh();
     if (refreshed) {
@@ -47,10 +49,10 @@ async function tryRefresh() {
   const rt = Auth.getRefreshToken();
   if (!rt) return false;
   try {
-    const res  = await fetch(`${API}/auth/refresh`, {
-      method:  'POST',
+    const res = await fetch(`${API}/auth/refresh`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ refresh_token: rt }),
+      body: JSON.stringify({ refresh_token: rt }),
     });
     if (!res.ok) return false;
     const data = await res.json();
@@ -61,7 +63,7 @@ async function tryRefresh() {
 
 // ── Helpers ───────────────────────────────────────────────────────────
 async function apiGet(endpoint) {
-  const res  = await apiFetch(endpoint);
+  const res = await apiFetch(endpoint);
   if (!res) return { ok: false, message: 'Sesión expirada.' };
   return res.json();
 }
@@ -69,7 +71,7 @@ async function apiGet(endpoint) {
 async function apiPost(endpoint, body) {
   const res = await apiFetch(endpoint, {
     method: 'POST',
-    body:   JSON.stringify(body),
+    body: JSON.stringify(body),
   });
   if (!res) return { ok: false, message: 'Sesión expirada.' };
   return res.json();
@@ -78,7 +80,7 @@ async function apiPost(endpoint, body) {
 async function apiPut(endpoint, body) {
   const res = await apiFetch(endpoint, {
     method: 'PUT',
-    body:   JSON.stringify(body),
+    body: JSON.stringify(body),
   });
   if (!res) return { ok: false, message: 'Sesión expirada.' };
   return res.json();

@@ -1,13 +1,12 @@
-// src/routes/usuarios.js   Cuando el usuario abre su perfil y guarda sus datos, el frontend llama aquí. Guarda y lee nombre, identificación, rol, centro, etc.
+// src/routes/usuarios.js  —  Perfil de usuario
 const router = require('express').Router();
 const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
 const { authMiddleware } = require('../middlewares/auth');
 
-// Estas rutas requieren autenticación
 router.use(authMiddleware);
 
-// ── GET /api/usuarios/perfil ────────────────────────────────────────── AQUI SE GUARDAN LOS DATOS DEL PERFIL DE USUARIO
+// ── GET /api/usuarios/perfil ──────────────────────────────────────────
 router.get('/perfil', async (req, res) => {
   try {
     const result = await query(
@@ -18,14 +17,15 @@ router.get('/perfil', async (req, res) => {
          c.nombre   AS centro_nombre,
          c.id_region,
          r.nombre   AS region_nombre
-       FROM dbo.Usuarios u
-       LEFT JOIN dbo.CentrosFormacion c ON c.id_centro = u.id_centro
-       LEFT JOIN dbo.Regiones r         ON r.id_region = c.id_region
-       WHERE u.id_usuario = @uid AND u.activo = 1`,
+       FROM Usuarios u
+       LEFT JOIN CentrosFormacion c ON c.id_centro = u.id_centro
+       LEFT JOIN Regiones r         ON r.id_region = c.id_region
+       WHERE u.id_usuario = @uid AND u.activo = true`,
       { uid: req.user.id_usuario }
     );
-    if (!result.recordset.length) return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
-    return res.json({ ok: true, data: result.recordset[0] });
+    if (!result.rows.length)
+      return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+    return res.json({ ok: true, data: result.rows[0] });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ ok: false, message: 'Error interno.' });
@@ -41,21 +41,22 @@ router.put('/perfil',
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ ok: false, message: errors.array()[0].msg, errors: errors.array() });
+    if (!errors.isEmpty())
+      return res.status(400).json({ ok: false, message: errors.array()[0].msg, errors: errors.array() });
 
     const { nombre_completo, tipo_id, numero_id, id_centro, rol, email } = req.body;
 
     try {
-      // Verificar que el numero_id no lo use otro usuario
       const dup = await query(
-        `SELECT id_usuario FROM dbo.Usuarios
+        `SELECT id_usuario FROM Usuarios
          WHERE numero_id = @nid AND id_usuario <> @uid`,
         { nid: numero_id, uid: req.user.id_usuario }
       );
-      if (dup.recordset.length) return res.status(409).json({ ok: false, message: 'Ese número de identificación ya está en uso.' });
+      if (dup.rows.length)
+        return res.status(409).json({ ok: false, message: 'Ese número de identificación ya está en uso.' });
 
       await query(
-        `UPDATE dbo.Usuarios
+        `UPDATE Usuarios
          SET nombre_completo = @nombre,
              tipo_id         = @tipo_id,
              numero_id       = @nid,
@@ -63,7 +64,15 @@ router.put('/perfil',
              rol             = @rol,
              email           = @email
          WHERE id_usuario = @uid`,
-        { nombre: nombre_completo, tipo_id, nid: numero_id, centro: id_centro || null, rol: rol || null, email: email || null, uid: req.user.id_usuario }
+        {
+          nombre:  nombre_completo,
+          tipo_id,
+          nid:     numero_id,
+          centro:  id_centro || null,
+          rol:     rol || null,
+          email:   email || null,
+          uid:     req.user.id_usuario,
+        }
       );
       return res.json({ ok: true, message: 'Perfil actualizado.' });
     } catch (err) {
@@ -81,25 +90,27 @@ router.put('/cambiar-password',
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    if (!errors.isEmpty())
+      return res.status(400).json({ ok: false, errors: errors.array() });
 
     const bcrypt = require('bcryptjs');
     const { password_actual, password_nuevo } = req.body;
 
     try {
       const result = await query(
-        `SELECT password_hash FROM dbo.Usuarios WHERE id_usuario = @uid`,
+        `SELECT password_hash FROM Usuarios WHERE id_usuario = @uid`,
         { uid: req.user.id_usuario }
       );
-      if (!result.recordset.length) {
+      if (!result.rows.length)
         return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
-      }
-      const valid = await bcrypt.compare(password_actual, result.recordset[0].password_hash);
-      if (!valid) return res.status(401).json({ ok: false, message: 'Contraseña actual incorrecta.' });
+
+      const valid = await bcrypt.compare(password_actual, result.rows[0].password_hash);
+      if (!valid)
+        return res.status(401).json({ ok: false, message: 'Contraseña actual incorrecta.' });
 
       const hash = await bcrypt.hash(password_nuevo, 10);
       await query(
-        `UPDATE dbo.Usuarios SET password_hash = @hash WHERE id_usuario = @uid`,
+        `UPDATE Usuarios SET password_hash = @hash WHERE id_usuario = @uid`,
         { hash, uid: req.user.id_usuario }
       );
       return res.json({ ok: true, message: 'Contraseña actualizada.' });

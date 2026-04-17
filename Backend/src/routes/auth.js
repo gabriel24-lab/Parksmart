@@ -1,4 +1,4 @@
-// src/routes/auth.js ESTA ES LA API DEL INICIO DE SESION Y REGISTRO
+// src/routes/auth.js  —  Inicio de sesión y registro
 const router  = require('express').Router();
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
@@ -38,37 +38,35 @@ router.post('/register',
     try {
       // Verificar si la persona está autorizada en la tabla Personas
       const persona = await query(
-        `SELECT * FROM dbo.Personas WHERE numero_documento = @nid`,
+        `SELECT * FROM Personas WHERE numero_documento = @nid`,
         { nid: numero_id }
       );
-      if (persona.recordset.length === 0) {
+      if (persona.rows.length === 0) {
         return res.status(403).json({ ok: false, message: 'Tu documento no está autorizado para registrarse. Contacta al administrador.' });
       }
-      const datosPersona = persona.recordset[0];
+      const datosPersona = persona.rows[0];
 
       // Verificar que la identificación no esté ya registrada en Usuarios
       const dup = await query(
-        `SELECT id_usuario FROM dbo.Usuarios WHERE numero_id = @nid`,
+        `SELECT id_usuario FROM Usuarios WHERE numero_id = @nid`,
         { nid: numero_id }
       );
-      if (dup.recordset.length > 0) {
+      if (dup.rows.length > 0) {
         return res.status(409).json({ ok: false, message: 'Ese número de identificación ya está registrado.' });
       }
 
       const hash = await bcrypt.hash(password, 10);
       const qr   = generateQR(numero_id);
 
-      // Obtener nombres y apellidos desde la tabla Personas
       const nombreFinal = datosPersona.nombres + ' ' + datosPersona.apellidos;
-      const correoFijo = datosPersona.correo || email || null;
-      const tipoIdFijo = datosPersona.tipo_documento || tipo_id || null;
+      const correoFijo  = datosPersona.correo || email || null;
+      const tipoIdFijo  = datosPersona.tipo_documento || tipo_id || null;
 
-      // Insertar usando la información de la tabla Personas
       await query(
-        `INSERT INTO dbo.Usuarios
+        `INSERT INTO Usuarios
            (nombre_completo, numero_id, password_hash, qr_code, activo, id_centro, email, rol, tipo_id)
          VALUES
-           (@nombre, @nid, @hash, @qr, 1, @centro, @email, @rol, @tipo_id)`,
+           (@nombre, @nid, @hash, @qr, true, @centro, @email, @rol, @tipo_id)`,
         {
           nombre: nombreFinal,
           nid:    numero_id,
@@ -77,7 +75,7 @@ router.post('/register',
           centro: id_centro || null,
           email:  correoFijo,
           rol:    rol || 'aprendiz',
-          tipo_id: tipoIdFijo
+          tipo_id: tipoIdFijo,
         }
       );
 
@@ -104,11 +102,11 @@ router.post('/login',
     try {
       const result = await query(
         `SELECT id_usuario, nombre_completo, email, password_hash, rol, qr_code, id_centro, activo
-         FROM dbo.Usuarios WHERE numero_id = @nid`,
+         FROM Usuarios WHERE numero_id = @nid`,
         { nid: numero_id }
       );
 
-      const user = result.recordset[0];
+      const user = result.rows[0];
       if (!user) return res.status(401).json({ ok: false, message: 'Credenciales incorrectas.' });
       if (!user.activo) return res.status(403).json({ ok: false, message: 'Cuenta desactivada.' });
 
@@ -118,10 +116,9 @@ router.post('/login',
       const payload = { id_usuario: user.id_usuario, rol: user.rol, email: user.email };
       const { access, refresh } = signTokens(payload);
 
-      // Guardar refresh token
       const exp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       await query(
-        `INSERT INTO dbo.TokensSesion (id_usuario, refresh_token, expira_en)
+        `INSERT INTO TokensSesion (id_usuario, refresh_token, expira_en)
          VALUES (@uid, @token, @exp)`,
         { uid: user.id_usuario, token: refresh, exp }
       );
@@ -155,11 +152,11 @@ router.post('/refresh', async (req, res) => {
     const decoded = jwt.verify(refresh_token, process.env.JWT_REFRESH_SECRET);
 
     const row = await query(
-      `SELECT id_token FROM dbo.TokensSesion
-       WHERE refresh_token = @token AND activo = 1 AND expira_en > GETDATE()`,
+      `SELECT id_token FROM TokensSesion
+       WHERE refresh_token = @token AND activo = true AND expira_en > NOW()`,
       { token: refresh_token }
     );
-    if (!row.recordset.length) return res.status(401).json({ ok: false, message: 'Refresh token inválido.' });
+    if (!row.rows.length) return res.status(401).json({ ok: false, message: 'Refresh token inválido.' });
 
     const payload = { id_usuario: decoded.id_usuario, rol: decoded.rol, email: decoded.email };
     const { access } = signTokens(payload);
@@ -175,7 +172,7 @@ router.post('/logout', authMiddleware, async (req, res) => {
   const { refresh_token } = req.body;
   if (refresh_token) {
     await query(
-      `UPDATE dbo.TokensSesion SET activo = 0 WHERE refresh_token = @token`,
+      `UPDATE TokensSesion SET activo = false WHERE refresh_token = @token`,
       { token: refresh_token }
     ).catch(() => {});
   }

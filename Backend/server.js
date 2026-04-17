@@ -8,23 +8,33 @@ const { getPool } = require('./src/config/db');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Middlewares globales ──────────────────────────────────────────────
+// ── CORS ──────────────────────────────────────────────────────────────
+// Orígenes permitidos: Vercel (producción) + localhost (desarrollo)
+const FRONTEND_URL = process.env.FRONTEND_URL || '';
+
 app.use(cors({
   origin: (origin, cb) => {
-    // Permitir cualquier origen localhost / 127.0.0.1 en desarrollo
-    const allowed = !origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-    cb(null, allowed);
+    // Sin origin = Postman / curl / mismo servidor
+    if (!origin) return cb(null, true);
+
+    const esDev = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    const esVercel = FRONTEND_URL && origin === FRONTEND_URL;
+
+    if (esDev || esVercel) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Origen no permitido por CORS: ${origin}`));
+    }
   },
   credentials: true,
 }));
+
+// ── Middlewares globales ──────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Servir archivos estáticos (fotos subidas)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Servir el frontend (HTML/CSS/JS)
-app.use(express.static(path.join(__dirname, '../Frontend')));
 
 // ── Rutas API ─────────────────────────────────────────────────────────
 app.use('/api/auth',        require('./src/routes/auth'));
@@ -52,13 +62,14 @@ app.use((err, req, res, next) => {
 // ── Arranque ──────────────────────────────────────────────────────────
 async function start() {
   try {
-    await getPool();   // Conectar a SQL Server al arrancar
+    await getPool();   // Verificar conexión a Supabase al arrancar
     app.listen(PORT, () => {
       console.log(`Servidor conectado en http://localhost:${PORT}`);
       console.log(`API disponible en http://localhost:${PORT}/api`);
+      if (FRONTEND_URL) console.log(`Frontend permitido: ${FRONTEND_URL}`);
     });
   } catch (err) {
-    console.error('No se pudo conectar a la base de datos:', JSON.stringify(err, null, 2));
+    console.error('No se pudo conectar a Supabase:', err.message);
     process.exit(1);
   }
 }
