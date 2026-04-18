@@ -1,8 +1,2 @@
 const bcrypt = require('bcryptjs');
-
-async function main() {
-  const hash = await bcrypt.hash('Admin1234!', 10);
-  console.log('Hash:', hash);
-}
-
-main();
+bcrypt.hash('admin1234', 10).then(hash => console.log(hash));
