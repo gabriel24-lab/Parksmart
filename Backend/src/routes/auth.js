@@ -38,7 +38,7 @@ router.get('/verificar/:numero_id', async (req, res) => {
     }
 
     const resultado = await query(
-      'SELECT "Nombre", "Apellidos", "Correo Electronico", "Tipo de documento", "Estado" FROM public."Personas" WHERE "Numero de Documento" = @nid',
+      'SELECT "Nombre", "Apellidos", "Correo Electrónico", "Tipo de documento", "Estado" FROM public."Personas" WHERE "Numero de Documento" = @nid',
       { nid }
     );
 
@@ -64,7 +64,7 @@ router.get('/verificar/:numero_id', async (req, res) => {
       message: 'Persona verificada correctamente.',
       data: {
         nombre_completo: (p['Nombre'] + ' ' + p['Apellidos']).trim(),
-        email:           p['Correo Electronico'] || null,
+        email:           p['Correo Electrónico'] || null,
         tipo_id:         p['Tipo de documento']  || null,
       },
     });
@@ -98,7 +98,7 @@ router.post('/register',
       }
 
       const persona = await query(
-       'SELECT "Nombre", "Apellidos", "Correo Electronico", "Tipo de documento", "Estado" FROM public."Personas" WHERE "Numero de Documento" = @nid',
+       'SELECT "Nombre", "Apellidos", "Correo Electrónico", "Tipo de documento", "Estado" FROM public."Personas" WHERE "Numero de Documento" = @nid',
         { nid: numero_id }
       );
       if (!persona.rows.length) {
@@ -118,7 +118,7 @@ router.post('/register',
       }
 
       const nombre_completo = (p['Nombre'] + ' ' + p['Apellidos']).trim();
-      const email           = p['Correo Electronico'] || null;
+      const email           = p['Correo Electrónico'] || null;
       const tipo_id         = p['Tipo de documento']  || null;
       const hash            = await bcrypt.hash(password, 10);
       const qr              = generateQR(numero_id);
