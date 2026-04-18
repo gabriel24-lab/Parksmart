@@ -38,7 +38,7 @@ router.get('/verificar/:numero_id', async (req, res) => {
     }
 
     const resultado = await query(
-      'SELECT "Nombres", "Apellidos", "Correo Electronico", "Tipo de documento", "Estado" FROM Personas WHERE "Numero de Documento" = @nid',
+      'SELECT "Nombres", "Apellidos", "Correo Electronico", "Tipo de documento", "Estado" FROM public."Personas" WHERE "Numero de Documento" = @nid',
       { nid }
     );
 
