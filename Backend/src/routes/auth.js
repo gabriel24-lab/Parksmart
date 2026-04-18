@@ -26,7 +26,7 @@ function signTokens(payload) {
 // Solo personas con estado EN FORMACION o INDUCCION pueden registrarse.
 router.get('/verificar/:numero_id', async (req, res) => {
   const nid = req.params.numero_id?.trim();
-  if (!nid) return res.status(400).json({ ok: false, message: 'Número de documento requerido.' });
+  if (!nid) return res.status(400).json({ ok: false, message: 'Número de Documento requerido.' });
 
   try {
     const cuentaExistente = await query(
@@ -34,18 +34,18 @@ router.get('/verificar/:numero_id', async (req, res) => {
       { nid }
     );
     if (cuentaExistente.rows.length > 0) {
-      return res.status(409).json({ ok: false, message: 'Este número de documento ya tiene una cuenta registrada.' });
+      return res.status(409).json({ ok: false, message: 'Este número de Documento ya tiene una cuenta registrada.' });
     }
 
     const resultado = await query(
-      'SELECT "Nombre", "Apellidos", "Correo Electrónico", "Tipo de documento", "Estado" FROM public."Personas" WHERE "Numero de Documento" = @nid',
+      'SELECT "Nombre", "Apellidos", "Correo Electrónico", "Tipo de Documento", "Estado" FROM public."Personas" WHERE "Numero de Documento" = @nid',
       { nid }
     );
 
     if (!resultado.rows.length) {
       return res.status(404).json({
         ok: false,
-        message: 'Este número de documento no está registrado en la base de datos del SENA.',
+        message: 'Este número de  no está registrado en la base de datos del SENA.',
       });
     }
 
@@ -65,7 +65,7 @@ router.get('/verificar/:numero_id', async (req, res) => {
       data: {
         nombre_completo: (p['Nombre'] + ' ' + p['Apellidos']).trim(),
         email:           p['Correo Electrónico'] || null,
-        tipo_id:         p['Tipo de documento']  || null,
+        tipo_id:         p['Tipo de Documento']  || null,
       },
     });
   } catch (err) {
@@ -98,13 +98,13 @@ router.post('/register',
       }
 
       const persona = await query(
-       'SELECT "Nombre", "Apellidos", "Correo Electrónico", "Tipo de documento", "Estado" FROM public."Personas" WHERE "Numero de Documento" = @nid',
+       'SELECT "Nombre", "Apellidos", "Correo Electrónico", "Tipo de Documento", "Estado" FROM public."Personas" WHERE "Numero de Documento" = @nid',
         { nid: numero_id }
       );
       if (!persona.rows.length) {
         return res.status(403).json({
           ok: false,
-          message: 'Este número de documento no está registrado en la base de datos del SENA.',
+          message: 'Este número de Documento no está registrado en la base de datos del SENA.',
         });
       }
       const p = persona.rows[0];
@@ -119,7 +119,7 @@ router.post('/register',
 
       const nombre_completo = (p['Nombre'] + ' ' + p['Apellidos']).trim();
       const email           = p['Correo Electrónico'] || null;
-      const tipo_id         = p['Tipo de documento']  || null;
+      const tipo_id         = p['Tipo de Documento']  || null;
       const hash            = await bcrypt.hash(password, 10);
       const qr              = generateQR(numero_id);
 
