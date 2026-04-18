@@ -162,8 +162,6 @@ body {
 
 .nav-item.logout { 
   color: rgba(255,160,160,0.85);
-  flex-shrink: 0;
-  margin-top: 8px;
 }
 
 .nav-item.logout:hover { 
