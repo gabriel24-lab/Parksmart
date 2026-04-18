@@ -5,7 +5,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Inicio - Parksmart</title>
-  <link rel="icon" href="/Frontend/img/logo-icon-cropped.png" type="image/x-icon">
   <link rel="stylesheet" href="dashboard.css" />
   <link
     href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap"
@@ -77,6 +76,15 @@
           <h1>Bienvenido, <span class="name-highlight" id="dash-name">Usuario</span> 👋</h1>
           <p class="section-sub">Sistema de gestion para el parqueadero del Sena (CIGEC)</p>
         </div>
+      </div>
+
+      <!-- ── BANNER SIN VEHÍCULO ── -->
+      <div id="banner-sin-vehiculo" style="display:none;background:rgba(230,25,45,0.08);border:1px solid rgba(230,25,45,0.25);border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <i class="bi bi-exclamation-triangle-fill" style="color:#e6192d;font-size:20px;flex-shrink:0;"></i>
+        <span style="color:rgba(255,255,255,0.85);font-size:14px;flex:1;min-width:180px;">Termina de completar tu perfil añadiendo tu vehículo.</span>
+        <button onclick="showSection('vehiculo',null)" style="background:var(--brand-color);border:none;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+          <i class="bi bi-plus-circle"></i> Registrar vehículo
+        </button>
       </div>
 
       <!-- ── LADO A ── -->
@@ -1503,6 +1511,10 @@
 
     // ════════ LISTA VEHÍCULOS ════════
     function renderVehicleList() {
+      // Mostrar u ocultar banner en el dashboard
+      const banner = document.getElementById('banner-sin-vehiculo');
+      if (banner) banner.style.display = vehiculos.length === 0 ? 'flex' : 'none';
+
       const container = document.getElementById('perfil-vehicles-list');
       if (!vehiculos.length) {
         container.innerHTML = `<div class="pvc-empty"><i class="bi bi-exclamation-circle"></i><span>Aún no has registrado ningún vehículo. <button class="link-btn" onclick="showSection('vehiculo',null)">Regístralo aquí</button></span></div>`;
