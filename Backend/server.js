@@ -6,7 +6,7 @@ const path     = require('path');
 const { getPool } = require('./src/config/db');
 
 const app  = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 // ── CORS ──────────────────────────────────────────────────────────────
 // Orígenes permitidos: Vercel (producción) + localhost (desarrollo)

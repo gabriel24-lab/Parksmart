@@ -19,6 +19,6 @@ services:
       - key: FRONTEND_URL
         sync: false          # URL de Vercel, la pegas después de desplegar el frontend
       - key: PORT
-        value: 3000
+        value: 10000
       - key: MAX_FILE_SIZE
         value: "5242880"
