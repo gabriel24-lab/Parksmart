@@ -38,7 +38,7 @@ router.get('/verificar/:numero_id', async (req, res) => {
     }
 
     const resultado = await query(
-      'SELECT "Nombres", "Apellidos", "Correo Electronico", "Tipo de documento", "Estado" FROM personas WHERE "Numero de Documento" = @nid',
+      'SELECT "Nombres", "Apellidos", "Correo Electronico", "Tipo de documento", "Estado" FROM Personas WHERE "Numero de Documento" = @nid',
       { nid }
     );
 
@@ -98,7 +98,7 @@ router.post('/register',
       }
 
       const persona = await query(
-        'SELECT "Nombres", "Apellidos", "Correo Electronico", "Tipo de documento", "Estado" FROM personas WHERE "Numero de Documento" = @nid',
+        'SELECT "Nombres", "Apellidos", "Correo Electronico", "Tipo de documento", "Estado" FROM Personas WHERE "Numero de Documento" = @nid',
         { nid: numero_id }
       );
       if (!persona.rows.length) {
