@@ -9,14 +9,8 @@ function toColombiaIso(dateVal) {
   if (!dateVal) return null;
   const d = new Date(dateVal);
   if (Number.isNaN(d.getTime())) return null;
-  const pad = (n) => String(n).padStart(2, '0');
-  const y   = d.getUTCFullYear();
-  const m   = pad(d.getUTCMonth() + 1);
-  const day = pad(d.getUTCDate());
-  const h   = pad(d.getUTCHours());
-  const min = pad(d.getUTCMinutes());
-  const s   = pad(d.getUTCSeconds());
-  return `${y}-${m}-${day}T${h}:${min}:${s}-05:00`;
+  // Devolver UTC puro — el frontend convierte a Colombia con timeZone:'America/Bogota'
+  return d.toISOString();
 }
 
 function normalizeRegistroFechas(row) {
