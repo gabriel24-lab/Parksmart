@@ -3,15 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Register</title>
+  <title>Register - Parksmart</title>
   <link rel="stylesheet" href="register.css" />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
   <script src="api.js"></script>
+  <style>
+    .verified-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #a5d6a7;
+      margin-top: 4px;
+    }
+    .form-section-locked {
+      opacity: 0.4;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .form-section-unlocked {
+      opacity: 1;
+      pointer-events: all;
+      transition: opacity 0.3s;
+    }
+    .nombre-display {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.85);
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .btn-verificar {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .btn-verificar:hover { background: rgba(255,255,255,0.25); }
+    .btn-verificar:disabled { opacity: 0.5; cursor: not-allowed; }
+    .input-with-btn {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .input-with-btn .input-wrapper {
+      flex: 1;
+      margin-bottom: 0;
+    }
+  </style>
 </head>
 <body>
-  <div class="background">
-  </div>
+  <div class="background"></div>
 
   <div class="card">
     <div class="logo">
@@ -19,56 +71,85 @@
     </div>
 
     <h1 class="title">Crear cuenta</h1>
-    <p class="subtitle">Solo necesitas estos datos para comenzar</p>
+    <p class="subtitle">Solo aprendices del SENA pueden registrarse</p>
 
+    <!-- PASO 1: Verificación -->
     <div class="form-group">
-      <label for="fullname">Nombre completo</label>
-      <div class="input-wrapper">
-        <i class="bi bi-person input-icon"></i>
-        <input type="text" id="fullname" placeholder="Ej: Juan David Pérez" />
+      <label for="identificacion">Número de documento</label>
+      <div class="input-with-btn">
+        <div class="input-wrapper">
+          <i class="bi bi-card-text input-icon"></i>
+          <input type="text" id="identificacion" placeholder="Ej: 1001234567" oninput="onNumIdChange()" />
+        </div>
+        <button class="btn-verificar" id="btn-verificar" onclick="verificarPersona()">
+          <i class="bi bi-shield-check"></i> Verificar
+        </button>
+      </div>
+      <p id="verificar-msg" style="display:none;font-size:12px;margin-top:6px;"></p>
+    </div>
+
+    <!-- PASO 2: Datos pre-llenados (se muestra solo tras verificar) -->
+    <div id="seccion-nombre" class="form-section-locked">
+      <div class="form-group">
+        <label>Nombre completo</label>
+        <div class="nombre-display" id="nombre-display">—</div>
+        <input type="hidden" id="nombre-oculto" />
       </div>
     </div>
 
-    <div class="form-group">
-      <label for="identificacion">Número de identificación</label>
-      <div class="input-wrapper">
-        <i class="bi bi-card-text input-icon"></i>
-        <input type="text" id="identificacion" placeholder="Ej: 1001234567" />
+    <!-- PASO 3: Contraseña (bloqueada hasta verificar) -->
+    <div id="seccion-password" class="form-section-locked">
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <div class="input-wrapper password-wrapper">
+          <i class="bi bi-lock input-icon"></i>
+          <input type="password" id="password" placeholder="Mínimo 8 caracteres" />
+          <span class="eye-icon" onclick="togglePassword('password', 'eye1')">
+            <i id="eye1" class="bi bi-eye"></i>
+          </span>
+        </div>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label for="password">Contraseña</label>
-      <div class="input-wrapper password-wrapper">
-        <i class="bi bi-lock input-icon"></i>
-        <input type="password" id="password" placeholder="Mínimo 8 caracteres" />
-        <span class="eye-icon" onclick="togglePassword('password', 'eye1')">
-          <i id="eye1" class="bi bi-eye"></i>
-        </span>
+      <div class="form-group">
+        <label for="confirm-password">Confirmar contraseña</label>
+        <div class="input-wrapper password-wrapper">
+          <i class="bi bi-lock-fill input-icon"></i>
+          <input type="password" id="confirm-password" placeholder="Repite tu contraseña" />
+          <span class="eye-icon" onclick="togglePassword('confirm-password', 'eye2')">
+            <i id="eye2" class="bi bi-eye"></i>
+          </span>
+        </div>
       </div>
+
+      <p id="reg-error"   style="display:none;color:#ffb3b3;font-size:13px;text-align:center;margin-bottom:8px;"></p>
+      <p id="reg-success" style="display:none;color:#a5d6a7;font-size:13px;text-align:center;margin-bottom:8px;"></p>
+
+      <button class="btn-register" id="btn-register" onclick="handleRegister()">Crear cuenta</button>
     </div>
-
-    <div class="form-group">
-      <label for="confirm-password">Confirmar contraseña</label>
-      <div class="input-wrapper password-wrapper">
-        <i class="bi bi-lock-fill input-icon"></i>
-        <input type="password" id="confirm-password" placeholder="Repite tu contraseña" />
-        <span class="eye-icon" onclick="togglePassword('confirm-password', 'eye2')">
-          <i id="eye2" class="bi bi-eye"></i>
-        </span>
-      </div>
-    </div>
-
-    <p id="reg-error"   style="display:none;color:#ffb3b3;font-size:13px;text-align:center;margin-top:-10px;margin-bottom:8px;"></p>
-    <p id="reg-success" style="display:none;color:#a5d6a7;font-size:13px;text-align:center;margin-top:-10px;margin-bottom:8px;"></p>
-
-    <button class="btn-register" onclick="handleRegister()">Crear cuenta</button>
 
     <p class="login-text">Ya tienes una cuenta? <a href="login.html">Inicia sesion</a></p>
   </div>
 
   <script>
     if (Auth.isLogged()) window.location.href = 'dashboard.html';
+
+    let verificado = false;
+
+    function onNumIdChange() {
+      // Si el usuario modifica el número después de verificar, resetear
+      if (verificado) resetVerificacion();
+    }
+
+    function resetVerificacion() {
+      verificado = false;
+      document.getElementById('seccion-nombre').className = 'form-section-locked';
+      document.getElementById('seccion-password').className = 'form-section-locked';
+      document.getElementById('nombre-display').textContent = '—';
+      document.getElementById('nombre-oculto').value = '';
+      const msg = document.getElementById('verificar-msg');
+      msg.style.display = 'none';
+      document.getElementById('btn-verificar').innerHTML = '<i class="bi bi-shield-check"></i> Verificar';
+    }
 
     function togglePassword(inputId, iconId) {
       const input = document.getElementById(inputId);
@@ -82,21 +163,78 @@
       }
     }
 
+    async function verificarPersona() {
+      const nid    = document.getElementById('identificacion').value.trim();
+      const msgEl  = document.getElementById('verificar-msg');
+      const btnV   = document.getElementById('btn-verificar');
+
+      msgEl.style.display = 'none';
+
+      if (!nid) {
+        msgEl.textContent   = 'Ingresa tu número de documento primero.';
+        msgEl.style.color   = '#ffb3b3';
+        msgEl.style.display = 'block';
+        return;
+      }
+
+      btnV.disabled    = true;
+      btnV.innerHTML   = '<i class="bi bi-arrow-repeat"></i> Verificando...';
+
+      try {
+        const res = await fetch(`${API}/auth/verificar/${encodeURIComponent(nid)}`);
+        const data = await res.json();
+
+        if (!data.ok) {
+          msgEl.textContent   = data.message || 'No se pudo verificar.';
+          msgEl.style.color   = '#ffb3b3';
+          msgEl.style.display = 'block';
+          btnV.innerHTML      = '<i class="bi bi-shield-check"></i> Verificar';
+          btnV.disabled       = false;
+          return;
+        }
+
+        // Verificado correctamente
+        verificado = true;
+        document.getElementById('nombre-display').textContent = data.data.nombre_completo;
+        document.getElementById('nombre-oculto').value        = data.data.nombre_completo;
+
+        document.getElementById('seccion-nombre').className   = 'form-section-unlocked';
+        document.getElementById('seccion-password').className = 'form-section-unlocked';
+
+        msgEl.textContent   = '✓ Verificado. Ahora crea tu contraseña.';
+        msgEl.style.color   = '#a5d6a7';
+        msgEl.style.display = 'block';
+
+        btnV.innerHTML  = '<i class="bi bi-shield-fill-check"></i> Verificado';
+        btnV.disabled   = true;
+
+      } catch {
+        msgEl.textContent   = 'No se pudo conectar al servidor.';
+        msgEl.style.color   = '#ffb3b3';
+        msgEl.style.display = 'block';
+        btnV.innerHTML      = '<i class="bi bi-shield-check"></i> Verificar';
+        btnV.disabled       = false;
+      }
+    }
+
     async function handleRegister() {
-      const nombre   = document.getElementById('fullname').value.trim();
       const numId    = document.getElementById('identificacion').value.trim();
       const pass     = document.getElementById('password').value;
       const passConf = document.getElementById('confirm-password').value;
 
       const errEl = document.getElementById('reg-error');
       const okEl  = document.getElementById('reg-success');
-      const btn   = document.querySelector('.btn-register');
+      const btn   = document.getElementById('btn-register');
 
       errEl.style.display = 'none';
       okEl.style.display  = 'none';
 
-      if (!nombre || !numId || !pass || !passConf) {
-        errEl.textContent   = 'Por favor completa todos los campos.';
+      if (!verificado) {
+        errEl.textContent   = 'Primero verifica tu número de documento.';
+        errEl.style.display = 'block'; return;
+      }
+      if (!pass || !passConf) {
+        errEl.textContent   = 'Por favor completa la contraseña.';
         errEl.style.display = 'block'; return;
       }
       if (pass !== passConf) {
@@ -112,40 +250,30 @@
       btn.textContent = 'Creando cuenta...';
 
       try {
-        let data;
-        try {
-          data = await apiPost('/auth/register', {
-            nombre_completo: nombre,
-            numero_id:       numId,
-            password:        pass,
-          });
-        } catch (fetchErr) {
-          // El servidor no responde o no está corriendo
-          errEl.textContent   = 'No se pudo conectar al servidor. Verifica que el backend esté corriendo en el servidor';
-          errEl.style.display = 'block';
-          return;
-        }
+        const data = await apiPost('/auth/register', {
+          numero_id: numId,
+          password:  pass,
+        });
 
         if (!data) {
           errEl.textContent   = 'El servidor no devolvió respuesta.';
-          errEl.style.display = 'block';
-          return;
+          errEl.style.display = 'block'; return;
         }
-
         if (!data.ok) {
-          // Mostrar el error exacto que devuelve el servidor
           const msg = data.message
             || (data.errors && data.errors.map(e => e.msg).join(', '))
             || 'Error al registrar.';
           errEl.textContent   = msg;
-          errEl.style.display = 'block';
-          return;
+          errEl.style.display = 'block'; return;
         }
 
-        okEl.textContent   = '¡Cuenta creada! Redirigiendo al login...';
+        okEl.textContent   = '¡Cuenta creada! Redirigiendo al inicio de sesión...';
         okEl.style.display = 'block';
-        setTimeout(() => window.location.href = 'dashboard.html', 1800);
+        setTimeout(() => window.location.href = 'login.html', 1800);
 
+      } catch {
+        errEl.textContent   = 'No se pudo conectar al servidor.';
+        errEl.style.display = 'block';
       } finally {
         btn.disabled    = false;
         btn.textContent = 'Crear cuenta';

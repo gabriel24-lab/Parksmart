@@ -4,7 +4,7 @@
 //     una vez que hayas desplegado el backend.
 //     Ejemplo: 'https://parqueadero-api.onrender.com/api'
 // ─────────────────────────────────────────────────────────────────────
-const API = 'https://parksmart-ggt8.onrender.com';
+const API = 'https://parksmart-ggt8.onrender.com/api';
 
 // ── Tokens ────────────────────────────────────────────────────────────
 const Auth = {
