@@ -14,17 +14,15 @@ const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
 app.use(cors({
   origin: (origin, cb) => {
-    // Sin origin = Postman / curl / mismo servidor
     if (!origin) return cb(null, true);
 
-    const esDev = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-    const esVercel = FRONTEND_URL && origin === FRONTEND_URL;
+    const permitido =
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+      /^https:\/\/[\w-]+\.vercel\.app$/.test(origin) ||
+      (FRONTEND_URL && origin === FRONTEND_URL);
 
-    if (esDev || esVercel) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Origen no permitido por CORS: ${origin}`));
-    }
+    if (permitido) cb(null, true);
+    else cb(new Error(`Origen no permitido por CORS: ${origin}`));
   },
   credentials: true,
 }));
