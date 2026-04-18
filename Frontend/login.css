@@ -30,7 +30,7 @@ body {
 .background {
   position: fixed;
   inset: 0;
-  background-image: linear-gradient(to right, rgba(11, 11, 12, 0.95), rgba(11, 11, 12, 0.6)), url('/Frontend/img/fondo\ del\ login.jpg');
+  background-image: linear-gradient(to right, rgba(11, 11, 12, 0.95), rgba(11, 11, 12, 0.6)), url('/Frontend/img/fondo-del-login.webp');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
