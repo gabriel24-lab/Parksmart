@@ -1,30 +1,24 @@
 // src/routes/vehiculos.js
 const router = require('express').Router();
-const path   = require('path');
-const fs     = require('fs');
 const multer = require('multer');
 const { body, validationResult } = require('express-validator');
+const { createClient } = require('@supabase/supabase-js');
 const { query } = require('../config/db');
 const { authMiddleware } = require('../middlewares/auth');
 
-// ── Multer config ─────────────────────────────────────────────────────
-const uploadDir = path.join(__dirname, '../../uploads/vehiculos');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+// ── Supabase Storage client ───────────────────────────────────────────
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename:    (req, file, cb) => {
-    const ext  = path.extname(file.originalname).toLowerCase();
-    const name = `${Date.now()}-${req.user.id_usuario}${ext}`;
-    cb(null, name);
-  },
-});
+// ── Multer en memoria (no guarda en disco) ────────────────────────────
 const upload = multer({
-  storage,
-  limits:     { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
-    if (allowed.includes(path.extname(file.originalname).toLowerCase())) cb(null, true);
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error('Solo imágenes JPG, PNG o WEBP.'));
   },
 });
@@ -70,7 +64,6 @@ router.post('/',
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(400).json({ ok: false, errors: errors.array() });
     }
 
@@ -79,7 +72,6 @@ router.post('/',
     const rol     = req.user.rol;
 
     if (!TIPOS_POR_ROL[rol]?.includes(tipoNum)) {
-      if (req.file) fs.unlinkSync(req.file.path);
       const permitidos = TIPOS_POR_ROL[rol].map(t => TIPO_NOMBRES[t]).join(', ');
       return res.status(403).json({
         ok: false,
@@ -87,19 +79,38 @@ router.post('/',
       });
     }
 
-    // Moto/Auto/Furgoneta requieren placa
     if (tipoNum !== 1 && !placa?.trim()) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(400).json({ ok: false, message: 'La placa es obligatoria para este tipo de vehículo.' });
     }
 
-    // Bicicleta requiere modelo
     if (tipoNum === 1 && !modelo?.trim()) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(400).json({ ok: false, message: 'El modelo es obligatorio para bicicletas.' });
     }
 
-    const foto_url = req.file ? `/uploads/vehiculos/${req.file.filename}` : null;
+    // ── Subir foto a Supabase Storage ─────────────────────────────────
+    let foto_url = null;
+    if (req.file) {
+      const ext      = req.file.mimetype.split('/')[1].replace('jpeg', 'jpg');
+      const fileName = `${Date.now()}-${req.user.id_usuario}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('vehiculos')
+        .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Error subiendo foto a Supabase Storage:', uploadError);
+        return res.status(500).json({ ok: false, message: 'Error al subir la foto.' });
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('vehiculos')
+        .getPublicUrl(fileName);
+
+      foto_url = urlData.publicUrl;
+    }
 
     try {
       const result = await query(
@@ -123,7 +134,11 @@ router.post('/',
         foto_url,
       });
     } catch (err) {
-      if (req.file) fs.unlinkSync(req.file.path);
+      // Si falló la BD, borrar la foto que subimos
+      if (foto_url) {
+        const fileName = foto_url.split('/').pop();
+        await supabase.storage.from('vehiculos').remove([fileName]).catch(() => {});
+      }
       console.error(err);
       return res.status(500).json({ ok: false, message: 'Error interno.' });
     }
@@ -144,10 +159,11 @@ router.delete('/:id', async (req, res) => {
 
     await query(`UPDATE vehiculos SET activo = false WHERE id_vehiculo = @id`, { id });
 
+    // Borrar foto de Supabase Storage si existe
     const foto = check.rows[0].foto_url;
     if (foto) {
-      const filePath = path.join(__dirname, '../..', foto.replace(/^\/+/, ''));
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      const fileName = foto.split('/').pop();
+      await supabase.storage.from('vehiculos').remove([fileName]).catch(() => {});
     }
 
     return res.json({ ok: true, message: 'Vehículo eliminado.' });
