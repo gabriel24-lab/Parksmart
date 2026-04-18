@@ -1,4 +1,4 @@
-// src/routes/usuarios.js  —  Perfil de usuario
+// src/routes/usuarios.js
 const router = require('express').Router();
 const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
@@ -17,9 +17,9 @@ router.get('/perfil', async (req, res) => {
          c.nombre   AS centro_nombre,
          c.id_region,
          r.nombre   AS region_nombre
-       FROM Usuarios u
-       LEFT JOIN CentrosFormacion c ON c.id_centro = u.id_centro
-       LEFT JOIN Regiones r         ON r.id_region = c.id_region
+       FROM usuarios u
+       LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
+       LEFT JOIN regiones r          ON r.id_region = c.id_region
        WHERE u.id_usuario = @uid AND u.activo = true`,
       { uid: req.user.id_usuario }
     );
@@ -48,7 +48,7 @@ router.put('/perfil',
 
     try {
       const dup = await query(
-        `SELECT id_usuario FROM Usuarios
+        `SELECT id_usuario FROM usuarios
          WHERE numero_id = @nid AND id_usuario <> @uid`,
         { nid: numero_id, uid: req.user.id_usuario }
       );
@@ -56,7 +56,7 @@ router.put('/perfil',
         return res.status(409).json({ ok: false, message: 'Ese número de identificación ya está en uso.' });
 
       await query(
-        `UPDATE Usuarios
+        `UPDATE usuarios
          SET nombre_completo = @nombre,
              tipo_id         = @tipo_id,
              numero_id       = @nid,
@@ -69,8 +69,8 @@ router.put('/perfil',
           tipo_id,
           nid:     numero_id,
           centro:  id_centro || null,
-          rol:     rol || null,
-          email:   email || null,
+          rol:     rol       || null,
+          email:   email     || null,
           uid:     req.user.id_usuario,
         }
       );
@@ -98,7 +98,7 @@ router.put('/cambiar-password',
 
     try {
       const result = await query(
-        `SELECT password_hash FROM Usuarios WHERE id_usuario = @uid`,
+        `SELECT password_hash FROM usuarios WHERE id_usuario = @uid`,
         { uid: req.user.id_usuario }
       );
       if (!result.rows.length)
@@ -110,7 +110,7 @@ router.put('/cambiar-password',
 
       const hash = await bcrypt.hash(password_nuevo, 10);
       await query(
-        `UPDATE Usuarios SET password_hash = @hash WHERE id_usuario = @uid`,
+        `UPDATE usuarios SET password_hash = @hash WHERE id_usuario = @uid`,
         { hash, uid: req.user.id_usuario }
       );
       return res.json({ ok: true, message: 'Contraseña actualizada.' });

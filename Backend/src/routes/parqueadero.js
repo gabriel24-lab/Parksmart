@@ -1,4 +1,4 @@
-// src/routes/parqueadero.js  —  Cupos, historial, stats y operaciones de parqueadero
+// src/routes/parqueadero.js
 const router = require('express').Router();
 const { query, getClient } = require('../config/db');
 const { authMiddleware, requireRol } = require('../middlewares/auth');
@@ -28,41 +28,34 @@ function normalizeRegistroFechas(row) {
   };
 }
 
-// ── Lógica equivalente a dbo.sp_RegistrarEntrada ──────────────────────
-async function sp_RegistrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
-  // Verificar que no haya una entrada activa
+// ── Lógica de entrada (equivalente al stored proc) ────────────────────
+async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
   const activeCheck = await client.query(
-    `SELECT id_registro FROM RegistrosUso WHERE id_usuario = $1 AND estado = 'activo'`,
+    `SELECT id_registro FROM registros_uso WHERE id_usuario = $1 AND estado = 'activo'`,
     [id_usuario]
   );
-  if (activeCheck.rows.length > 0) {
+  if (activeCheck.rows.length > 0)
     throw new Error('Ya tienes una entrada activa en el parqueadero.');
-  }
 
-  // Verificar cupos disponibles
   const cupoCheck = await client.query(
     `SELECT l.capacidad, c.ocupados
-     FROM Lados l JOIN Cupos c ON c.id_lado = l.id_lado
+     FROM lados l JOIN cupos c ON c.id_lado = l.id_lado
      WHERE l.id_lado = $1`,
     [id_lado]
   );
-  if (cupoCheck.rows.length === 0) throw new Error('Lado de parqueo no encontrado.');
+  if (!cupoCheck.rows.length) throw new Error('Lado de parqueo no encontrado.');
   const { capacidad, ocupados } = cupoCheck.rows[0];
-  if (Number(ocupados) >= Number(capacidad)) {
+  if (Number(ocupados) >= Number(capacidad))
     throw new Error('No hay cupos disponibles en este lado del parqueadero.');
-  }
 
-  // Registrar entrada
   const insert = await client.query(
-    `INSERT INTO RegistrosUso (id_usuario, id_vehiculo, id_lado, estado)
-     VALUES ($1, $2, $3, 'activo')
-     RETURNING id_registro`,
+    `INSERT INTO registros_uso (id_usuario, id_vehiculo, id_lado, estado)
+     VALUES ($1, $2, $3, 'activo') RETURNING id_registro`,
     [id_usuario, id_vehiculo, id_lado]
   );
 
-  // Actualizar Cupos
   await client.query(
-    `UPDATE Cupos SET ocupados = ocupados + 1, ultima_actualizacion = NOW()
+    `UPDATE cupos SET ocupados = ocupados + 1, ultima_actualizacion = NOW()
      WHERE id_lado = $1`,
     [id_lado]
   );
@@ -70,34 +63,30 @@ async function sp_RegistrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
   return insert.rows[0].id_registro;
 }
 
-// ── Lógica equivalente a dbo.sp_RegistrarSalida ───────────────────────
-async function sp_RegistrarSalida(client, id_usuario) {
-  // Buscar entrada activa
+// ── Lógica de salida ──────────────────────────────────────────────────
+async function registrarSalida(client, id_usuario) {
   const activeEntry = await client.query(
     `SELECT id_registro, id_lado, fecha_entrada
-     FROM RegistrosUso
+     FROM registros_uso
      WHERE id_usuario = $1 AND estado = 'activo'
      ORDER BY fecha_entrada DESC LIMIT 1`,
     [id_usuario]
   );
-  if (activeEntry.rows.length === 0) {
+  if (!activeEntry.rows.length)
     throw new Error('No tienes una entrada activa en el parqueadero.');
-  }
+
   const { id_registro, id_lado, fecha_entrada } = activeEntry.rows[0];
 
-  // Cerrar el registro
   await client.query(
-    `UPDATE RegistrosUso
+    `UPDATE registros_uso
      SET fecha_salida = NOW(),
-         duracion_min = EXTRACT(EPOCH FROM NOW() - $2) / 60,
-         estado       = 'cerrado'
+         estado       = 'completado'
      WHERE id_registro = $1`,
-    [id_registro, fecha_entrada]
+    [id_registro]
   );
 
-  // Liberar cupo
   await client.query(
-    `UPDATE Cupos
+    `UPDATE cupos
      SET ocupados = GREATEST(0, ocupados - 1), ultima_actualizacion = NOW()
      WHERE id_lado = $1`,
     [id_lado]
@@ -106,10 +95,10 @@ async function sp_RegistrarSalida(client, id_usuario) {
   return id_registro;
 }
 
-// ── GET /api/parqueadero/cupos  —  ocupación actual ───────────────────
+// ── GET /api/parqueadero/cupos ────────────────────────────────────────
 router.get('/cupos', async (req, res) => {
   try {
-    const result = await query(`SELECT * FROM vw_OcupacionActual`);
+    const result = await query(`SELECT * FROM vw_ocupacion_actual`);
     return res.json({ ok: true, data: result.rows });
   } catch (err) {
     console.error(err);
@@ -124,10 +113,10 @@ router.get('/ocupacion-rol', async (req, res) => {
 
     const result = await query(
       `SELECT l.id_lado, l.nombre AS lado, tv.nombre AS tipo, COUNT(*) AS cantidad
-       FROM RegistrosUso r
-       JOIN Vehiculos     v  ON v.id_vehiculo = r.id_vehiculo
-       JOIN TiposVehiculo tv ON tv.id_tipo    = v.id_tipo
-       JOIN Lados         l  ON l.id_lado     = r.id_lado
+       FROM registros_uso r
+       JOIN vehiculos     v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN tipos_vehiculo tv ON tv.id_tipo   = v.id_tipo
+       JOIN lados         l  ON l.id_lado     = r.id_lado
        WHERE r.estado = 'activo'
        GROUP BY l.id_lado, l.nombre, tv.nombre
        ORDER BY l.id_lado, tv.nombre`
@@ -142,10 +131,9 @@ router.get('/ocupacion-rol', async (req, res) => {
     const ids  = Object.keys(grupos).map(Number).sort((a, b) => a - b);
     const mapA = grupos[ids[0]] || {};
     const mapB = grupos[ids[1]] || {};
-
     const totalA = Object.values(mapA).reduce((s, v) => s + v, 0);
     const totalB = Object.values(mapB).reduce((s, v) => s + v, 0);
-    const CAPACIDAD_B = 20;
+    const CAPACIDAD_B = 25;
 
     return res.json({
       ok: true,
@@ -153,9 +141,10 @@ router.get('/ocupacion-rol', async (req, res) => {
         rol,
         vista: rol === 'aprendiz' ? 'aprendiz' : 'funcionario',
         lado_a: {
-          carros:     mapA['carro']     || 0,
-          motos:      mapA['moto']      || 0,
-          bicicletas: mapA['bicicleta'] || 0,
+          autos:      mapA['auto']       || 0,
+          motos:      mapA['motocicleta']|| 0,
+          bicicletas: mapA['bicicleta']  || 0,
+          furgonetas: mapA['furgoneta']  || 0,
           total:      totalA,
         },
         lado_b: {
@@ -171,7 +160,7 @@ router.get('/ocupacion-rol', async (req, res) => {
   }
 });
 
-// ── GET /api/parqueadero/historial  —  mis registros ─────────────────
+// ── GET /api/parqueadero/historial ────────────────────────────────────
 router.get('/historial', async (req, res) => {
   const page   = Math.max(1, parseInt(req.query.page)  || 1);
   const limit  = Math.min(200, parseInt(req.query.limit) || 10);
@@ -181,18 +170,18 @@ router.get('/historial', async (req, res) => {
     const result = await query(
       `SELECT
          r.id_registro,
-         tv.nombre           AS tipo_vehiculo,
+         tv.nombre                   AS tipo_vehiculo,
          COALESCE(v.placa, v.modelo) AS identificador,
          v.color,
-         l.nombre            AS lado,
+         l.nombre                    AS lado,
          r.fecha_entrada,
          r.fecha_salida,
-         r.duracion_min,
+         EXTRACT(EPOCH FROM (r.fecha_salida - r.fecha_entrada)) / 60 AS duracion_min,
          r.estado
-       FROM RegistrosUso r
-       JOIN Vehiculos     v  ON v.id_vehiculo = r.id_vehiculo
-       JOIN TiposVehiculo tv ON tv.id_tipo    = v.id_tipo
-       JOIN Lados         l  ON l.id_lado     = r.id_lado
+       FROM registros_uso r
+       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
+       JOIN lados          l  ON l.id_lado     = r.id_lado
        WHERE r.id_usuario = @uid
        ORDER BY r.fecha_entrada DESC
        LIMIT @limit OFFSET @offset`,
@@ -200,15 +189,13 @@ router.get('/historial', async (req, res) => {
     );
 
     const total = await query(
-      `SELECT COUNT(*) AS total FROM RegistrosUso WHERE id_usuario = @uid`,
+      `SELECT COUNT(*) AS total FROM registros_uso WHERE id_usuario = @uid`,
       { uid: req.user.id_usuario }
     );
 
-    const data = result.rows.map(normalizeRegistroFechas);
-
     return res.json({
       ok: true,
-      data,
+      data: result.rows.map(normalizeRegistroFechas),
       meta: { page, limit, total: Number(total.rows[0].total) },
     });
   } catch (err) {
@@ -217,22 +204,18 @@ router.get('/historial', async (req, res) => {
   }
 });
 
-// ── POST /api/parqueadero/entrada  —  registrar entrada ──────────────
+// ── POST /api/parqueadero/entrada ─────────────────────────────────────
 router.post('/entrada', async (req, res) => {
   const { id_vehiculo, id_lado } = req.body;
-  if (!id_vehiculo || !id_lado) {
+  if (!id_vehiculo || !id_lado)
     return res.status(400).json({ ok: false, message: 'id_vehiculo e id_lado son requeridos.' });
-  }
 
   const client = await getClient();
   try {
     await client.query('BEGIN');
 
-    // Validar que el vehículo pertenezca al usuario
     const veh = await client.query(
-      `SELECT v.id_tipo, tv.nombre AS tipo
-       FROM Vehiculos v
-       JOIN TiposVehiculo tv ON tv.id_tipo = v.id_tipo
+      `SELECT v.id_tipo FROM vehiculos v
        WHERE v.id_vehiculo = $1 AND v.id_usuario = $2 AND v.activo = true`,
       [id_vehiculo, req.user.id_usuario]
     );
@@ -241,20 +224,16 @@ router.post('/entrada', async (req, res) => {
       return res.status(404).json({ ok: false, message: 'Vehículo no encontrado.' });
     }
 
-    const id_registro = await sp_RegistrarEntrada(
-      client,
-      req.user.id_usuario,
-      parseInt(id_vehiculo),
-      parseInt(id_lado)
+    const id_registro = await registrarEntrada(
+      client, req.user.id_usuario, parseInt(id_vehiculo), parseInt(id_lado)
     );
 
     await client.query('COMMIT');
     return res.status(201).json({ ok: true, message: 'Entrada registrada.', id_registro });
   } catch (err) {
     await client.query('ROLLBACK');
-    if (err.message?.includes('entrada activa') || err.message?.includes('cupos')) {
+    if (err.message?.includes('activa') || err.message?.includes('cupos'))
       return res.status(409).json({ ok: false, message: err.message });
-    }
     console.error(err);
     return res.status(500).json({ ok: false, message: 'Error interno.' });
   } finally {
@@ -262,19 +241,18 @@ router.post('/entrada', async (req, res) => {
   }
 });
 
-// ── POST /api/parqueadero/salida  —  registrar salida ─────────────────
+// ── POST /api/parqueadero/salida ──────────────────────────────────────
 router.post('/salida', async (req, res) => {
   const client = await getClient();
   try {
     await client.query('BEGIN');
-    const id_registro = await sp_RegistrarSalida(client, req.user.id_usuario);
+    const id_registro = await registrarSalida(client, req.user.id_usuario);
     await client.query('COMMIT');
     return res.json({ ok: true, message: 'Salida registrada.', id_registro });
   } catch (err) {
     await client.query('ROLLBACK');
-    if (err.message?.includes('entrada activa')) {
+    if (err.message?.includes('activa'))
       return res.status(404).json({ ok: false, message: err.message });
-    }
     console.error(err);
     return res.status(500).json({ ok: false, message: 'Error interno.' });
   } finally {
@@ -282,25 +260,23 @@ router.post('/salida', async (req, res) => {
   }
 });
 
-// ── GET /api/parqueadero/estado-actual  —  ¿estoy dentro? ─────────────
+// ── GET /api/parqueadero/estado-actual ────────────────────────────────
 router.get('/estado-actual', async (req, res) => {
   try {
     const result = await query(
-      `SELECT
-         r.id_registro, r.fecha_entrada, l.nombre AS lado,
-         tv.nombre AS tipo_vehiculo,
-         COALESCE(v.placa, v.modelo) AS identificador
-       FROM RegistrosUso r
-       JOIN Vehiculos v      ON v.id_vehiculo = r.id_vehiculo
-       JOIN TiposVehiculo tv ON tv.id_tipo    = v.id_tipo
-       JOIN Lados l          ON l.id_lado     = r.id_lado
+      `SELECT r.id_registro, r.fecha_entrada, l.nombre AS lado,
+              tv.nombre AS tipo_vehiculo,
+              COALESCE(v.placa, v.modelo) AS identificador
+       FROM registros_uso r
+       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
+       JOIN lados          l  ON l.id_lado     = r.id_lado
        WHERE r.id_usuario = @uid AND r.estado = 'activo'
-       ORDER BY r.fecha_entrada DESC
-       LIMIT 1`,
+       ORDER BY r.fecha_entrada DESC LIMIT 1`,
       { uid: req.user.id_usuario }
     );
     return res.json({
-      ok: true,
+      ok:     true,
       dentro: result.rows.length > 0,
       data:   result.rows[0] ? normalizeRegistroFechas(result.rows[0]) : null,
     });
@@ -310,7 +286,7 @@ router.get('/estado-actual', async (req, res) => {
   }
 });
 
-// ── GET /api/parqueadero/stats-hoy  —  estadísticas del día ──────────
+// ── GET /api/parqueadero/stats-hoy ────────────────────────────────────
 router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
   try {
     const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
@@ -319,15 +295,13 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
       `SELECT
          COUNT(*) AS entradas_hoy,
          SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas_hoy,
-         SUM(CASE WHEN tv.nombre='carro'     THEN 1 ELSE 0 END) AS carros_entradas,
-         SUM(CASE WHEN tv.nombre='moto'      THEN 1 ELSE 0 END) AS motos_entradas,
-         SUM(CASE WHEN tv.nombre='bicicleta' THEN 1 ELSE 0 END) AS bicis_entradas,
-         SUM(CASE WHEN tv.nombre='carro'     AND r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS carros_salidas,
-         SUM(CASE WHEN tv.nombre='moto'      AND r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS motos_salidas,
-         SUM(CASE WHEN tv.nombre='bicicleta' AND r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS bicis_salidas
-       FROM RegistrosUso r
-       JOIN Vehiculos v      ON v.id_vehiculo = r.id_vehiculo
-       JOIN TiposVehiculo tv ON tv.id_tipo    = v.id_tipo
+         SUM(CASE WHEN tv.nombre='Auto'        THEN 1 ELSE 0 END) AS autos_entradas,
+         SUM(CASE WHEN tv.nombre='Motocicleta' THEN 1 ELSE 0 END) AS motos_entradas,
+         SUM(CASE WHEN tv.nombre='Bicicleta'   THEN 1 ELSE 0 END) AS bicis_entradas,
+         SUM(CASE WHEN tv.nombre='Furgoneta'   THEN 1 ELSE 0 END) AS furgonetas_entradas
+       FROM registros_uso r
+       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
        WHERE r.fecha_entrada::DATE = @hoy::DATE`,
       { hoy }
     );
@@ -337,7 +311,7 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
          EXTRACT(HOUR FROM r.fecha_entrada)::INT AS hora,
          COUNT(*) AS entradas,
          SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
-       FROM RegistrosUso r
+       FROM registros_uso r
        WHERE r.fecha_entrada::DATE = @hoy::DATE
        GROUP BY EXTRACT(HOUR FROM r.fecha_entrada)
        ORDER BY hora`,
@@ -348,7 +322,7 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
       `SELECT
          EXTRACT(DOW FROM r.fecha_entrada)::INT AS dia_semana,
          COUNT(*) AS ingresos
-       FROM RegistrosUso r
+       FROM registros_uso r
        WHERE r.fecha_entrada >= (NOW() - INTERVAL '6 days')::DATE
        GROUP BY EXTRACT(DOW FROM r.fecha_entrada)
        ORDER BY dia_semana`
@@ -356,11 +330,7 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
 
     return res.json({
       ok: true,
-      data: {
-        ...stats.rows[0],
-        por_hora:    porHora.rows,
-        por_semana:  porSemana.rows,
-      },
+      data: { ...stats.rows[0], por_hora: porHora.rows, por_semana: porSemana.rows },
     });
   } catch (err) {
     console.error(err);
@@ -368,7 +338,7 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
   }
 });
 
-// ── GET /api/parqueadero/stats-lado  —  estadísticas por lado ─────────
+// ── GET /api/parqueadero/stats-lado ───────────────────────────────────
 router.get('/stats-lado', requireRol('admin'), async (req, res) => {
   try {
     const id_lado = parseInt(req.query.id_lado);
@@ -377,115 +347,89 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
     const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
     const porHora = await query(
-      `SELECT
-         EXTRACT(HOUR FROM r.fecha_entrada)::INT AS hora,
-         COUNT(*) AS entradas,
-         SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
-       FROM RegistrosUso r
-       WHERE r.fecha_entrada::DATE = @hoy::DATE
-         AND r.id_lado = @id_lado
-       GROUP BY EXTRACT(HOUR FROM r.fecha_entrada)
-       ORDER BY hora`,
+      `SELECT EXTRACT(HOUR FROM r.fecha_entrada)::INT AS hora,
+              COUNT(*) AS entradas,
+              SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
+       FROM registros_uso r
+       WHERE r.fecha_entrada::DATE = @hoy::DATE AND r.id_lado = @id_lado
+       GROUP BY EXTRACT(HOUR FROM r.fecha_entrada) ORDER BY hora`,
       { hoy, id_lado }
     );
 
     const porTipo = await query(
       `SELECT tv.nombre AS tipo, COUNT(*) AS cantidad
-       FROM RegistrosUso r
-       JOIN Vehiculos     v  ON v.id_vehiculo = r.id_vehiculo
-       JOIN TiposVehiculo tv ON tv.id_tipo    = v.id_tipo
-       WHERE r.fecha_entrada::DATE = @hoy::DATE
-         AND r.id_lado = @id_lado
+       FROM registros_uso r
+       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
+       WHERE r.fecha_entrada::DATE = @hoy::DATE AND r.id_lado = @id_lado
        GROUP BY tv.nombre`,
       { hoy, id_lado }
     );
 
     const porSemana = await query(
-      `SELECT
-         EXTRACT(DOW FROM r.fecha_entrada)::INT AS dia_semana,
-         COUNT(*) AS ingresos
-       FROM RegistrosUso r
-       WHERE r.fecha_entrada >= (NOW() - INTERVAL '6 days')::DATE
-         AND r.id_lado = @id_lado
-       GROUP BY EXTRACT(DOW FROM r.fecha_entrada)
-       ORDER BY dia_semana`,
+      `SELECT EXTRACT(DOW FROM r.fecha_entrada)::INT AS dia_semana, COUNT(*) AS ingresos
+       FROM registros_uso r
+       WHERE r.fecha_entrada >= (NOW() - INTERVAL '6 days')::DATE AND r.id_lado = @id_lado
+       GROUP BY EXTRACT(DOW FROM r.fecha_entrada) ORDER BY dia_semana`,
       { id_lado }
     );
 
-    return res.json({
-      ok: true,
-      data: {
-        por_hora:    porHora.rows,
-        por_tipo:    porTipo.rows,
-        por_semana:  porSemana.rows,
-      },
-    });
+    return res.json({ ok: true, data: { por_hora: porHora.rows, por_tipo: porTipo.rows, por_semana: porSemana.rows } });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ ok: false, message: 'Error interno.' });
   }
 });
 
-// ── GET /api/parqueadero/reciente  —  últimos 200 movimientos del día ─
+// ── GET /api/parqueadero/reciente ─────────────────────────────────────
 router.get('/reciente', requireRol('admin'), async (req, res) => {
   try {
     const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
     const result = await query(
-      `SELECT
-         u.nombre_completo, u.qr_code,
-         tv.nombre AS tipo_vehiculo,
-         r.estado,
-         l.nombre AS lado,
-         CASE WHEN r.estado = 'activo' THEN r.fecha_entrada ELSE r.fecha_salida END AS fecha_accion
-       FROM RegistrosUso r
-       JOIN Usuarios      u  ON u.id_usuario  = r.id_usuario
-       JOIN Vehiculos     v  ON v.id_vehiculo = r.id_vehiculo
-       JOIN TiposVehiculo tv ON tv.id_tipo    = v.id_tipo
-       JOIN Lados         l  ON l.id_lado     = r.id_lado
+      `SELECT u.nombre_completo, u.qr_code,
+              tv.nombre AS tipo_vehiculo, r.estado, l.nombre AS lado,
+              CASE WHEN r.estado = 'activo' THEN r.fecha_entrada ELSE r.fecha_salida END AS fecha_accion
+       FROM registros_uso r
+       JOIN usuarios       u  ON u.id_usuario  = r.id_usuario
+       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
+       JOIN lados          l  ON l.id_lado     = r.id_lado
        WHERE r.fecha_entrada::DATE = @hoy::DATE OR r.fecha_salida::DATE = @hoy::DATE
-       ORDER BY fecha_accion DESC
-       LIMIT 200`,
+       ORDER BY fecha_accion DESC LIMIT 200`,
       { hoy }
     );
-    const data = result.rows.map(normalizeRegistroFechas);
-    return res.json({ ok: true, data });
+    return res.json({ ok: true, data: result.rows.map(normalizeRegistroFechas) });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ ok: false, message: 'Error interno.' });
   }
 });
 
-// ── GET /api/parqueadero/usuarios-admin  —  lista todos los usuarios ──
+// ── GET /api/parqueadero/usuarios-admin ───────────────────────────────
 router.get('/usuarios-admin', requireRol('admin'), async (req, res) => {
   try {
     const result = await query(
-      `SELECT
-         u.id_usuario, u.nombre_completo, u.tipo_id, u.numero_id,
-         u.qr_code, u.rol,
-         c.nombre AS centro_nombre,
-         EXISTS (
-           SELECT 1 FROM RegistrosUso r2
-           WHERE r2.id_usuario = u.id_usuario AND r2.estado = 'activo'
-         ) AS dentro
-       FROM Usuarios u
-       LEFT JOIN CentrosFormacion c ON c.id_centro = u.id_centro
-       WHERE u.activo = true
-       ORDER BY u.nombre_completo`
+      `SELECT u.id_usuario, u.nombre_completo, u.tipo_id, u.numero_id,
+              u.qr_code, u.rol, c.nombre AS centro_nombre,
+              EXISTS (
+                SELECT 1 FROM registros_uso r2
+                WHERE r2.id_usuario = u.id_usuario AND r2.estado = 'activo'
+              ) AS dentro
+       FROM usuarios u
+       LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
+       WHERE u.activo = true ORDER BY u.nombre_completo`
     );
-
-    const usuarios = result.rows;
 
     const vResult = await query(
       `SELECT v.id_usuario, v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo, v.color
-       FROM Vehiculos v
-       JOIN TiposVehiculo tv ON tv.id_tipo = v.id_tipo
+       FROM vehiculos v
+       JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
        WHERE v.activo = true`
     );
-    const vehiculos = vResult.rows;
 
-    const data = usuarios.map(u => ({
+    const data = result.rows.map(u => ({
       ...u,
-      vehiculos: vehiculos.filter(v => v.id_usuario === u.id_usuario),
+      vehiculos: vResult.rows.filter(v => v.id_usuario === u.id_usuario),
     }));
 
     return res.json({ ok: true, data });
@@ -495,42 +439,36 @@ router.get('/usuarios-admin', requireRol('admin'), async (req, res) => {
   }
 });
 
-// ── GET /api/parqueadero/historial-admin  —  historial por fecha ──────
+// ── GET /api/parqueadero/historial-admin ──────────────────────────────
 router.get('/historial-admin', requireRol('admin'), async (req, res) => {
   const fecha = req.query.fecha;
   if (!fecha) return res.status(400).json({ ok: false, message: 'Parámetro fecha requerido.' });
   try {
     const result = await query(
-      `SELECT
-         r.id_registro,
-         u.id_usuario,
-         u.nombre_completo,
-         tv.nombre                   AS tipo_vehiculo,
-         COALESCE(v.placa, v.modelo) AS identificador,
-         v.color,
-         l.nombre                    AS lado,
-         r.fecha_entrada,
-         r.fecha_salida,
-         r.duracion_min,
-         r.estado
-       FROM RegistrosUso r
-       JOIN Usuarios      u  ON u.id_usuario  = r.id_usuario
-       JOIN Vehiculos     v  ON v.id_vehiculo = r.id_vehiculo
-       JOIN TiposVehiculo tv ON tv.id_tipo    = v.id_tipo
-       JOIN Lados         l  ON l.id_lado     = r.id_lado
+      `SELECT r.id_registro, u.id_usuario, u.nombre_completo,
+              tv.nombre AS tipo_vehiculo,
+              COALESCE(v.placa, v.modelo) AS identificador,
+              v.color, l.nombre AS lado,
+              r.fecha_entrada, r.fecha_salida,
+              EXTRACT(EPOCH FROM (r.fecha_salida - r.fecha_entrada)) / 60 AS duracion_min,
+              r.estado
+       FROM registros_uso r
+       JOIN usuarios       u  ON u.id_usuario  = r.id_usuario
+       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
+       JOIN lados          l  ON l.id_lado     = r.id_lado
        WHERE r.fecha_entrada::DATE = @fecha::DATE
        ORDER BY r.fecha_entrada DESC`,
       { fecha }
     );
-    const data = result.rows.map(normalizeRegistroFechas);
-    return res.json({ ok: true, data });
+    return res.json({ ok: true, data: result.rows.map(normalizeRegistroFechas) });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ ok: false, message: 'Error interno.' });
   }
 });
 
-// ── POST /api/parqueadero/escanear  —  admin escanea QR ──────────────
+// ── POST /api/parqueadero/escanear ────────────────────────────────────
 router.post('/escanear', requireRol('admin'), async (req, res) => {
   const { qr_code } = req.body;
   if (!qr_code) return res.status(400).json({ ok: false, message: 'qr_code requerido.' });
@@ -538,8 +476,8 @@ router.post('/escanear', requireRol('admin'), async (req, res) => {
     const uResult = await query(
       `SELECT u.id_usuario, u.nombre_completo, u.tipo_id, u.numero_id,
               u.rol, u.qr_code, c.nombre AS centro_nombre
-       FROM Usuarios u
-       LEFT JOIN CentrosFormacion c ON c.id_centro = u.id_centro
+       FROM usuarios u
+       LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
        WHERE u.qr_code = @qr AND u.activo = true`,
       { qr: qr_code }
     );
@@ -549,8 +487,7 @@ router.post('/escanear', requireRol('admin'), async (req, res) => {
 
     const vResult = await query(
       `SELECT v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo, v.color
-       FROM Vehiculos v
-       JOIN TiposVehiculo tv ON tv.id_tipo = v.id_tipo
+       FROM vehiculos v JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
        WHERE v.id_usuario = @uid AND v.activo = true`,
       { uid: usuario.id_usuario }
     );
@@ -558,22 +495,21 @@ router.post('/escanear', requireRol('admin'), async (req, res) => {
     const estadoResult = await query(
       `SELECT r.id_registro, r.fecha_entrada, l.nombre AS lado,
               tv.nombre AS tipo_vehiculo, COALESCE(v.placa, v.modelo) AS identificador
-       FROM RegistrosUso r
-       JOIN Vehiculos v      ON v.id_vehiculo = r.id_vehiculo
-       JOIN TiposVehiculo tv ON tv.id_tipo    = v.id_tipo
-       JOIN Lados l          ON l.id_lado     = r.id_lado
+       FROM registros_uso r
+       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
+       JOIN lados          l  ON l.id_lado     = r.id_lado
        WHERE r.id_usuario = @uid AND r.estado = 'activo'
-       ORDER BY r.fecha_entrada DESC
-       LIMIT 1`,
+       ORDER BY r.fecha_entrada DESC LIMIT 1`,
       { uid: usuario.id_usuario }
     );
 
     return res.json({
-      ok: true,
+      ok:            true,
       usuario,
-      vehiculos:      vResult.rows,
-      dentro:         estadoResult.rows.length > 0,
-      estado_actual:  estadoResult.rows[0] ? normalizeRegistroFechas(estadoResult.rows[0]) : null,
+      vehiculos:     vResult.rows,
+      dentro:        estadoResult.rows.length > 0,
+      estado_actual: estadoResult.rows[0] ? normalizeRegistroFechas(estadoResult.rows[0]) : null,
     });
   } catch (err) {
     console.error(err);
@@ -581,7 +517,7 @@ router.post('/escanear', requireRol('admin'), async (req, res) => {
   }
 });
 
-// ── POST /api/parqueadero/admin-entrada ──────────────────────────────
+// ── POST /api/parqueadero/admin-entrada ───────────────────────────────
 router.post('/admin-entrada', requireRol('admin'), async (req, res) => {
   const { id_usuario, id_vehiculo, id_lado } = req.body;
   if (!id_usuario || !id_vehiculo || !id_lado)
@@ -590,17 +526,14 @@ router.post('/admin-entrada', requireRol('admin'), async (req, res) => {
   const client = await getClient();
   try {
     await client.query('BEGIN');
-    const id_registro = await sp_RegistrarEntrada(
-      client,
-      parseInt(id_usuario),
-      parseInt(id_vehiculo),
-      parseInt(id_lado)
+    const id_registro = await registrarEntrada(
+      client, parseInt(id_usuario), parseInt(id_vehiculo), parseInt(id_lado)
     );
     await client.query('COMMIT');
     return res.status(201).json({ ok: true, message: 'Entrada registrada.', id_registro });
   } catch (err) {
     await client.query('ROLLBACK');
-    if (err.message?.includes('entrada activa') || err.message?.includes('cupos'))
+    if (err.message?.includes('activa') || err.message?.includes('cupos'))
       return res.status(409).json({ ok: false, message: err.message });
     console.error(err);
     return res.status(500).json({ ok: false, message: 'Error interno.' });
@@ -609,7 +542,7 @@ router.post('/admin-entrada', requireRol('admin'), async (req, res) => {
   }
 });
 
-// ── POST /api/parqueadero/admin-salida ───────────────────────────────
+// ── POST /api/parqueadero/admin-salida ────────────────────────────────
 router.post('/admin-salida', requireRol('admin'), async (req, res) => {
   const { id_usuario } = req.body;
   if (!id_usuario) return res.status(400).json({ ok: false, message: 'id_usuario requerido.' });
@@ -617,12 +550,12 @@ router.post('/admin-salida', requireRol('admin'), async (req, res) => {
   const client = await getClient();
   try {
     await client.query('BEGIN');
-    const id_registro = await sp_RegistrarSalida(client, parseInt(id_usuario));
+    const id_registro = await registrarSalida(client, parseInt(id_usuario));
     await client.query('COMMIT');
     return res.json({ ok: true, message: 'Salida registrada.', id_registro });
   } catch (err) {
     await client.query('ROLLBACK');
-    if (err.message?.includes('entrada activa'))
+    if (err.message?.includes('activa'))
       return res.status(404).json({ ok: false, message: err.message });
     console.error(err);
     return res.status(500).json({ ok: false, message: 'Error interno.' });

@@ -1,4 +1,4 @@
-// src/routes/auth.js  —  Inicio de sesión y registro
+// src/routes/auth.js
 const router  = require('express').Router();
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
@@ -7,7 +7,6 @@ const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
 const { authMiddleware } = require('../middlewares/auth');
 
-// ── Helpers ──────────────────────────────────────────────────────────
 function generateQR(numeroId) {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const short = uuidv4().split('-')[0].toUpperCase();
@@ -36,19 +35,9 @@ router.post('/register',
     const { nombre_completo, numero_id, password, id_centro, email, rol, tipo_id } = req.body;
 
     try {
-      // Verificar si la persona está autorizada en la tabla Personas
-      const persona = await query(
-        `SELECT * FROM Personas WHERE numero_documento = @nid`,
-        { nid: numero_id }
-      );
-      if (persona.rows.length === 0) {
-        return res.status(403).json({ ok: false, message: 'Tu documento no está autorizado para registrarse. Contacta al administrador.' });
-      }
-      const datosPersona = persona.rows[0];
-
-      // Verificar que la identificación no esté ya registrada en Usuarios
+      // Verificar que la identificación no esté ya registrada
       const dup = await query(
-        `SELECT id_usuario FROM Usuarios WHERE numero_id = @nid`,
+        `SELECT id_usuario FROM usuarios WHERE numero_id = @nid`,
         { nid: numero_id }
       );
       if (dup.rows.length > 0) {
@@ -58,24 +47,20 @@ router.post('/register',
       const hash = await bcrypt.hash(password, 10);
       const qr   = generateQR(numero_id);
 
-      const nombreFinal = datosPersona.nombres + ' ' + datosPersona.apellidos;
-      const correoFijo  = datosPersona.correo || email || null;
-      const tipoIdFijo  = datosPersona.tipo_documento || tipo_id || null;
-
       await query(
-        `INSERT INTO Usuarios
+        `INSERT INTO usuarios
            (nombre_completo, numero_id, password_hash, qr_code, activo, id_centro, email, rol, tipo_id)
          VALUES
            (@nombre, @nid, @hash, @qr, true, @centro, @email, @rol, @tipo_id)`,
         {
-          nombre: nombreFinal,
-          nid:    numero_id,
+          nombre:  nombre_completo,
+          nid:     numero_id,
           hash,
           qr,
-          centro: id_centro || null,
-          email:  correoFijo,
-          rol:    rol || 'aprendiz',
-          tipo_id: tipoIdFijo,
+          centro:  id_centro  || null,
+          email:   email      || null,
+          rol:     rol        || 'aprendiz',
+          tipo_id: tipo_id    || null,
         }
       );
 
@@ -102,7 +87,7 @@ router.post('/login',
     try {
       const result = await query(
         `SELECT id_usuario, nombre_completo, email, password_hash, rol, qr_code, id_centro, activo
-         FROM Usuarios WHERE numero_id = @nid`,
+         FROM usuarios WHERE numero_id = @nid`,
         { nid: numero_id }
       );
 
@@ -118,14 +103,14 @@ router.post('/login',
 
       const exp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       await query(
-        `INSERT INTO TokensSesion (id_usuario, refresh_token, expira_en)
+        `INSERT INTO tokens_sesion (id_usuario, refresh_token, expira_en)
          VALUES (@uid, @token, @exp)`,
         { uid: user.id_usuario, token: refresh, exp }
       );
 
       return res.json({
         ok: true,
-        access_token: access,
+        access_token:  access,
         refresh_token: refresh,
         user: {
           id_usuario:      user.id_usuario,
@@ -152,7 +137,7 @@ router.post('/refresh', async (req, res) => {
     const decoded = jwt.verify(refresh_token, process.env.JWT_REFRESH_SECRET);
 
     const row = await query(
-      `SELECT id_token FROM TokensSesion
+      `SELECT id_token FROM tokens_sesion
        WHERE refresh_token = @token AND activo = true AND expira_en > NOW()`,
       { token: refresh_token }
     );
@@ -160,7 +145,6 @@ router.post('/refresh', async (req, res) => {
 
     const payload = { id_usuario: decoded.id_usuario, rol: decoded.rol, email: decoded.email };
     const { access } = signTokens(payload);
-
     return res.json({ ok: true, access_token: access });
   } catch {
     return res.status(401).json({ ok: false, message: 'Refresh token expirado.' });
@@ -172,7 +156,7 @@ router.post('/logout', authMiddleware, async (req, res) => {
   const { refresh_token } = req.body;
   if (refresh_token) {
     await query(
-      `UPDATE TokensSesion SET activo = false WHERE refresh_token = @token`,
+      `UPDATE tokens_sesion SET activo = false WHERE refresh_token = @token`,
       { token: refresh_token }
     ).catch(() => {});
   }
