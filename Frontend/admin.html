@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Administración — Parksmart</title>
+  <title>Administración - Parksmart</title>
   <link rel="icon" href="/Frontend/img/logo-icon-cropped.png" type="image/x-icon">
   <link rel="stylesheet" href="/Frontend/admin.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet"/>
@@ -655,6 +655,15 @@
           <div class="form-group">
             <label><i class="bi bi-envelope-fill"></i> Correo electrónico</label>
             <input type="email" id="reg-email" placeholder="usuario@sena.edu.co"/>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-person-badge-fill"></i> Rol del usuario</label>
+            <select id="reg-rol">
+              <option value="aprendiz">Aprendiz</option>
+              <option value="funcionario">Funcionario</option>
+              <option value="instructor">Instructor</option>
+              <option value="admin">Administrador</option>
+            </select>
           </div>
           <div class="form-group">
             <label><i class="bi bi-lock-fill"></i> Contraseña temporal</label>
@@ -1872,7 +1881,7 @@ async function processQRResult(rawText) {
       <div class="result-av">${initials}</div>
       <div class="result-details">
         <div class="result-name">${usuario.nombre_completo}</div>
-        <div class="result-id"><i class="bi bi-fingerprint"></i> ${usuario.tipo_id} ${usuario.numero_id}</div>
+        <div class="result-id"><i class="bi bi-fingerprint"></i> ${usuario.tipo_id} ${'*'.repeat(Math.max(0, String(usuario.numero_id).length - 4))}${String(usuario.numero_id).slice(-4)}</div>
         <div class="result-id"><i class="bi bi-person-badge"></i> ${ROL_LABELS[usuario.rol] || usuario.rol || 'Sin rol'}</div>
         ${usuario.centro_nombre ? `<div class="result-id"><i class="bi bi-building"></i> ${usuario.centro_nombre}</div>` : ''}
         <div class="result-vehicle" style="margin-top:6px">${vehHTML}</div>
@@ -2061,9 +2070,10 @@ async function adminSalida(id_usuario) {
     const centro = document.getElementById('reg-centro').value || null;
     const email  = document.getElementById('reg-email').value.trim();
     const pass   = document.getElementById('reg-pass').value;
+    const rol    = document.getElementById('reg-rol').value;
 
-    if (!nombre || !tipoId || !numId || !email || !pass) { 
-      showToast('Por favor, completa nombre, identificación, correo y contraseña.'); 
+    if (!nombre || !tipoId || !numId || !pass) { 
+      showToast('Por favor, completa nombre, tipo de ID, número de identificación y contraseña.'); 
       return; 
     }
 
@@ -2071,16 +2081,16 @@ async function adminSalida(id_usuario) {
       const btn = document.querySelector('#section-registrar .btn-save');
       if (btn) { btn.innerHTML = '<i class="bi bi-hourglass"></i> Procesando...'; btn.disabled = true; }
 
-      const res = await apiFetch('/auth/register', {
+      const res = await apiFetch('/auth/admin-register', {
         method: 'POST',
         body: JSON.stringify({
           nombre_completo: nombre,
           tipo_id: tipoId,
           numero_id: numId,
           id_centro: centro ? parseInt(centro) : null,
-          email: email,
+          email: email || null,
           password: pass,
-          rol: 'aprendiz'
+          rol: rol
         })
       });
       const data = await res.json();
@@ -2097,6 +2107,7 @@ async function adminSalida(id_usuario) {
           const el = document.getElementById(id); if (el) el.value='';
         });
         document.getElementById('reg-tipo-id').value = '';
+        document.getElementById('reg-rol').value = 'aprendiz';
         await cargarUsuariosDesdeAPI(); // refrescar la tabla dinámica
       }
       if (btn) { btn.innerHTML = '<i class="bi bi-person-check-fill"></i> Registrar usuario'; btn.disabled = false; }
