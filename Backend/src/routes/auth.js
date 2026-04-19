@@ -7,6 +7,7 @@ const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
 const { authMiddleware } = require('../middlewares/auth');
 
+// ── Helpers ───────────────────────────────────────────────────────────
 function generateQR(numeroId) {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const short = uuidv4().split('-')[0].toUpperCase();
@@ -21,9 +22,18 @@ function signTokens(payload) {
   return { access, refresh };
 }
 
+function maskEmail(email) {
+  if (!email) return null;
+  const [user, domain] = email.split('@');
+  const masked = user[0] + '*'.repeat(Math.max(1, user.length - 2)) + (user.length > 1 ? user.slice(-1) : '');
+  return `${masked}@${domain}`;
+}
+
+function generarCodigo() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 // ── GET /api/auth/verificar/:numero_id ───────────────────────────────
-// Comprueba si una persona existe en la tabla `personas` del SENA.
-// Solo personas con estado EN FORMACION o INDUCCION pueden registrarse.
 router.get('/verificar/:numero_id', async (req, res) => {
   const nid = req.params.numero_id?.trim();
   if (!nid) return res.status(400).json({ ok: false, message: 'Número de documento requerido.' });
@@ -38,25 +48,19 @@ router.get('/verificar/:numero_id', async (req, res) => {
     }
 
     const resultado = await query(
-      'SELECT "Nombres", "Apellidos", "Correo Electronico", "Tipo de documento", "Estado" FROM personas WHERE "Numero de Documento" = @nid',
+      'SELECT "Nombres", "Apellidos", "Correo Electrónico", "Tipo de documento", "Estado" FROM "Personas" WHERE "Numero de Documento" = @nid',
       { nid }
     );
 
     if (!resultado.rows.length) {
-      return res.status(404).json({
-        ok: false,
-        message: 'Este número de documento no está registrado en la base de datos del SENA.',
-      });
+      return res.status(404).json({ ok: false, message: 'Este número de documento no está registrado en la base de datos del SENA.' });
     }
 
     const p = resultado.rows[0];
     const estadosValidos = ['EN FORMACION', 'INDUCCION'];
     const estado = (p['Estado'] || '').toString().trim().toUpperCase();
     if (!estadosValidos.includes(estado)) {
-      return res.status(403).json({
-        ok: false,
-        message: 'Tu estado en el SENA no permite crear una cuenta en este momento.',
-      });
+      return res.status(403).json({ ok: false, message: 'Tu estado en el SENA no permite crear una cuenta en este momento.' });
     }
 
     return res.json({
@@ -64,7 +68,7 @@ router.get('/verificar/:numero_id', async (req, res) => {
       message: 'Persona verificada correctamente.',
       data: {
         nombre_completo: (p['Nombres'] + ' ' + p['Apellidos']).trim(),
-        email:           p['Correo Electronico'] || null,
+        email:           p['Correo Electrónico'] || null,
         tipo_id:         p['Tipo de documento']  || null,
       },
     });
@@ -75,8 +79,7 @@ router.get('/verificar/:numero_id', async (req, res) => {
 });
 
 // ── POST /api/auth/register ───────────────────────────────────────────
-// Registro público: solo aprendices verificados en la tabla personas.
-// El rol se fuerza siempre a 'aprendiz'.
+// Registro público: solo aprendices verificados en la tabla Personas.
 router.post('/register',
   [
     body('numero_id').trim().notEmpty().withMessage('Número de identificación requerido.'),
@@ -98,27 +101,22 @@ router.post('/register',
       }
 
       const persona = await query(
-        'SELECT "Nombres", "Apellidos", "Correo Electronico", "Tipo de documento", "Estado" FROM personas WHERE "Numero de Documento" = @nid',
+        'SELECT "Nombres", "Apellidos", "Correo Electrónico", "Tipo de documento", "Estado" FROM "Personas" WHERE "Numero de Documento" = @nid',
         { nid: numero_id }
       );
       if (!persona.rows.length) {
-        return res.status(403).json({
-          ok: false,
-          message: 'Este número de documento no está registrado en la base de datos del SENA.',
-        });
+        return res.status(403).json({ ok: false, message: 'Este número de documento no está registrado en la base de datos del SENA.' });
       }
+
       const p = persona.rows[0];
       const estadosValidos = ['EN FORMACION', 'INDUCCION'];
       const estado = (p['Estado'] || '').toString().trim().toUpperCase();
       if (!estadosValidos.includes(estado)) {
-        return res.status(403).json({
-          ok: false,
-          message: 'Tu estado en el SENA no permite crear una cuenta en este momento.',
-        });
+        return res.status(403).json({ ok: false, message: 'Tu estado en el SENA no permite crear una cuenta en este momento.' });
       }
 
       const nombre_completo = (p['Nombres'] + ' ' + p['Apellidos']).trim();
-      const email           = p['Correo Electronico'] || null;
+      const email           = p['Correo Electrónico'] || null;
       const tipo_id         = p['Tipo de documento']  || null;
       const hash            = await bcrypt.hash(password, 10);
       const qr              = generateQR(numero_id);
@@ -136,9 +134,8 @@ router.post('/register',
   }
 );
 
-
 // ── POST /api/auth/admin-register ────────────────────────────────────
-// Registro manual por admin: sin validar contra tabla personas.
+// Registro manual por admin: sin validar contra tabla Personas.
 // Permite registrar instructores, funcionarios y cualquier rol.
 router.post('/admin-register',
   authMiddleware,
@@ -146,7 +143,7 @@ router.post('/admin-register',
     body('nombre_completo').trim().notEmpty().withMessage('Nombre requerido.'),
     body('numero_id').trim().notEmpty().withMessage('Número de identificación requerido.'),
     body('password').isLength({ min: 8 }).withMessage('La contraseña debe tener al menos 8 caracteres.'),
-    body('rol').isIn(['aprendiz','funcionario','instructor','admin']).withMessage('Rol inválido.'),
+    body('rol').isIn(['aprendiz', 'funcionario', 'instructor', 'admin']).withMessage('Rol inválido.'),
   ],
   async (req, res) => {
     if (req.user.rol !== 'admin') {
@@ -171,22 +168,22 @@ router.post('/admin-register',
       const qr   = generateQR(numero_id);
 
       await query(
-        "INSERT INTO usuarios (nombre_completo, numero_id, password_hash, qr_code, activo, email, rol, tipo_id, id_centro) VALUES (@nombre, @nid, @hash, @qr, true, @email, @rol, @tipo_id, @centro)",
+        'INSERT INTO usuarios (nombre_completo, numero_id, password_hash, qr_code, activo, email, rol, tipo_id, id_centro) VALUES (@nombre, @nid, @hash, @qr, true, @email, @rol, @tipo_id, @centro)',
         {
           nombre:  nombre_completo,
           nid:     numero_id,
           hash,
           qr,
-          email:   email   || null,
+          email:   email    || null,
           rol,
-          tipo_id: tipo_id || null,
+          tipo_id: tipo_id  || null,
           centro:  id_centro ? parseInt(id_centro) : null,
         }
       );
 
       return res.status(201).json({ ok: true, message: 'Usuario registrado correctamente.' });
     } catch (err) {
-      console.error(err);
+      console.error('Error en admin-register:', err);
       return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
     }
   }
@@ -246,14 +243,13 @@ router.post('/login',
   }
 );
 
-// ── POST /api/auth/refresh ─────────────────────────────────────────────
+// ── POST /api/auth/refresh ────────────────────────────────────────────
 router.post('/refresh', async (req, res) => {
   const { refresh_token } = req.body;
   if (!refresh_token) return res.status(400).json({ ok: false, message: 'refresh_token requerido.' });
 
   try {
     const decoded = jwt.verify(refresh_token, process.env.JWT_REFRESH_SECRET);
-
     const row = await query(
       'SELECT id_token FROM tokens_sesion WHERE refresh_token = @token AND activo = true AND expira_en > NOW()',
       { token: refresh_token }
@@ -268,7 +264,7 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
-// ── POST /api/auth/logout ──────────────────────────────────────────────
+// ── POST /api/auth/logout ─────────────────────────────────────────────
 router.post('/logout', authMiddleware, async (req, res) => {
   const { refresh_token } = req.body;
   if (refresh_token) {
@@ -280,27 +276,7 @@ router.post('/logout', authMiddleware, async (req, res) => {
   return res.json({ ok: true, message: 'Sesión cerrada.' });
 });
 
-module.exports = router;
-
-
-// ════════ RECUPERACIÓN DE CONTRASEÑA ════════
-
-const { enviarCodigoRecuperacion } = require('../config/mailer');
-
-function maskEmail(email) {
-  if (!email) return null;
-  const [user, domain] = email.split('@');
-  const masked = user[0] + '*'.repeat(Math.max(1, user.length - 2)) + (user.length > 1 ? user.slice(-1) : '');
-  return `${masked}@${domain}`;
-}
-
-function generarCodigo() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
 // ── POST /api/auth/recuperar/solicitar ───────────────────────────────
-// Paso 1: el usuario da su número de documento.
-// Devuelve el correo enmascarado y si puede cambiarlo.
 router.post('/recuperar/solicitar', async (req, res) => {
   const { numero_id } = req.body;
   if (!numero_id) return res.status(400).json({ ok: false, message: 'Número de documento requerido.' });
@@ -316,11 +292,11 @@ router.post('/recuperar/solicitar', async (req, res) => {
 
     const user = result.rows[0];
     return res.json({
-      ok: true,
-      id_usuario:     user.id_usuario,
-      nombre:         user.nombre_completo,
-      tiene_email:    !!user.email,
-      email_masked:   maskEmail(user.email),
+      ok:           true,
+      id_usuario:   user.id_usuario,
+      nombre:       user.nombre_completo,
+      tiene_email:  !!user.email,
+      email_masked: maskEmail(user.email),
     });
   } catch (err) {
     console.error(err);
@@ -329,7 +305,6 @@ router.post('/recuperar/solicitar', async (req, res) => {
 });
 
 // ── POST /api/auth/recuperar/enviar-codigo ───────────────────────────
-// Paso 2: envía el código al correo (el original o uno alternativo).
 router.post('/recuperar/enviar-codigo', async (req, res) => {
   const { id_usuario, email_alternativo } = req.body;
   if (!id_usuario) return res.status(400).json({ ok: false, message: 'id_usuario requerido.' });
@@ -341,34 +316,30 @@ router.post('/recuperar/enviar-codigo', async (req, res) => {
     );
     if (!result.rows.length) return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
 
-    const user = result.rows[0];
+    const user         = result.rows[0];
     const emailDestino = email_alternativo?.trim() || user.email;
 
     if (!emailDestino) {
       return res.status(400).json({ ok: false, message: 'No hay correo registrado. Por favor ingresa uno.' });
     }
 
-    // Invalidar códigos anteriores del usuario
     await query(
       'UPDATE codigos_recuperacion SET usado = true WHERE id_usuario = @uid AND usado = false',
       { uid: id_usuario }
     );
 
-    const codigo   = generarCodigo();
-    const expira   = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+    const codigo = generarCodigo();
+    const expira = new Date(Date.now() + 15 * 60 * 1000);
 
     await query(
       'INSERT INTO codigos_recuperacion (id_usuario, codigo, email_destino, expira_en) VALUES (@uid, @codigo, @email, @expira)',
       { uid: id_usuario, codigo, email: emailDestino, expira }
     );
 
+    const { enviarCodigoRecuperacion } = require('../config/mailer');
     await enviarCodigoRecuperacion(emailDestino, codigo, user.nombre_completo);
 
-    return res.json({
-      ok: true,
-      message: 'Código enviado correctamente.',
-      email_masked: maskEmail(emailDestino),
-    });
+    return res.json({ ok: true, message: 'Código enviado correctamente.', email_masked: maskEmail(emailDestino) });
   } catch (err) {
     console.error('Error enviando código:', err);
     return res.status(500).json({ ok: false, message: 'No se pudo enviar el correo. Verifica la configuración del servidor.' });
@@ -376,24 +347,18 @@ router.post('/recuperar/enviar-codigo', async (req, res) => {
 });
 
 // ── POST /api/auth/recuperar/verificar-codigo ────────────────────────
-// Paso 3: valida el código de 6 dígitos.
 router.post('/recuperar/verificar-codigo', async (req, res) => {
   const { id_usuario, codigo } = req.body;
   if (!id_usuario || !codigo) return res.status(400).json({ ok: false, message: 'Datos incompletos.' });
 
   try {
     const result = await query(
-      `SELECT id FROM codigos_recuperacion
-       WHERE id_usuario = @uid AND codigo = @codigo
-         AND usado = false AND expira_en > NOW()
-       ORDER BY creado_en DESC LIMIT 1`,
+      'SELECT id FROM codigos_recuperacion WHERE id_usuario = @uid AND codigo = @codigo AND usado = false AND expira_en > NOW() ORDER BY creado_en DESC LIMIT 1',
       { uid: id_usuario, codigo: codigo.trim() }
     );
-
     if (!result.rows.length) {
       return res.status(400).json({ ok: false, message: 'Código incorrecto o expirado.' });
     }
-
     return res.json({ ok: true, message: 'Código válido.' });
   } catch (err) {
     console.error(err);
@@ -402,7 +367,6 @@ router.post('/recuperar/verificar-codigo', async (req, res) => {
 });
 
 // ── POST /api/auth/recuperar/nueva-password ──────────────────────────
-// Paso 4: cambia la contraseña si el código sigue válido.
 router.post('/recuperar/nueva-password', async (req, res) => {
   const { id_usuario, codigo, nueva_password } = req.body;
   if (!id_usuario || !codigo || !nueva_password) {
@@ -414,29 +378,16 @@ router.post('/recuperar/nueva-password', async (req, res) => {
 
   try {
     const result = await query(
-      `SELECT id FROM codigos_recuperacion
-       WHERE id_usuario = @uid AND codigo = @codigo
-         AND usado = false AND expira_en > NOW()
-       ORDER BY creado_en DESC LIMIT 1`,
+      'SELECT id FROM codigos_recuperacion WHERE id_usuario = @uid AND codigo = @codigo AND usado = false AND expira_en > NOW() ORDER BY creado_en DESC LIMIT 1',
       { uid: id_usuario, codigo: codigo.trim() }
     );
-
     if (!result.rows.length) {
       return res.status(400).json({ ok: false, message: 'Código incorrecto o expirado.' });
     }
 
     const hash = await bcrypt.hash(nueva_password, 10);
-
-    await query(
-      'UPDATE usuarios SET password_hash = @hash WHERE id_usuario = @uid',
-      { hash, uid: id_usuario }
-    );
-
-    // Marcar el código como usado
-    await query(
-      'UPDATE codigos_recuperacion SET usado = true WHERE id_usuario = @uid AND codigo = @codigo',
-      { uid: id_usuario, codigo: codigo.trim() }
-    );
+    await query('UPDATE usuarios SET password_hash = @hash WHERE id_usuario = @uid', { hash, uid: id_usuario });
+    await query('UPDATE codigos_recuperacion SET usado = true WHERE id_usuario = @uid AND codigo = @codigo', { uid: id_usuario, codigo: codigo.trim() });
 
     return res.json({ ok: true, message: 'Contraseña actualizada correctamente.' });
   } catch (err) {
@@ -444,3 +395,5 @@ router.post('/recuperar/nueva-password', async (req, res) => {
     return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
   }
 });
+
+module.exports = router;
