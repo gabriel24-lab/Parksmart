@@ -135,10 +135,10 @@ router.get('/ocupacion-rol', async (req, res) => {
         rol,
         vista: rol === 'aprendiz' ? 'aprendiz' : 'funcionario',
         lado_a: {
-          autos:      mapA['auto']       || 0,
-          motos:      mapA['motocicleta']|| 0,
-          bicicletas: mapA['bicicleta']  || 0,
-          furgonetas: mapA['furgoneta']  || 0,
+          carros:     (mapA['auto'] || mapA['carro'] || mapA['automóvil'] || 0),
+          motos:      (mapA['motocicleta'] || mapA['moto'] || 0),
+          bicicletas: (mapA['bicicleta'] || 0),
+          furgonetas: (mapA['furgoneta'] || 0),
           total:      totalA,
         },
         lado_b: {
@@ -296,18 +296,18 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
        FROM registros_uso r
        JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
        JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
-       WHERE r.fecha_entrada::DATE = @hoy::DATE`,
+       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE`,
       { hoy }
     );
 
     const porHora = await query(
       `SELECT
-         EXTRACT(HOUR FROM r.fecha_entrada)::INT AS hora,
+         EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))::INT AS hora,
          COUNT(*) AS entradas,
          SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
        FROM registros_uso r
-       WHERE r.fecha_entrada::DATE = @hoy::DATE
-       GROUP BY EXTRACT(HOUR FROM r.fecha_entrada)
+       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE
+       GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))
        ORDER BY hora`,
       { hoy }
     );
@@ -345,8 +345,8 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
               COUNT(*) AS entradas,
               SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
        FROM registros_uso r
-       WHERE r.fecha_entrada::DATE = @hoy::DATE AND r.id_lado = @id_lado
-       GROUP BY EXTRACT(HOUR FROM r.fecha_entrada) ORDER BY hora`,
+       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE AND r.id_lado = @id_lado
+       GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota')) ORDER BY hora`,
       { hoy, id_lado }
     );
 
@@ -355,7 +355,7 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
        FROM registros_uso r
        JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
        JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
-       WHERE r.fecha_entrada::DATE = @hoy::DATE AND r.id_lado = @id_lado
+       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE AND r.id_lado = @id_lado
        GROUP BY tv.nombre`,
       { hoy, id_lado }
     );
@@ -388,7 +388,8 @@ router.get('/reciente', requireRol('admin'), async (req, res) => {
        JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
        JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
        JOIN lados          l  ON l.id_lado     = r.id_lado
-       WHERE r.fecha_entrada::DATE = @hoy::DATE OR r.fecha_salida::DATE = @hoy::DATE
+       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE
+          OR (r.fecha_salida  AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE
        ORDER BY fecha_accion DESC LIMIT 200`,
       { hoy }
     );
@@ -451,7 +452,7 @@ router.get('/historial-admin', requireRol('admin'), async (req, res) => {
        JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
        JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
        JOIN lados          l  ON l.id_lado     = r.id_lado
-       WHERE r.fecha_entrada::DATE = @fecha::DATE
+       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @fecha::DATE
        ORDER BY r.fecha_entrada DESC`,
       { fecha }
     );
