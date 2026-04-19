@@ -785,8 +785,8 @@
 
     const ROL_LABELS = { aprendiz: 'Aprendiz', funcionario: 'Funcionario', instructor: 'Instructor', admin: 'Admin' };
     const ROL_COLORS = { aprendiz: '#1565c0', funcionario: '#2e7d32', instructor: '#6a1b9a', admin: '#b71c1c' };
-    const TIPO_ICONS = { bicicleta: 'bi-bicycle', carro: 'bi-car-front-fill', moto: 'bi-scooter' };
-    const TIPO_LABELS = { bicicleta: 'Bicicleta', carro: 'Carro', moto: 'Moto' };
+    const TIPO_ICONS = { bicicleta: 'bi-bicycle', carro: 'bi-car-front-fill', moto: 'bi-scooter'};
+    const TIPO_LABELS = { bicicleta: 'Bicicleta', carro: 'Carro', moto: 'Moto'};
 
     // ════════ INIT ════════
     window.addEventListener('DOMContentLoaded', async () => {
@@ -823,7 +823,7 @@
         try {
           const res = await apiGet('/vehiculos');
           if (res.ok) {
-            const mapTipo = { 1: 'bicicleta', 2: 'carro', 3: 'moto' };
+           const mapTipo = { 1: 'bicicleta', 2: 'moto', 3: 'carro'};
             vehiculos = res.data.map(v => ({ ...v, tipo: v.tipo || mapTipo[v.id_tipo] || '' }));
           }
         } catch (e) { }
@@ -1410,7 +1410,7 @@
         const data = await apiGet('/vehiculos');
         if (!data.ok) return;
         // Convertir id_tipo numérico a nombre
-        const mapTipo = { 1: 'bicicleta', 2: 'carro', 3: 'moto' };
+        const mapTipo = { 1: 'bicicleta', 2: 'moto', 3: 'carro' };
         vehiculos = data.data.map(v => ({
           ...v,
           tipo: v.tipo || mapTipo[v.id_tipo] || 'carro',
@@ -1464,7 +1464,7 @@
       if (!rol) { showToast('Configura tu rol en el perfil primero.', 'error'); return; }
 
       const formData = new FormData();
-      const mapTipo = { bicicleta: '1', carro: '2', moto: '3' };
+      const mapTipo = { bicicleta: '1', moto: '2', carro: '3'};
       formData.append('id_tipo', mapTipo[tipo]);
 
       if (tipo === 'bicicleta') {
