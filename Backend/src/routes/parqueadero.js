@@ -123,8 +123,8 @@ router.get('/ocupacion-rol', async (req, res) => {
     });
 
     const ids  = Object.keys(grupos).map(Number).sort((a, b) => a - b);
-    const mapA = grupos[ids[0]] || {};
-    const mapB = grupos[ids[1]] || {};
+    const mapA = grupos[1] || {};
+    const mapB = grupos[2] || {};
     const totalA = Object.values(mapA).reduce((s, v) => s + v, 0);
     const totalB = Object.values(mapB).reduce((s, v) => s + v, 0);
     const CAPACIDAD_B = 25;
