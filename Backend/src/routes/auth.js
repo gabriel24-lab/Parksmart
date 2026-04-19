@@ -281,3 +281,166 @@ router.post('/logout', authMiddleware, async (req, res) => {
 });
 
 module.exports = router;
+
+
+// ════════ RECUPERACIÓN DE CONTRASEÑA ════════
+
+const { enviarCodigoRecuperacion } = require('../config/mailer');
+
+function maskEmail(email) {
+  if (!email) return null;
+  const [user, domain] = email.split('@');
+  const masked = user[0] + '*'.repeat(Math.max(1, user.length - 2)) + (user.length > 1 ? user.slice(-1) : '');
+  return `${masked}@${domain}`;
+}
+
+function generarCodigo() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// ── POST /api/auth/recuperar/solicitar ───────────────────────────────
+// Paso 1: el usuario da su número de documento.
+// Devuelve el correo enmascarado y si puede cambiarlo.
+router.post('/recuperar/solicitar', async (req, res) => {
+  const { numero_id } = req.body;
+  if (!numero_id) return res.status(400).json({ ok: false, message: 'Número de documento requerido.' });
+
+  try {
+    const result = await query(
+      'SELECT id_usuario, nombre_completo, email FROM usuarios WHERE numero_id = @nid AND activo = true',
+      { nid: numero_id.trim() }
+    );
+    if (!result.rows.length) {
+      return res.status(404).json({ ok: false, message: 'No existe una cuenta con ese número de documento.' });
+    }
+
+    const user = result.rows[0];
+    return res.json({
+      ok: true,
+      id_usuario:     user.id_usuario,
+      nombre:         user.nombre_completo,
+      tiene_email:    !!user.email,
+      email_masked:   maskEmail(user.email),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
+  }
+});
+
+// ── POST /api/auth/recuperar/enviar-codigo ───────────────────────────
+// Paso 2: envía el código al correo (el original o uno alternativo).
+router.post('/recuperar/enviar-codigo', async (req, res) => {
+  const { id_usuario, email_alternativo } = req.body;
+  if (!id_usuario) return res.status(400).json({ ok: false, message: 'id_usuario requerido.' });
+
+  try {
+    const result = await query(
+      'SELECT id_usuario, nombre_completo, email FROM usuarios WHERE id_usuario = @uid AND activo = true',
+      { uid: id_usuario }
+    );
+    if (!result.rows.length) return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+
+    const user = result.rows[0];
+    const emailDestino = email_alternativo?.trim() || user.email;
+
+    if (!emailDestino) {
+      return res.status(400).json({ ok: false, message: 'No hay correo registrado. Por favor ingresa uno.' });
+    }
+
+    // Invalidar códigos anteriores del usuario
+    await query(
+      'UPDATE codigos_recuperacion SET usado = true WHERE id_usuario = @uid AND usado = false',
+      { uid: id_usuario }
+    );
+
+    const codigo   = generarCodigo();
+    const expira   = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+    await query(
+      'INSERT INTO codigos_recuperacion (id_usuario, codigo, email_destino, expira_en) VALUES (@uid, @codigo, @email, @expira)',
+      { uid: id_usuario, codigo, email: emailDestino, expira }
+    );
+
+    await enviarCodigoRecuperacion(emailDestino, codigo, user.nombre_completo);
+
+    return res.json({
+      ok: true,
+      message: 'Código enviado correctamente.',
+      email_masked: maskEmail(emailDestino),
+    });
+  } catch (err) {
+    console.error('Error enviando código:', err);
+    return res.status(500).json({ ok: false, message: 'No se pudo enviar el correo. Verifica la configuración del servidor.' });
+  }
+});
+
+// ── POST /api/auth/recuperar/verificar-codigo ────────────────────────
+// Paso 3: valida el código de 6 dígitos.
+router.post('/recuperar/verificar-codigo', async (req, res) => {
+  const { id_usuario, codigo } = req.body;
+  if (!id_usuario || !codigo) return res.status(400).json({ ok: false, message: 'Datos incompletos.' });
+
+  try {
+    const result = await query(
+      `SELECT id FROM codigos_recuperacion
+       WHERE id_usuario = @uid AND codigo = @codigo
+         AND usado = false AND expira_en > NOW()
+       ORDER BY creado_en DESC LIMIT 1`,
+      { uid: id_usuario, codigo: codigo.trim() }
+    );
+
+    if (!result.rows.length) {
+      return res.status(400).json({ ok: false, message: 'Código incorrecto o expirado.' });
+    }
+
+    return res.json({ ok: true, message: 'Código válido.' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
+  }
+});
+
+// ── POST /api/auth/recuperar/nueva-password ──────────────────────────
+// Paso 4: cambia la contraseña si el código sigue válido.
+router.post('/recuperar/nueva-password', async (req, res) => {
+  const { id_usuario, codigo, nueva_password } = req.body;
+  if (!id_usuario || !codigo || !nueva_password) {
+    return res.status(400).json({ ok: false, message: 'Datos incompletos.' });
+  }
+  if (nueva_password.length < 8) {
+    return res.status(400).json({ ok: false, message: 'La contraseña debe tener al menos 8 caracteres.' });
+  }
+
+  try {
+    const result = await query(
+      `SELECT id FROM codigos_recuperacion
+       WHERE id_usuario = @uid AND codigo = @codigo
+         AND usado = false AND expira_en > NOW()
+       ORDER BY creado_en DESC LIMIT 1`,
+      { uid: id_usuario, codigo: codigo.trim() }
+    );
+
+    if (!result.rows.length) {
+      return res.status(400).json({ ok: false, message: 'Código incorrecto o expirado.' });
+    }
+
+    const hash = await bcrypt.hash(nueva_password, 10);
+
+    await query(
+      'UPDATE usuarios SET password_hash = @hash WHERE id_usuario = @uid',
+      { hash, uid: id_usuario }
+    );
+
+    // Marcar el código como usado
+    await query(
+      'UPDATE codigos_recuperacion SET usado = true WHERE id_usuario = @uid AND codigo = @codigo',
+      { uid: id_usuario, codigo: codigo.trim() }
+    );
+
+    return res.json({ ok: true, message: 'Contraseña actualizada correctamente.' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
+  }
+});
