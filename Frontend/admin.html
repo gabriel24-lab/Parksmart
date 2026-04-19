@@ -2245,7 +2245,7 @@ async function adminSalida(id_usuario) {
 
     const formData = new FormData();
     const isBici = tipo === 'bicicleta';
-    const idTipo = tipo === 'carro' ? 2 : tipo === 'moto' ? 3 : 1;
+    const idTipo = tipo === 'carro' ? 3 : tipo === 'moto' ? 2 : tipo === 'furgoneta' ? 4 : 1;
     
     formData.append('id_tipo', idTipo);
     const pre = tipo === 'carro' ? 'c' : tipo === 'moto' ? 'm' : 'b';
