@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Recuperar contraseña - Parksmart</title>
+  <link rel="stylesheet" href="login.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <script src="api.js"></script>
+  <style>
+    .step { display: none; }
+    .step.active { display: block; }
+
+    .email-display {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 6px;
+    }
+
+    .btn-link {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+    .btn-link:hover { color: #fff; }
+
+    .codigo-input {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 10px;
+      padding: 14px !important;
+    }
+
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      transition: background .3s;
+    }
+    .step-dot.active { background: #e6192d; }
+    .step-dot.done   { background: rgba(255,255,255,0.5); }
+
+    .resend-wrap {
+      text-align: center;
+      margin-top: 12px;
+    }
+    .resend-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.45);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .resend-btn:not(:disabled):hover { color: #fff; text-decoration: underline; }
+    .resend-btn:disabled { cursor: not-allowed; }
+
+    .success-icon {
+      font-size: 48px;
+      color: #a5d6a7;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="background"></div>
+
+  <div class="card">
+    <div class="logo">
+      <img src="/Frontend/img/logotipo-full-cropped.png" alt="Parksmart Logo"/>
+    </div>
+
+    <!-- Indicador de pasos -->
+    <div class="step-indicator" id="step-indicator">
+      <div class="step-dot active" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+      <div class="step-dot" id="dot-3"></div>
+    </div>
+
+    <!-- ── PASO 1: Número de documento ── -->
+    <div class="step active" id="step-1">
+      <h1 class="title">Recuperar contraseña</h1>
+      <p class="subtitle" style="margin-bottom:20px;">Ingresa tu número de documento para continuar</p>
+
+      <div class="form-group">
+        <label>Número de documento</label>
+        <input type="text" id="rec-num-id" placeholder="Ej: 1001234567"/>
+      </div>
+
+      <p id="err-1" style="display:none;color:#ffb3b3;font-size:13px;text-align:center;margin-bottom:10px;"></p>
+
+      <button class="btn-signin" id="btn-1" onclick="paso1()">Continuar</button>
+      <p class="register-text" style="margin-top:14px;">
+        <a href="login.html"><i class="bi bi-arrow-left"></i> Volver al inicio de sesión</a>
+      </p>
+    </div>
+
+    <!-- ── PASO 2: Confirmar correo y enviar código ── -->
+    <div class="step" id="step-2">
+      <h1 class="title">Confirma tu correo</h1>
+      <p class="subtitle" style="margin-bottom:20px;">Enviaremos el código a este correo</p>
+
+      <div id="email-confirmado-wrap">
+        <div class="email-display" id="email-display">—</div>
+        <button class="btn-link" onclick="mostrarCambioEmail()">
+          <i class="bi bi-pencil"></i> No tengo acceso a este correo, usar otro
+        </button>
+      </div>
+
+      <div id="email-alternativo-wrap" style="display:none;">
+        <div class="form-group">
+          <label>Correo alternativo</label>
+          <input type="email" id="email-alternativo" placeholder="otro@correo.com"/>
+        </div>
+        <button class="btn-link" onclick="ocultarCambioEmail()">
+          <i class="bi bi-arrow-left"></i> Usar mi correo registrado
+        </button>
+      </div>
+
+      <p id="err-2" style="display:none;color:#ffb3b3;font-size:13px;text-align:center;margin-bottom:10px;"></p>
+
+      <button class="btn-signin" id="btn-2" onclick="paso2()">
+        <i class="bi bi-envelope-fill"></i> Enviar código
+      </button>
+    </div>
+
+    <!-- ── PASO 3: Ingresar código ── -->
+    <div class="step" id="step-3">
+      <h1 class="title">Ingresa el código</h1>
+      <p class="subtitle" id="subtitle-3" style="margin-bottom:20px;">Revisá tu correo</p>
+
+      <div class="form-group">
+        <label>Código de 6 dígitos</label>
+        <input type="text" id="rec-codigo" class="codigo-input" placeholder="000000"
+               maxlength="6" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')"/>
+      </div>
+
+      <p id="err-3" style="display:none;color:#ffb3b3;font-size:13px;text-align:center;margin-bottom:10px;"></p>
+
+      <button class="btn-signin" id="btn-3" onclick="paso3()">Verificar código</button>
+
+      <div class="resend-wrap">
+        <button class="resend-btn" id="btn-reenviar" onclick="reenviarCodigo()" disabled>
+          Reenviar código (<span id="countdown">60</span>s)
+        </button>
+      </div>
+    </div>
+
+    <!-- ── PASO 4: Nueva contraseña ── -->
+    <div class="step" id="step-4">
+      <h1 class="title">Nueva contraseña</h1>
+      <p class="subtitle" style="margin-bottom:20px;">Elige una contraseña segura</p>
+
+      <div class="form-group">
+        <label>Nueva contraseña</label>
+        <div class="password-wrapper">
+          <input type="password" id="nueva-pass" placeholder="Mínimo 8 caracteres"/>
+          <span class="eye-icon" onclick="togglePass('nueva-pass','eye-nueva')">
+            <i id="eye-nueva" class="bi bi-eye"></i>
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Confirmar contraseña</label>
+        <div class="password-wrapper">
+          <input type="password" id="confirmar-pass" placeholder="Repite la contraseña"/>
+          <span class="eye-icon" onclick="togglePass('confirmar-pass','eye-conf')">
+            <i id="eye-conf" class="bi bi-eye"></i>
+          </span>
+        </div>
+      </div>
+
+      <p id="err-4" style="display:none;color:#ffb3b3;font-size:13px;text-align:center;margin-bottom:10px;"></p>
+
+      <button class="btn-signin" id="btn-4" onclick="paso4()">Guardar contraseña</button>
+    </div>
+
+    <!-- ── PASO 5: Éxito ── -->
+    <div class="step" id="step-5">
+      <div class="success-icon"><i class="bi bi-check-circle-fill"></i></div>
+      <h1 class="title" style="text-align:center;">¡Listo!</h1>
+      <p class="subtitle" style="text-align:center;margin-bottom:24px;">
+        Tu contraseña fue actualizada correctamente.
+      </p>
+      <button class="btn-signin" onclick="window.location.href='login.html'">
+        <i class="bi bi-box-arrow-in-right"></i> Ir al inicio de sesión
+      </button>
+    </div>
+  </div>
+
+  <script>
+    if (Auth.isLogged()) window.location.href = 'dashboard.html';
+
+    // Estado global del flujo
+    let state = {
+      id_usuario:  null,
+      nombre:      null,
+      email_masked: null,
+      tiene_email: false,
+      codigo:      null,
+      timer:       null,
+    };
+
+    // ── Navegación de pasos ──────────────────────────────────────────
+    function irAPaso(n) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step-' + n).classList.add('active');
+
+      const dots = document.querySelectorAll('.step-dot');
+      dots.forEach((d, i) => {
+        d.classList.remove('active', 'done');
+        if (i + 1 < n) d.classList.add('done');
+        if (i + 1 === n) d.classList.add('active');
+      });
+
+      // Ocultar indicador en el paso de éxito
+      document.getElementById('step-indicator').style.display = n === 5 ? 'none' : 'flex';
+    }
+
+    function setErr(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent   = msg;
+      el.style.display = msg ? 'block' : 'none';
+    }
+
+    function setLoading(btnId, loading, text) {
+      const btn = document.getElementById(btnId);
+      btn.disabled  = loading;
+      btn.innerHTML = loading ? '<i class="bi bi-hourglass"></i> Procesando...' : text;
+    }
+
+    function togglePass(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon  = document.getElementById(iconId);
+      input.type  = input.type === 'password' ? 'text' : 'password';
+      icon.classList.toggle('bi-eye');
+      icon.classList.toggle('bi-eye-slash');
+    }
+
+    // ── Paso 1: Buscar usuario por número de documento ───────────────
+    async function paso1() {
+      const numId = document.getElementById('rec-num-id').value.trim();
+      setErr('err-1', '');
+      if (!numId) { setErr('err-1', 'Ingresa tu número de documento.'); return; }
+
+      setLoading('btn-1', true, 'Continuar');
+      try {
+        const res  = await fetch(`${API}/auth/recuperar/solicitar`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ numero_id: numId }),
+        });
+        const data = await res.json();
+        if (!data.ok) { setErr('err-1', data.message); return; }
+
+        state.id_usuario  = data.id_usuario;
+        state.nombre      = data.nombre;
+        state.tiene_email = data.tiene_email;
+        state.email_masked = data.email_masked;
+
+        document.getElementById('email-display').textContent =
+          data.tiene_email ? data.email_masked : 'Sin correo registrado';
+
+        if (!data.tiene_email) mostrarCambioEmail();
+
+        irAPaso(2);
+      } catch {
+        setErr('err-1', 'No se pudo conectar al servidor.');
+      } finally {
+        setLoading('btn-1', false, 'Continuar');
+      }
+    }
+
+    // ── Paso 2: Enviar código ────────────────────────────────────────
+    function mostrarCambioEmail() {
+      document.getElementById('email-confirmado-wrap').style.display = 'none';
+      document.getElementById('email-alternativo-wrap').style.display = 'block';
+    }
+
+    function ocultarCambioEmail() {
+      document.getElementById('email-confirmado-wrap').style.display = 'block';
+      document.getElementById('email-alternativo-wrap').style.display = 'none';
+      document.getElementById('email-alternativo').value = '';
+    }
+
+    async function paso2() {
+      setErr('err-2', '');
+      const emailAlt = document.getElementById('email-alternativo').value.trim();
+      const usandoAlternativo = document.getElementById('email-alternativo-wrap').style.display !== 'none';
+
+      if (usandoAlternativo && !emailAlt) {
+        setErr('err-2', 'Ingresa un correo alternativo.');
+        return;
+      }
+
+      setLoading('btn-2', true, '<i class="bi bi-envelope-fill"></i> Enviar código');
+      try {
+        const res  = await fetch(`${API}/auth/recuperar/enviar-codigo`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            id_usuario:        state.id_usuario,
+            email_alternativo: usandoAlternativo ? emailAlt : null,
+          }),
+        });
+        const data = await res.json();
+        if (!data.ok) { setErr('err-2', data.message); return; }
+
+        document.getElementById('subtitle-3').textContent =
+          `Código enviado a ${data.email_masked}`;
+
+        irAPaso(3);
+        iniciarCountdown();
+      } catch {
+        setErr('err-2', 'No se pudo enviar el correo.');
+      } finally {
+        setLoading('btn-2', false, '<i class="bi bi-envelope-fill"></i> Enviar código');
+      }
+    }
+
+    // ── Paso 3: Verificar código ─────────────────────────────────────
+    async function paso3() {
+      const codigo = document.getElementById('rec-codigo').value.trim();
+      setErr('err-3', '');
+      if (codigo.length !== 6) { setErr('err-3', 'El código debe tener 6 dígitos.'); return; }
+
+      setLoading('btn-3', true, 'Verificar código');
+      try {
+        const res  = await fetch(`${API}/auth/recuperar/verificar-codigo`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ id_usuario: state.id_usuario, codigo }),
+        });
+        const data = await res.json();
+        if (!data.ok) { setErr('err-3', data.message); return; }
+
+        state.codigo = codigo;
+        clearInterval(state.timer);
+        irAPaso(4);
+      } catch {
+        setErr('err-3', 'No se pudo conectar al servidor.');
+      } finally {
+        setLoading('btn-3', false, 'Verificar código');
+      }
+    }
+
+    // ── Paso 4: Nueva contraseña ─────────────────────────────────────
+    async function paso4() {
+      const pass  = document.getElementById('nueva-pass').value;
+      const pass2 = document.getElementById('confirmar-pass').value;
+      setErr('err-4', '');
+
+      if (pass.length < 8) { setErr('err-4', 'Mínimo 8 caracteres.'); return; }
+      if (pass !== pass2)  { setErr('err-4', 'Las contraseñas no coinciden.'); return; }
+
+      setLoading('btn-4', true, 'Guardar contraseña');
+      try {
+        const res  = await fetch(`${API}/auth/recuperar/nueva-password`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            id_usuario:      state.id_usuario,
+            codigo:          state.codigo,
+            nueva_password:  pass,
+          }),
+        });
+        const data = await res.json();
+        if (!data.ok) { setErr('err-4', data.message); return; }
+
+        irAPaso(5);
+      } catch {
+        setErr('err-4', 'No se pudo conectar al servidor.');
+      } finally {
+        setLoading('btn-4', false, 'Guardar contraseña');
+      }
+    }
+
+    // ── Countdown para reenvío ───────────────────────────────────────
+    function iniciarCountdown() {
+      let segundos = 60;
+      const btn    = document.getElementById('btn-reenviar');
+      const span   = document.getElementById('countdown');
+      btn.disabled = true;
+
+      state.timer = setInterval(() => {
+        segundos--;
+        span.textContent = segundos;
+        if (segundos <= 0) {
+          clearInterval(state.timer);
+          btn.disabled     = false;
+          btn.textContent  = 'Reenviar código';
+        }
+      }, 1000);
+    }
+
+    async function reenviarCodigo() {
+      document.getElementById('btn-reenviar').disabled = true;
+      await paso2();
+    }
+
+    // Enter en los inputs
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const paso = document.querySelector('.step.active')?.id;
+      if (paso === 'step-1') paso1();
+      if (paso === 'step-2') paso2();
+      if (paso === 'step-3') paso3();
+      if (paso === 'step-4') paso4();
+    });
+  </script>
+</body>
+</html>
