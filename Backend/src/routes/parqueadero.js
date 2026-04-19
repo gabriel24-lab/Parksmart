@@ -122,7 +122,6 @@ router.get('/ocupacion-rol', async (req, res) => {
       grupos[row.id_lado][row.tipo.toLowerCase()] = Number(row.cantidad);
     });
 
-    const ids  = Object.keys(grupos).map(Number).sort((a, b) => a - b);
     const mapA = grupos[1] || {};
     const mapB = grupos[2] || {};
     const totalA = Object.values(mapA).reduce((s, v) => s + v, 0);
