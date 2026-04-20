@@ -284,42 +284,38 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
   try {
     const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
-    const stats = await query(
-      `SELECT
-         COUNT(*) AS entradas_hoy,
-         SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas_hoy,
-         SUM(CASE WHEN tv.nombre='Auto'        THEN 1 ELSE 0 END) AS autos_entradas,
-         SUM(CASE WHEN tv.nombre='Motocicleta' THEN 1 ELSE 0 END) AS motos_entradas,
-         SUM(CASE WHEN tv.nombre='Bicicleta'   THEN 1 ELSE 0 END) AS bicis_entradas,
-         SUM(CASE WHEN tv.nombre='Furgoneta'   THEN 1 ELSE 0 END) AS furgonetas_entradas
-       FROM registros_uso r
-       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
-       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
-       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE`,
-      { hoy }
-    );
-
-    const porHora = await query(
-      `SELECT
-         EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))::INT AS hora,
-         COUNT(*) AS entradas,
-         SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
-       FROM registros_uso r
-       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE
-       GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))
-       ORDER BY hora`,
-      { hoy }
-    );
-
-    const porSemana = await query(
-      `SELECT
-         EXTRACT(DOW FROM r.fecha_entrada)::INT AS dia_semana,
-         COUNT(*) AS ingresos
-       FROM registros_uso r
-       WHERE r.fecha_entrada >= (NOW() - INTERVAL '6 days')::DATE
-       GROUP BY EXTRACT(DOW FROM r.fecha_entrada)
-       ORDER BY dia_semana`
-    );
+    const [stats, porHora, porSemana] = await Promise.all([
+      query(
+        `SELECT COUNT(*) AS entradas_hoy,
+                SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas_hoy,
+                SUM(CASE WHEN tv.nombre='Auto'        THEN 1 ELSE 0 END) AS autos_entradas,
+                SUM(CASE WHEN tv.nombre='Motocicleta' THEN 1 ELSE 0 END) AS motos_entradas,
+                SUM(CASE WHEN tv.nombre='Bicicleta'   THEN 1 ELSE 0 END) AS bicis_entradas,
+                SUM(CASE WHEN tv.nombre='Furgoneta'   THEN 1 ELSE 0 END) AS furgonetas_entradas
+         FROM registros_uso r
+         JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+         JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
+         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE`,
+        { hoy }
+      ),
+      query(
+        `SELECT EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))::INT AS hora,
+                COUNT(*) AS entradas,
+                SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
+         FROM registros_uso r
+         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE
+         GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))
+         ORDER BY hora`,
+        { hoy }
+      ),
+      query(
+        `SELECT EXTRACT(DOW FROM r.fecha_entrada)::INT AS dia_semana, COUNT(*) AS ingresos
+         FROM registros_uso r
+         WHERE r.fecha_entrada >= (NOW() - INTERVAL '6 days')::DATE
+         GROUP BY EXTRACT(DOW FROM r.fecha_entrada)
+         ORDER BY dia_semana`
+      ),
+    ]);
 
     return res.json({
       ok: true,
@@ -339,33 +335,33 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
 
     const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
-    const porHora = await query(
-      `SELECT EXTRACT(HOUR FROM r.fecha_entrada)::INT AS hora,
-              COUNT(*) AS entradas,
-              SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
-       FROM registros_uso r
-       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE AND r.id_lado = @id_lado
-       GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota')) ORDER BY hora`,
-      { hoy, id_lado }
-    );
-
-    const porTipo = await query(
-      `SELECT tv.nombre AS tipo, COUNT(*) AS cantidad
-       FROM registros_uso r
-       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
-       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
-       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE AND r.id_lado = @id_lado
-       GROUP BY tv.nombre`,
-      { hoy, id_lado }
-    );
-
-    const porSemana = await query(
-      `SELECT EXTRACT(DOW FROM r.fecha_entrada)::INT AS dia_semana, COUNT(*) AS ingresos
-       FROM registros_uso r
-       WHERE r.fecha_entrada >= (NOW() - INTERVAL '6 days')::DATE AND r.id_lado = @id_lado
-       GROUP BY EXTRACT(DOW FROM r.fecha_entrada) ORDER BY dia_semana`,
-      { id_lado }
-    );
+    const [porHora, porTipo, porSemana] = await Promise.all([
+      query(
+        `SELECT EXTRACT(HOUR FROM r.fecha_entrada)::INT AS hora,
+                COUNT(*) AS entradas,
+                SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
+         FROM registros_uso r
+         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE AND r.id_lado = @id_lado
+         GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota')) ORDER BY hora`,
+        { hoy, id_lado }
+      ),
+      query(
+        `SELECT tv.nombre AS tipo, COUNT(*) AS cantidad
+         FROM registros_uso r
+         JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+         JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
+         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE AND r.id_lado = @id_lado
+         GROUP BY tv.nombre`,
+        { hoy, id_lado }
+      ),
+      query(
+        `SELECT EXTRACT(DOW FROM r.fecha_entrada)::INT AS dia_semana, COUNT(*) AS ingresos
+         FROM registros_uso r
+         WHERE r.fecha_entrada >= (NOW() - INTERVAL '6 days')::DATE AND r.id_lado = @id_lado
+         GROUP BY EXTRACT(DOW FROM r.fecha_entrada) ORDER BY dia_semana`,
+        { id_lado }
+      ),
+    ]);
 
     return res.json({ ok: true, data: { por_hora: porHora.rows, por_tipo: porTipo.rows, por_semana: porSemana.rows } });
   } catch (err) {
@@ -402,24 +398,25 @@ router.get('/reciente', requireRol('admin'), async (req, res) => {
 // ── GET /api/parqueadero/usuarios-admin ───────────────────────────────
 router.get('/usuarios-admin', requireRol('admin'), async (req, res) => {
   try {
-    const result = await query(
-      `SELECT u.id_usuario, u.nombre_completo, u.tipo_id, u.numero_id,
-              u.qr_code, u.rol, c.nombre AS centro_nombre,
-              EXISTS (
-                SELECT 1 FROM registros_uso r2
-                WHERE r2.id_usuario = u.id_usuario AND r2.estado = 'activo'
-              ) AS dentro
-       FROM usuarios u
-       LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
-       WHERE u.activo = true ORDER BY u.nombre_completo`
-    );
-
-    const vResult = await query(
-      `SELECT v.id_usuario, v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo, v.color
-       FROM vehiculos v
-       JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
-       WHERE v.activo = true`
-    );
+    const [result, vResult] = await Promise.all([
+      query(
+        `SELECT u.id_usuario, u.nombre_completo, u.tipo_id, u.numero_id,
+                u.qr_code, u.rol, c.nombre AS centro_nombre,
+                EXISTS (
+                  SELECT 1 FROM registros_uso r2
+                  WHERE r2.id_usuario = u.id_usuario AND r2.estado = 'activo'
+                ) AS dentro
+         FROM usuarios u
+         LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
+         WHERE u.activo = true ORDER BY u.nombre_completo`
+      ),
+      query(
+        `SELECT v.id_usuario, v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo, v.color
+         FROM vehiculos v
+         JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
+         WHERE v.activo = true`
+      ),
+    ]);
 
     const data = result.rows.map(u => ({
       ...u,
@@ -479,24 +476,26 @@ router.post('/escanear', requireRol('admin'), async (req, res) => {
       return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
     const usuario = uResult.rows[0];
 
-    const vResult = await query(
-      `SELECT v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo, v.color
-       FROM vehiculos v JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
-       WHERE v.id_usuario = @uid AND v.activo = true`,
-      { uid: usuario.id_usuario }
-    );
-
-    const estadoResult = await query(
-      `SELECT r.id_registro, r.fecha_entrada, l.nombre AS lado,
-              tv.nombre AS tipo_vehiculo, COALESCE(v.placa, v.modelo) AS identificador
-       FROM registros_uso r
-       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
-       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
-       JOIN lados          l  ON l.id_lado     = r.id_lado
-       WHERE r.id_usuario = @uid AND r.estado = 'activo'
-       ORDER BY r.fecha_entrada DESC LIMIT 1`,
-      { uid: usuario.id_usuario }
-    );
+    // Consultar vehículos y estado actual en paralelo
+    const [vResult, estadoResult] = await Promise.all([
+      query(
+        `SELECT v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo, v.color
+         FROM vehiculos v JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
+         WHERE v.id_usuario = @uid AND v.activo = true`,
+        { uid: usuario.id_usuario }
+      ),
+      query(
+        `SELECT r.id_registro, r.fecha_entrada, l.nombre AS lado,
+                tv.nombre AS tipo_vehiculo, COALESCE(v.placa, v.modelo) AS identificador
+         FROM registros_uso r
+         JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+         JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
+         JOIN lados          l  ON l.id_lado     = r.id_lado
+         WHERE r.id_usuario = @uid AND r.estado = 'activo'
+         ORDER BY r.fecha_entrada DESC LIMIT 1`,
+        { uid: usuario.id_usuario }
+      ),
+    ]);
 
     return res.json({
       ok:            true,
