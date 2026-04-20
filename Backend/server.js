@@ -1,26 +1,26 @@
-// server.js  —  Punto de entrada principal
+// server.js — Punto de entrada principal
 require('dotenv').config();
-const express  = require('express');
-const cors     = require('cors');
-const path     = require('path');
+const express    = require('express');
+const cors       = require('cors');
+const path       = require('path');
+const compression = require('compression');
 const { getPool } = require('./src/config/db');
 
 const app  = express();
 const PORT = process.env.PORT || 10000;
-
-// ── CORS ──────────────────────────────────────────────────────────────
-// Orígenes permitidos: Vercel (producción) + localhost (desarrollo)
 const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
+// ── Compresión gzip (reduce tamaño de respuestas hasta 70%) ───────────
+app.use(compression());
+
+// ── CORS ──────────────────────────────────────────────────────────────
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
-
     const permitido =
       /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
       /^https:\/\/[\w-]+\.vercel\.app$/.test(origin) ||
       (FRONTEND_URL && origin === FRONTEND_URL);
-
     if (permitido) cb(null, true);
     else cb(new Error(`Origen no permitido por CORS: ${origin}`));
   },
@@ -28,11 +28,13 @@ app.use(cors({
 }));
 
 // ── Middlewares globales ──────────────────────────────────────────────
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Servir archivos estáticos (fotos subidas)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '7d', // caché de 7 días para imágenes estáticas
+}));
 
 // ── Rutas API ─────────────────────────────────────────────────────────
 app.use('/api/auth',        require('./src/routes/auth'));
@@ -60,7 +62,7 @@ app.use((err, req, res, next) => {
 // ── Arranque ──────────────────────────────────────────────────────────
 async function start() {
   try {
-    await getPool();   // Verificar conexión a Supabase al arrancar
+    await getPool();
     app.listen(PORT, () => {
       console.log(`Servidor conectado en http://localhost:${PORT}`);
       console.log(`API disponible en http://localhost:${PORT}/api`);
