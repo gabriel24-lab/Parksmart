@@ -1387,13 +1387,14 @@
           const ladoStr = ladoReal || 'A';
           const badgeLado = `<span class="side-badge ${ladoStr.toLowerCase()}">${ladoStr}</span>`;
           
-          htmlMain += `<tr>...(igual que antes)...</tr>`;
+          htmlMain += `<tr><td>${nombre}</td><td><code>${qr}</code></td><td><span class="vtag ${vtag}">${veh}</span></td><td>${time}</td><td>${badgeLado}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
           if (ladoStr === 'A') {
-            htmlA += `<tr>...(igual que antes)...</tr>`;
+            htmlA += `<tr><td>${nombre}</td><td><span class="vtag ${vtag}">${veh}</span></td><td>${time}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
           } else if (ladoStr === 'B') {
-            htmlB += `<tr>...(igual que antes)...</tr>`;
+            htmlB += `<tr><td>${nombre}</td><td><span class="vtag ${vtag}">${veh}</span></td><td>${time}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
           }
-        
+        });
+
         const tbM = document.getElementById('recent-tbody');
         const tbA = document.getElementById('recent-tbody-A');
         const tbB = document.getElementById('recent-tbody-B');
