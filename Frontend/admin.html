@@ -1366,18 +1366,19 @@
           const veh = r.tipo_vehiculo ? r.tipo_vehiculo.charAt(0).toUpperCase() + r.tipo_vehiculo.slice(1) : 'Vehículo';
           const tipo = r.estado === 'activo' ? 'in' : 'out';
           const time = fechaColombia(r.fecha_accion).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' });
-          const vtag = veh==='Carro'?'car':veh==='Moto'?'moto':'bike';
+          const vtag = veh==='Auto'||veh==='Carro'?'car':veh==='Motocicleta'||veh==='Moto'?'moto':'bike';
           const evTag = tipo==='in'?'Entrada':'Salida';
           
-          let ladoStr = veh==='Carro' ? 'A/B' : 'A';
-          const badgeLado = `<span class="side-badge ${ladoStr.toLowerCase().replace('/','')}">${ladoStr}</span>`;
-
-          htmlMain += `<tr><td>${nombre}</td><td><code>${qr}</code></td><td><span class="vtag ${vtag}">${veh}</span></td><td>${time}</td><td>${badgeLado}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
-          htmlA += `<tr><td>${nombre}</td><td><span class="vtag ${vtag}">${veh}</span></td><td>${time}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
-          if (veh === 'Carro') {
-            htmlB += `<tr><td>${nombre}</td><td><span class="vtag car">Autorizado</span></td><td>${time}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
+          const ladoReal = (r.lado || '').toString().toUpperCase().trim();
+          const ladoStr = ladoReal || 'A';
+          const badgeLado = `<span class="side-badge ${ladoStr.toLowerCase()}">${ladoStr}</span>`;
+          
+          htmlMain += `<tr>...(igual que antes)...</tr>`;
+          if (ladoStr === 'A') {
+            htmlA += `<tr>...(igual que antes)...</tr>`;
+          } else if (ladoStr === 'B') {
+            htmlB += `<tr>...(igual que antes)...</tr>`;
           }
-        });
         
         const tbM = document.getElementById('recent-tbody');
         const tbA = document.getElementById('recent-tbody-A');
