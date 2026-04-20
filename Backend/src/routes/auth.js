@@ -116,7 +116,7 @@ router.post('/register',
         return res.status(403).json({ ok: false, message: 'Tu estado en el SENA no permite crear una cuenta en este momento.' });
       }
 
-      const nombre_completo = (p['Nombres'] + ' ' + p['Apellidos']).trim();
+      const nombre_completo = (p['Nombre'] + ' ' + p['Apellidos']).trim();
       const email           = p['Correo Electrónico'] || null;
       const tipo_id         = p['Tipo de documento']  || null;
       const hash            = await bcrypt.hash(password, 10);
