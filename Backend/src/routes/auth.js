@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
 const { authMiddleware } = require('../middlewares/auth');
+const { enviarCodigoRecuperacion } = require('../config/mailer');
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function generateQR(numeroId) {
@@ -336,7 +337,6 @@ router.post('/recuperar/enviar-codigo', async (req, res) => {
       { uid: id_usuario, codigo, email: emailDestino, expira }
     );
 
-    const { enviarCodigoRecuperacion } = require('../config/mailer');
     await enviarCodigoRecuperacion(emailDestino, codigo, user.nombre_completo);
 
     return res.json({ ok: true, message: 'Código enviado correctamente.', email_masked: maskEmail(emailDestino) });
