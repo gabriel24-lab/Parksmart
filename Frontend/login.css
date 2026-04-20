@@ -1,3 +1,6 @@
+/* Hint para que las fuentes no bloqueen el renderizado */
+@font-face { font-display: swap; }
+
 :root {
   --brand-color:  #e6192d;
   --brand-hover:  #b30e1f;
@@ -30,11 +33,15 @@ body {
 .background {
   position: fixed;
   inset: 0;
+  /* Color de fondo sólido mientras carga la imagen (evita flash blanco) */
+  background-color: #0b0b0c;
   background-image: linear-gradient(to right, rgba(11, 11, 12, 0.95), rgba(11, 11, 12, 0.6)), url('/Frontend/img/fondo-del-login.webp');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   z-index: 0;
+  /* Carga la imagen sin bloquear el renderizado */
+  content-visibility: auto;
 }
 /* Removed blobs */
 
