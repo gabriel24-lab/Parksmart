@@ -25,49 +25,15 @@ body {
 .background {
   position: fixed;
   inset: 0;
-  background-image: linear-gradient(to right, rgba(11, 11, 12, 0.95), rgba(11, 11, 12, 0.6)), url('/Frontend/img/fondo-principal.webp');
+  background-color: #0b0b0c;
+  background-image: linear-gradient(to right, rgba(11,11,12,.95), rgba(11,11,12,.6)),
+                    url('/Frontend/img/fondo-principal.webp');
   background-size: cover;
   background-position: center;
-  background-repeat: no-repeat;
   z-index: 0;
 }
 
-.blob { 
-  position: absolute; 
-  border-radius: 50%; 
-  filter: blur(70px); 
-  opacity: 0.35; 
-  animation: float 10s ease-in-out infinite; 
-}
 
-.blob1 { 
-  width: 500px; 
-  height: 500px; 
-  background: radial-gradient(circle,#0a1f3d,#c71221); 
-  top: -150px; 
-  left: -100px; 
-  animation-delay: 0s; 
-}
-
-.blob2 { 
-  width: 400px; 
-  height: 400px; 
-  background: radial-gradient(circle,#0d2d55,var(--brand-color)); 
-  bottom: -120px; 
-  right: -80px; 
-  animation-delay: -4s; 
-}
-
-.blob3 { 
-  width: 320px; 
-  height: 320px; 
-  background: radial-gradient(circle,#0a1f3d,#c71221); 
-  top: 50%; 
-  left: 60%; 
-  animation-delay: -7s; 
-}
-
-@keyframes float { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-30px) scale(1.05)} }
 
 /* ══ SIDEBAR ══ */
 .sidebar {

@@ -1,19 +1,12 @@
 :root {
-  --brand-color:  #e6192d;
-  --brand-hover:  #b30e1f;
-  --bg-dark:      #0b0b0c;
-  --bg-card:      #1a1a1c;
-  --text-muted:   #999999;
-  --glass-bg:     rgba(20, 20, 22, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.05);
-  --white:        #ffffff;
-  --sidebar-w:    230px;
+  --brand-color: #e6192d;
+  --brand-hover: #b30e1f;
+  --bg-dark:     #0b0b0c;
+  --text-muted:  #999;
+  --white:       #fff;
 }
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   font-family: 'DM Sans', sans-serif;
@@ -26,31 +19,29 @@ body {
   padding: 24px 0;
 }
 
-/* ── Background ── */
 .background {
   position: fixed;
   inset: 0;
-  background-image: linear-gradient(to right, rgba(11, 11, 12, 0.95), rgba(11, 11, 12, 0.6)), url('/Frontend/img/fondo-del-login.webp');
+  background-color: var(--bg-dark);
+  background-image: linear-gradient(to right, rgba(11,11,12,.95), rgba(11,11,12,.6)),
+                    url('/Frontend/img/fondo-del-login.webp');
   background-size: cover;
   background-position: center;
-  background-repeat: no-repeat;
   z-index: 0;
 }
-/* Removed blobs */
 
-/* ── Card ── */
 .card {
   position: relative;
   z-index: 1;
-  background: rgba(11, 11, 12, 0.85);
+  background: rgba(11,11,12,.85);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255,255,255,.08);
   border-radius: 2px;
   padding: 36px 34px 30px;
   width: calc(100% - 32px);
   max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
   animation: slideUp .55s cubic-bezier(.22,.61,.36,1) both;
 }
 
@@ -59,7 +50,6 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Logo ── */
 .logo {
   text-align: center;
   margin-bottom: 14px;
@@ -68,9 +58,7 @@ body {
   align-items: center;
   width: 100%;
   max-height: 120px;
-  overflow: visible;
 }
-
 .logo img {
   width: auto;
   max-width: 100%;
@@ -78,29 +66,19 @@ body {
   object-fit: contain;
   display: block;
   mix-blend-mode: lighten;
-  filter: drop-shadow(0 0 3px rgba(230,25,45,0.25));
+  filter: drop-shadow(0 0 3px rgba(230,25,45,.25));
 }
 
-/* ── Title & subtitle ── */
 .title {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--white);
   margin-bottom: 2px;
 }
+.subtitle { font-size: 12px; color: #bbdefb; margin-bottom: 18px; }
 
-.subtitle {
-  font-size: 12px;
-  color: #bbdefb;
-  margin-bottom: 18px;
-}
-
-/* ── Form groups ── */
-.form-group {
-  margin-bottom: 14px;
-}
-
+.form-group { margin-bottom: 14px; }
 .form-group label {
   display: block;
   font-size: 13px;
@@ -109,13 +87,7 @@ body {
   margin-bottom: 5px;
 }
 
-/* ── Input wrapper with icon ── */
-.input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
+.input-wrapper { position: relative; display: flex; align-items: center; }
 .input-icon {
   position: absolute;
   left: 14px;
@@ -123,34 +95,25 @@ body {
   color: var(--brand-color);
   pointer-events: none;
 }
-
 .input-wrapper input {
   width: 100%;
   padding: 11px 15px 11px 38px;
   border-radius: 2px;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.05);
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
-  color: #ffffff;
+  color: var(--white);
   outline: none;
   transition: border-color .2s, box-shadow .2s;
 }
-
-.input-wrapper input::placeholder {
-  color: #aaa;
-}
-
+.input-wrapper input::placeholder { color: #aaa; }
 .input-wrapper input:focus {
   border-color: var(--brand-color);
-  box-shadow: 0 0 0 3px rgba(144,202,249,0.3);
+  box-shadow: 0 0 0 3px rgba(230,25,45,.2);
 }
 
-/* ── Password eye toggle ── */
-.password-wrapper input {
-  padding-right: 44px;
-}
-
+.password-wrapper input { padding-right: 44px; }
 .eye-icon {
   position: absolute;
   right: 14px;
@@ -160,70 +123,44 @@ body {
   font-size: 18px;
   color: #aaa;
 }
+.eye-icon:hover i { color: #666; }
 
-.eye-icon:hover i {
-  color: #666;
-}
-
-/* ── Register button ── */
 .btn-register {
   width: 100%;
   padding: 13px;
   border-radius: 2px;
   border: none;
   background: var(--brand-color);
-  color: #ffffff;
+  color: var(--white);
   font-family: 'Space Grotesk', sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: background .2s, transform .15s, box-shadow .2s;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 18px rgba(0,0,0,.25);
   margin-top: 6px;
   margin-bottom: 16px;
-  letter-spacing: 0.3px;
+  letter-spacing: .3px;
 }
-
 .btn-register:hover {
   background: var(--brand-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 22px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 22px rgba(0,0,0,.35);
 }
+.btn-register:active { transform: translateY(0); }
 
-.btn-register:active {
-  transform: translateY(0);
-}
-
-/* ── Login link ── */
-.login-text {
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
+.login-text { text-align: center; font-size: 13px; color: var(--text-muted); }
 .login-text a {
   font-weight: 600;
-  color: #ffffff;
+  color: var(--white);
   text-decoration: none;
   transition: opacity .2s;
 }
+.login-text a:hover { opacity: .8; text-decoration: underline; }
 
-.login-text a:hover {
-  opacity: 0.8;
-  text-decoration: underline;
-}
-
-/* ── Responsive ── */
 @media (max-width: 480px) {
-  body {
-    align-items: flex-start;
-    padding: 16px 0 24px;
-  }
-  .card {
-    width: calc(100% - 24px);
-    padding: 22px 18px 20px;
-    margin: 0 auto;
-  }
+  body { align-items: flex-start; padding: 16px 0 24px; }
+  .card { width: calc(100% - 24px); padding: 22px 18px 20px; margin: 0 auto; }
   .logo { max-height: 70px; }
   .logo img { max-height: 70px; }
   .title { font-size: 19px; }

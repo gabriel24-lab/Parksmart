@@ -25,6 +25,14 @@
         "select-name": "off",
         "label": "off"
       }
+    ],
+    "compat-api/html": [
+      "default",
+      {
+        "ignore": [
+          "img[fetchpriority]"
+        ]
+      }
     ]
   }
 }
