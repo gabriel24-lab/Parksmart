@@ -1,5 +1,6 @@
 // src/routes/usuarios.js
 const router = require('express').Router();
+const bcrypt = require('bcryptjs'); // al nivel de módulo, no dentro del handler
 const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
 const { authMiddleware } = require('../middlewares/auth');
@@ -10,13 +11,10 @@ router.use(authMiddleware);
 router.get('/perfil', async (req, res) => {
   try {
     const result = await query(
-      `SELECT
-         u.id_usuario, u.nombre_completo, u.tipo_id, u.numero_id,
-         u.email, u.rol, u.qr_code, u.fecha_registro,
-         u.id_centro,
-         c.nombre   AS centro_nombre,
-         c.id_region,
-         r.nombre   AS region_nombre
+      `SELECT u.id_usuario, u.nombre_completo, u.tipo_id, u.numero_id,
+              u.email, u.rol, u.qr_code, u.fecha_registro, u.id_centro,
+              c.nombre AS centro_nombre, c.id_region,
+              r.nombre AS region_nombre
        FROM usuarios u
        LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
        LEFT JOIN regiones r          ON r.id_region = c.id_region
@@ -48,8 +46,7 @@ router.put('/perfil',
 
     try {
       const dup = await query(
-        `SELECT id_usuario FROM usuarios
-         WHERE numero_id = @nid AND id_usuario <> @uid`,
+        `SELECT id_usuario FROM usuarios WHERE numero_id = @nid AND id_usuario <> @uid`,
         { nid: numero_id, uid: req.user.id_usuario }
       );
       if (dup.rows.length)
@@ -57,12 +54,8 @@ router.put('/perfil',
 
       await query(
         `UPDATE usuarios
-         SET nombre_completo = @nombre,
-             tipo_id         = @tipo_id,
-             numero_id       = @nid,
-             id_centro       = @centro,
-             rol             = @rol,
-             email           = @email
+         SET nombre_completo = @nombre, tipo_id = @tipo_id, numero_id = @nid,
+             id_centro = @centro, rol = @rol, email = @email
          WHERE id_usuario = @uid`,
         {
           nombre:  nombre_completo,
@@ -93,7 +86,6 @@ router.put('/cambiar-password',
     if (!errors.isEmpty())
       return res.status(400).json({ ok: false, errors: errors.array() });
 
-    const bcrypt = require('bcryptjs');
     const { password_actual, password_nuevo } = req.body;
 
     try {
