@@ -1,15 +1,5 @@
-// src/config/mailer.js — Configuración de Nodemailer
+//  Configuración de Nodemailer
 const nodemailer = require('nodemailer');
-
-// ── Transporter ───────────────────────────────────────────────────────
-// Cuando tengas el correo del proyecto listo, configura estas variables
-// de entorno en Render:
-//   MAIL_USER = tu-correo@gmail.com (o el correo del proyecto)
-//   MAIL_PASS = contraseña de aplicación de Gmail (no tu contraseña normal)
-//
-// Para Gmail: ve a myaccount.google.com → Seguridad → Verificación en 2 pasos
-// → Contraseñas de aplicación → genera una para "Correo / Windows"
-// ─────────────────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -51,7 +41,7 @@ async function enviarCodigoRecuperacion(destino, codigo, nombre) {
           </p>
         </div>
         <div style="padding: 16px 32px; border-top: 1px solid rgba(255,255,255,0.08); text-align: center;">
-          <p style="margin: 0; font-size: 11px; opacity: .4;">Parksmart · SENA CIGEC</p>
+          <p style="margin: 0; font-size: 11px; opacity: .4;">Parksmart · SENA-CENTRO CIGEC</p>
         </div>
       </div>
     `,
