@@ -1368,44 +1368,127 @@
   }
 
   async function cargarRecientesDesdeAPI() {
+    // Mostrar estado de carga inmediatamente
+    const tbM = document.getElementById('recent-tbody');
+    const tbA = document.getElementById('recent-tbody-A');
+    const tbB = document.getElementById('recent-tbody-B');
+    const loadingRow = (cols) =>
+      `<tr><td colspan="${cols}" style="text-align:center;padding:20px;opacity:0.5">
+        <i class="bi bi-hourglass-split"></i> Cargando...
+       </td></tr>`;
+    if (tbM) tbM.innerHTML = loadingRow(6);
+    if (tbA) tbA.innerHTML = loadingRow(4);
+    if (tbB) tbB.innerHTML = loadingRow(4);
+
+    const emptyRow  = (cols) => `<tr><td colspan="${cols}" style="text-align:center;padding:20px;opacity:0.5">Sin actividad reciente hoy</td></tr>`;
+    const errorRow  = (cols, msg) => `<tr><td colspan="${cols}" style="text-align:center;padding:16px;color:#ef9a9a;font-size:13px;">${msg}</td></tr>`;
+
     try {
       const res = await apiFetch('/parqueadero/reciente');
-      if (!res) return;
-      const data = await res.json();
-      if (data.ok && data.data) {
-        let htmlMain = '', htmlA = '', htmlB = '';
-        data.data.forEach(r => {
-          const nombre = r.nombre_completo;
-          const qr = r.qr_code || '---';
-          const veh = r.tipo_vehiculo ? r.tipo_vehiculo.charAt(0).toUpperCase() + r.tipo_vehiculo.slice(1) : 'Vehículo';
-          const tipo = r.estado === 'activo' ? 'in' : 'out';
-          const fechaAcc = fechaColombia(r.fecha_accion);
-          const time = fechaAcc ? fechaAcc.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' }) : '--:--';
-          const vtag = veh==='Auto'||veh==='Carro'||veh==='Furgoneta'?'car':veh==='Motocicleta'||veh==='Moto'?'moto':'bike';
-          const evTag = tipo==='in'?'Entrada':'Salida';
-          
-          // Extraer solo 'A' o 'B' del nombre completo ("Lado A" → "A", "LADO B" → "B")
-          const ladoMatch = (r.lado || '').toString().match(/\b([AB])\b/i);
-          const ladoStr = ladoMatch ? ladoMatch[1].toUpperCase() : 'A';
-          const badgeLado = `<span class="side-badge ${ladoStr.toLowerCase()}">${ladoStr}</span>`;
-          
-          htmlMain += `<tr><td>${nombre}</td><td><code>${qr}</code></td><td><span class="vtag ${vtag}">${veh}</span></td><td>${time}</td><td>${badgeLado}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
-          if (ladoStr === 'A') {
-            htmlA += `<tr><td>${nombre}</td><td><span class="vtag ${vtag}">${veh}</span></td><td>${time}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
-          } else if (ladoStr === 'B') {
-            htmlB += `<tr><td>${nombre}</td><td><span class="vtag ${vtag}">${veh}</span></td><td>${time}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
-          }
-        });
 
-        const tbM = document.getElementById('recent-tbody');
-        const tbA = document.getElementById('recent-tbody-A');
-        const tbB = document.getElementById('recent-tbody-B');
-        
-        if (tbM) tbM.innerHTML = htmlMain || '<tr><td colspan="6" style="text-align:center;padding:20px;opacity:0.5">Sin actividad reciente</td></tr>';
-        if (tbA) tbA.innerHTML = htmlA || '<tr><td colspan="4" style="text-align:center;padding:20px;opacity:0.5">Sin actividad</td></tr>';
-        if (tbB) tbB.innerHTML = htmlB || '<tr><td colspan="4" style="text-align:center;padding:20px;opacity:0.5">Sin actividad</td></tr>';
+      // Si apiFetch retorna undefined (token expirado sin refresh), mostrar aviso
+      if (!res) {
+        if (tbM) tbM.innerHTML = errorRow(6, 'Sesión expirada. Recarga la página.');
+        if (tbA) tbA.innerHTML = errorRow(4, 'Sesión expirada.');
+        if (tbB) tbB.innerHTML = errorRow(4, 'Sesión expirada.');
+        return;
       }
-    } catch(e) { console.warn('Error reciente:', e); }
+
+      // Si el servidor devuelve un error HTTP
+      if (!res.ok) {
+        const errMsg = `Error del servidor (${res.status})`;
+        console.error('cargarRecientesDesdeAPI HTTP error:', res.status, res.statusText);
+        if (tbM) tbM.innerHTML = errorRow(6, errMsg);
+        if (tbA) tbA.innerHTML = errorRow(4, errMsg);
+        if (tbB) tbB.innerHTML = errorRow(4, errMsg);
+        return;
+      }
+
+      const data = await res.json();
+
+      // Si la API retorna ok:false
+      if (!data.ok) {
+        console.error('cargarRecientesDesdeAPI API error:', data.message);
+        if (tbM) tbM.innerHTML = errorRow(6, data.message || 'Error al cargar actividad');
+        if (tbA) tbA.innerHTML = errorRow(4, data.message || 'Error');
+        if (tbB) tbB.innerHTML = errorRow(4, data.message || 'Error');
+        return;
+      }
+
+      const registros = data.data || [];
+
+      if (!registros.length) {
+        if (tbM) tbM.innerHTML = emptyRow(6);
+        if (tbA) tbA.innerHTML = emptyRow(4);
+        if (tbB) tbB.innerHTML = emptyRow(4);
+        return;
+      }
+
+      let htmlMain = '', htmlA = '', htmlB = '';
+
+      registros.forEach(r => {
+        try {
+          const nombre  = r.nombre_completo || 'Sin nombre';
+          const qr      = r.qr_code || '---';
+          const tipoRaw = (r.tipo_vehiculo || '').toString();
+          const veh     = tipoRaw ? tipoRaw.charAt(0).toUpperCase() + tipoRaw.slice(1) : 'Vehículo';
+          const tipo    = r.estado === 'activo' ? 'in' : 'out';
+          const evTag   = tipo === 'in' ? 'Entrada' : 'Salida';
+
+          const tLow = tipoRaw.toLowerCase();
+          const vtag = (tLow === 'auto' || tLow === 'carro' || tLow === 'furgoneta') ? 'car'
+                     : (tLow === 'motocicleta' || tLow === 'moto') ? 'moto'
+                     : 'bike';
+
+          const fechaAcc = fechaColombia(r.fecha_accion);
+          const time = fechaAcc
+            ? fechaAcc.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' })
+            : '--:--';
+
+          // Extraer solo 'A' o 'B' del nombre ("Lado A" → "A", "LADO B" → "B")
+          const ladoMatch = (r.lado || '').toString().match(/\b([AB])\b/i);
+          const ladoStr   = ladoMatch ? ladoMatch[1].toUpperCase() : 'A';
+          const badgeLado = `<span class="side-badge ${ladoStr.toLowerCase()}">${ladoStr}</span>`;
+
+          htmlMain += `<tr>
+            <td>${nombre}</td>
+            <td><code>${qr}</code></td>
+            <td><span class="vtag ${vtag}">${veh}</span></td>
+            <td>${time}</td>
+            <td>${badgeLado}</td>
+            <td><span class="event-badge ${tipo}">${evTag}</span></td>
+          </tr>`;
+
+          if (ladoStr === 'A') {
+            htmlA += `<tr>
+              <td>${nombre}</td>
+              <td><span class="vtag ${vtag}">${veh}</span></td>
+              <td>${time}</td>
+              <td><span class="event-badge ${tipo}">${evTag}</span></td>
+            </tr>`;
+          } else if (ladoStr === 'B') {
+            htmlB += `<tr>
+              <td>${nombre}</td>
+              <td><span class="vtag ${vtag}">${veh}</span></td>
+              <td>${time}</td>
+              <td><span class="event-badge ${tipo}">${evTag}</span></td>
+            </tr>`;
+          }
+        } catch (rowErr) {
+          console.error('Error procesando fila de actividad:', rowErr, r);
+        }
+      });
+
+      if (tbM) tbM.innerHTML = htmlMain || emptyRow(6);
+      if (tbA) tbA.innerHTML = htmlA    || emptyRow(4);
+      if (tbB) tbB.innerHTML = htmlB    || emptyRow(4);
+
+    } catch (e) {
+      console.error('cargarRecientesDesdeAPI excepción:', e);
+      if (tbM) tbM.innerHTML = errorRow(6, 'Error de conexión con el servidor');
+      if (tbA) tbA.innerHTML = errorRow(4, 'Error de conexión');
+      if (tbB) tbB.innerHTML = errorRow(4, 'Error de conexión');
+    }
   }
 
   function startClock() {
