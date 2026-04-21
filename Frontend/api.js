@@ -1,9 +1,4 @@
-// api.js  —  Cliente API compartido por todos los HTML
-// ─────────────────────────────────────────────────────────────────────
-//  ⚠️  IMPORTANTE: reemplaza la URL de abajo con la URL real de Render
-//     una vez que hayas desplegado el backend.
-//     Ejemplo: 'https://parqueadero-api.onrender.com/api'
-// ─────────────────────────────────────────────────────────────────────
+
 const API = 'https://parksmart-ggt8.onrender.com/api';
 
 // ── Tokens ────────────────────────────────────────────────────────────
