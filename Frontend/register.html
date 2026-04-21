@@ -263,23 +263,30 @@
           numero_id: numId,
           password:  pass,
         });
-
         if (!data) {
           errEl.textContent   = 'El servidor no devolvió respuesta.';
           errEl.style.display = 'block'; return;
         }
         if (!data.ok) {
           const msg = data.message
-            || (data.errors && data.errors.map(e => e.msg).join(', '))
+        || (data.errors && data.errors.map(e => e.msg).join(', '))
             || 'Error al registrar.';
           errEl.textContent   = msg;
           errEl.style.display = 'block'; return;
         }
-
-        okEl.textContent   = '¡Cuenta creada! Redirigiendo al inicio de sesión...';
+        okEl.textContent   = '¡Cuenta creada! Iniciando sesión...';
         okEl.style.display = 'block';
-        setTimeout(() => window.location.href = 'login.html', 1800);
-
+        const loginData = await apiPost('/auth/login', {
+          numero_id: numId,
+          password:  pass,
+        });
+        
+        if (loginData.ok) {
+          Auth.save(loginData);
+          setTimeout(() => window.location.href = 'dashboard.html', 1000);
+        } else {
+          setTimeout(() => window.location.href = 'login.html', 1800);
+        }
       } catch {
         errEl.textContent   = 'No se pudo conectar al servidor.';
         errEl.style.display = 'block';
