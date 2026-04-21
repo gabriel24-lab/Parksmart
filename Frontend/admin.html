@@ -1299,44 +1299,46 @@
 
   async function cargarCuposDesdeAPI() {
     try {
-      const res  = await apiFetch('/parqueadero/cupos');
-      if (!res) return;
-      const data = await res.json();
-      if (!data.ok || !data.data) return;
+      // Llamamos en paralelo: cupos (capacidad total) + ocupacion-rol (desglose por tipo)
+      const [resOcup, resRol] = await Promise.all([
+        apiFetch('/parqueadero/cupos'),
+        apiFetch('/parqueadero/ocupacion-rol')
+      ]);
+      if (!resOcup || !resRol) return;
+      const [dataOcup, dataRol] = await Promise.all([resOcup.json(), resRol.json()]);
 
-      // vw_OcupacionActual devuelve: lado (nombre), capacidad, ocupados, disponibles, porcentaje_ocupacion
-      // NO tiene columnas: tipo, dentro, entradas, salidas
-      // Reiniciar contadores de estado actual (dentro)
-      ladoA.carros.dentro = 0;
-      ladoA.motos.dentro  = 0;
-      ladoA.bicis.dentro  = 0;
-      ladoB.ocupados      = 0;
+      // 1. Capacidad y ocupados totales por lado (para la barra de progreso y lado B)
+      if (dataOcup.ok && dataOcup.data) {
+        dataOcup.data.forEach(row => {
+          const ladoNombre = (row.lado || row.Lado || '').toString().toUpperCase().trim();
+          const ocup = parseInt(row.ocupados ?? row.Ocupados ?? 0);
+          const esB = ladoNombre.includes('B') && !ladoNombre.includes('A');
+          if (esB) {
+            ladoB.ocupados = ocup;
+            ladoB.total    = parseInt(row.capacidad ?? row.Capacidad ?? 25);
+            const elDisp = document.getElementById('dB-disponibles');
+            const elOcup = document.getElementById('dB-ocupados');
+            const disp   = parseInt(row.disponibles ?? row.Disponibles ?? 0);
+            if (elDisp) elDisp.textContent = disp;
+            if (elOcup) elOcup.textContent = ocup;
+          }
+        });
+      }
 
-      data.data.forEach(row => {
-        // El campo 'lado' contiene el nombre tal como está en la DB (ej: 'Lado A', 'Lado B')
-        const ladoNombre = (row.lado || row.Lado || '').toString().toUpperCase().trim();
-        const ocup = parseInt(row.ocupados ?? row.Ocupados ?? 0);
-
-        const esA = ladoNombre.includes('A') && !ladoNombre.includes('B');
-        const esB = ladoNombre.includes('B');
-
-        if (esA) {
-          // Para Lado A: sin separación por tipo en la vista, asignamos el total a carros como proxy
-          // Las estadísticas detalladas por tipo se muestran en la sección de gestión de cupos
-          // Los contadores dentro de ladoA serán actualizados por el sistema de registro en tiempo real
-          ladoA.carros.dentro = ocup; // total lado A visible en dashboard global
+      // 2. Desglose REAL por tipo de vehículo en Lado A (Bicicleta, Moto, Auto)
+      if (dataRol.ok && dataRol.data) {
+        const d = dataRol.data;
+        if (d.lado_a) {
+          ladoA.carros.dentro = Number(d.lado_a.carros     || 0);
+          ladoA.motos.dentro  = Number(d.lado_a.motos      || 0);
+          ladoA.bicis.dentro  = Number(d.lado_a.bicicletas || 0);
         }
-        if (esB) {
-          ladoB.ocupados = ocup;
-          ladoB.total   = parseInt(row.capacidad ?? row.Capacidad ?? 20);
-          // Actualizar elementos del dashboard Lado B
-          const elDisp = document.getElementById('dB-disponibles');
-          const elOcup = document.getElementById('dB-ocupados');
-          const disp   = parseInt(row.disponibles ?? row.Disponibles ?? 0);
-          if (elDisp) elDisp.textContent = disp;
-          if (elOcup) elOcup.textContent = ocup;
+        // También sincronizar lado B si viene en ocupacion-rol
+        if (d.lado_b) {
+          ladoB.ocupados = Number(d.lado_b.ocupados  || ladoB.ocupados);
+          ladoB.total    = Number(d.lado_b.capacidad || ladoB.total);
         }
-      });
+      }
 
       updateCuposUI();
     } catch (err) {
@@ -1377,12 +1379,14 @@
           const qr = r.qr_code || '---';
           const veh = r.tipo_vehiculo ? r.tipo_vehiculo.charAt(0).toUpperCase() + r.tipo_vehiculo.slice(1) : 'Vehículo';
           const tipo = r.estado === 'activo' ? 'in' : 'out';
-          const time = fechaColombia(r.fecha_accion).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' });
-          const vtag = veh==='Auto'||veh==='Carro'?'car':veh==='Motocicleta'||veh==='Moto'?'moto':'bike';
+          const fechaAcc = fechaColombia(r.fecha_accion);
+          const time = fechaAcc ? fechaAcc.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' }) : '--:--';
+          const vtag = veh==='Auto'||veh==='Carro'||veh==='Furgoneta'?'car':veh==='Motocicleta'||veh==='Moto'?'moto':'bike';
           const evTag = tipo==='in'?'Entrada':'Salida';
           
-          const ladoReal = (r.lado || '').toString().toUpperCase().trim();
-          const ladoStr = ladoReal || 'A';
+          // Extraer solo 'A' o 'B' del nombre completo ("Lado A" → "A", "LADO B" → "B")
+          const ladoMatch = (r.lado || '').toString().match(/\b([AB])\b/i);
+          const ladoStr = ladoMatch ? ladoMatch[1].toUpperCase() : 'A';
           const badgeLado = `<span class="side-badge ${ladoStr.toLowerCase()}">${ladoStr}</span>`;
           
           htmlMain += `<tr><td>${nombre}</td><td><code>${qr}</code></td><td><span class="vtag ${vtag}">${veh}</span></td><td>${time}</td><td>${badgeLado}</td><td><span class="event-badge ${tipo}">${evTag}</span></td></tr>`;
@@ -1437,9 +1441,9 @@
     for (let h = 6; h <= 18; h++) {
        const strH = h > 12 ? (h-12)+'PM' : (h===12 ? '12PM' : h+'AM');
        labels.push(strH);
-       const obj = porHora.find(x => x.hora === h) || { entradas: 0, salidas: 0 };
-       entradas.push(obj.entradas);
-       salidas.push(obj.salidas);
+       const obj = porHora.find(x => Number(x.hora) === h) || { entradas: 0, salidas: 0 };
+       entradas.push(Number(obj.entradas));
+       salidas.push(Number(obj.salidas));
     }
 
     chartHoraInst = new Chart(ctx.getContext('2d'), {
@@ -1466,8 +1470,8 @@
     
     const labels = dias.map(d => weekMap[d]);
     const ingresos = dias.map(d => {
-       const obj = porSemana.find(x => x.dia_semana === d);
-       return obj ? obj.ingresos : 0;
+       const obj = porSemana.find(x => Number(x.dia_semana) === d);
+       return obj ? Number(obj.ingresos) : 0;
     });
 
     chartSemanaInst = new Chart(ctx.getContext('2d'), {
@@ -1498,7 +1502,11 @@
     }
     tbody.innerHTML = list.map(u => {
       const dentro = u.estado === 'Dentro';
-      const tieneCarro = u.vehiculos && u.vehiculos.some(v => v.tipo.toLowerCase() === 'carro');
+      // Normalizar: la BD devuelve 'Auto', 'Motocicleta', 'Bicicleta', 'Furgoneta'
+      const tieneCarro = u.vehiculos && u.vehiculos.some(v => {
+        const t = (v.tipo || '').toLowerCase();
+        return t === 'auto' || t === 'carro' || t === 'furgoneta';
+      });
       
       // Columna de entrada/salida rápida
       let entradaSalidaCol;
@@ -1538,8 +1546,10 @@
       // Vehículos HTML
       const vehiculosHtml = (u.vehiculos && u.vehiculos.length > 0)
         ? u.vehiculos.map(v => {
-            const t = v.tipo.toLowerCase();
-            const c = t === 'carro' ? 'car' : t === 'moto' ? 'moto' : 'bike';
+            const t = (v.tipo || '').toLowerCase();
+            const c = (t === 'auto' || t === 'carro' || t === 'furgoneta') ? 'car'
+                    : (t === 'motocicleta' || t === 'moto') ? 'moto'
+                    : 'bike';
             return `<span class="vtag ${c}">${v.tipo}</span>`;
           }).join('<div style="margin-top:4px;"></div>')
         : `<span style="opacity:0.5;font-size:12px;">Sin Vehículo</span>`;
@@ -1672,9 +1682,9 @@
     for (let h = 6; h <= 18; h++) {
       const strH = h > 12 ? (h-12)+'PM' : (h === 12 ? '12PM' : h+'AM');
       labels.push(strH);
-      const obj = porHora.find(x => x.hora === h) || { entradas: 0, salidas: 0 };
-      entradas.push(obj.entradas);
-      salidas.push(obj.salidas);
+      const obj = porHora.find(x => Number(x.hora) === h) || { entradas: 0, salidas: 0 };
+      entradas.push(Number(obj.entradas));
+      salidas.push(Number(obj.salidas));
     }
     _chartHoraAInst = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
       { label:'Entradas A', data:entradas, backgroundColor:'rgba(99,179,237,0.75)', borderRadius:4 },
@@ -1687,13 +1697,18 @@
     if (_chartTipoAInst) { _chartTipoAInst.destroy(); _chartTipoAInst = null; }
     const ctx = document.getElementById('chartTipoA');
     if (!ctx) return;
-    // Muestra todos los vehículos que ingresaron hoy (hayan salido o no)
-    const tipos   = ['carro', 'moto', 'bicicleta'];
-    const labels  = ['Carros', 'Motos', 'Bicicletas'];
+    // Tipos tal como los devuelve la BD (tv.nombre): Auto, Motocicleta, Bicicleta, Furgoneta
+    const tipoMap = [
+      { label: 'Carros',     match: ['auto', 'carro', 'furgoneta', 'automóvil'] },
+      { label: 'Motos',      match: ['motocicleta', 'moto'] },
+      { label: 'Bicicletas', match: ['bicicleta'] },
+    ];
+    const labels  = tipoMap.map(t => t.label);
     const colors  = ['rgba(99,179,237,0.85)', 'rgba(252,211,77,0.85)', 'rgba(72,187,120,0.85)'];
-    const valores = tipos.map(t => {
-      const row = porTipo.find(r => r.tipo && r.tipo.toLowerCase() === t);
-      return row ? Number(row.cantidad) : 0;
+    const valores = tipoMap.map(({ match }) => {
+      return porTipo
+        .filter(r => r.tipo && match.includes(r.tipo.toLowerCase()))
+        .reduce((s, r) => s + Number(r.cantidad), 0);
     });
     const total = valores.reduce((s, v) => s + v, 0);
     _chartTipoAInst = new Chart(ctx, { type:'doughnut', data:{ labels, datasets:[{
@@ -1717,9 +1732,9 @@
     for (let h = 6; h <= 18; h++) {
       const strH = h > 12 ? (h-12)+'PM' : (h === 12 ? '12PM' : h+'AM');
       labels.push(strH);
-      const obj = porHora.find(x => x.hora === h) || { entradas: 0, salidas: 0 };
-      entradas.push(obj.entradas);
-      salidas.push(obj.salidas);
+      const obj = porHora.find(x => Number(x.hora) === h) || { entradas: 0, salidas: 0 };
+      entradas.push(Number(obj.entradas));
+      salidas.push(Number(obj.salidas));
     }
     _chartHoraBInst = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
       { label:'Entradas B', data:entradas, backgroundColor:'rgba(159,122,234,0.75)', borderRadius:4 },
@@ -1736,8 +1751,8 @@
     const dias = [2, 3, 4, 5, 6, 7, 1];
     const labels  = dias.map(d => weekMap[d]);
     const ingresos = dias.map(d => {
-      const obj = porSemana.find(x => x.dia_semana === d);
-      return obj ? obj.ingresos : 0;
+      const obj = porSemana.find(x => Number(x.dia_semana) === d);
+      return obj ? Number(obj.ingresos) : 0;
     });
     _chartSemanaBInst = new Chart(ctx, { type:'line', data:{ labels, datasets:[{ label:'Ingresos Lado B', data:ingresos,
       borderColor:'rgba(159,122,234,0.9)', backgroundColor:'rgba(159,122,234,0.15)',
