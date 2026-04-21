@@ -1257,21 +1257,20 @@
         setValue('p-id-num', data.data.numero_id);
         setValue('p-rol', data.data.rol);
 
+      // Primero cargar regiones para que el select tenga opciones
+        await loadRegiones();
+
         // Si tiene región, cargar centros y seleccionar
         if (data.data.id_region) {
           setValue('p-region', data.data.id_region);
           await loadCentros(data.data.id_region);
           setValue('p-centro', data.data.id_centro);
         }
-
         applyUserToUI(data.data);
         onRolChange();
-
-        // Cargar regiones desde la API (reemplaza el hardcode)
-        loadRegiones();
       } catch (e) { console.warn('loadPerfil:', e); }
     }
-
+    
     async function loadRegiones() {
       try {
         const data = await apiGet('/catalogos/regiones');
