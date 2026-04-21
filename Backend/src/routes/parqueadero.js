@@ -385,7 +385,8 @@ router.get('/reciente', requireRol('admin'), async (req, res) => {
        JOIN lados          l  ON l.id_lado     = r.id_lado
        WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE
           OR (r.fecha_salida  AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE
-       ORDER BY fecha_accion DESC LIMIT 200`,
+       ORDER BY CASE WHEN r.estado = 'activo' THEN r.fecha_entrada ELSE r.fecha_salida END DESC NULLS LAST
+       LIMIT 200`,
       { hoy }
     );
     return res.json({ ok: true, data: result.rows.map(normalizeRegistroFechas) });
