@@ -1653,6 +1653,9 @@
       const data = await res.json();
       if (!data.ok || !data.data) return;
       const { por_hora, por_tipo, por_semana } = data.data;
+      // Esperar un tick para que el panel sea visible antes de renderizar
+      // Chart.js necesita que el canvas tenga dimensiones reales
+      await new Promise(r => setTimeout(r, 50));   // ← AGREGA ESTA LÍNEA
       if (id_lado === 1) {
         renderChartHoraA(por_hora);
         renderChartTipoA(por_tipo);
