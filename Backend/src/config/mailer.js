@@ -26,7 +26,7 @@ const transporter = nodemailer.createTransport({
  */
 async function enviarCodigoRecuperacion(destino, codigo, nombre) {
   const mailOptions = {
-    from: `"Parksmart SENA" <${process.env.MAIL_USER}>`,
+    from: `"SENA Parksmart" <${process.env.MAIL_USER}>`,
     to: destino,
     subject: 'Código de recuperación de contraseña — Parksmart',
     html: `
