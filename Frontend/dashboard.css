@@ -1,3 +1,35 @@
+/* ── Fuentes locales (sin dependencia de Google Fonts) ── */
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/Frontend/fonts/space-grotesk-v22-latin-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/Frontend/fonts/space-grotesk-v22-latin-500.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/Frontend/fonts/space-grotesk-v22-latin-600.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/Frontend/fonts/dm-sans-v17-latin-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/Frontend/fonts/dm-sans-v17-latin-500.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
 *, *::before, *::after { 
   box-sizing: border-box; 
   margin: 0; 

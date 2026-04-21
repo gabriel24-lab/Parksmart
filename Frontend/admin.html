@@ -2,21 +2,19 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
+  <!-- Preload fuentes críticas para renderizado inmediato -->
+  <link rel="preload" href="/Frontend/fonts/space-grotesk-v22-latin-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/Frontend/fonts/dm-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Administración - Parksmart</title>
   <link rel="icon" href="/Frontend/img/logo-icon-cropped.webp" type="image/x-icon">
   <!-- Preconnect para acelerar recursos externos -->
-  <link rel="preconnect" href="https://parksmart-ggt8.onrender.com">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://parksmart-ggt8.onrender.com">  <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
   <!-- CSS propio (crítico, bloqueante intencionalmente) -->
   <link rel="stylesheet" href="/Frontend/admin.css"/>
 
-  <!-- Fuentes e íconos no bloqueantes -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap"></noscript>
+  <!-- Fuentes e íconos no bloqueantes -->  <noscript></noscript>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
 
@@ -1655,7 +1653,7 @@
       const { por_hora, por_tipo, por_semana } = data.data;
       // Esperar un tick para que el panel sea visible antes de renderizar
       // Chart.js necesita que el canvas tenga dimensiones reales
-      await new Promise(r => setTimeout(r, 50));   // ← AGREGA ESTA LÍNEA
+      await new Promise(r => setTimeout(r, 50));
       if (id_lado === 1) {
         renderChartHoraA(por_hora);
         renderChartTipoA(por_tipo);

@@ -2,16 +2,14 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <!-- Preload fuentes críticas para renderizado inmediato -->
+  <link rel="preload" href="/Frontend/fonts/space-grotesk-v22-latin-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/Frontend/fonts/dm-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Registro - Parksmart</title>
   <link rel="icon" href="/Frontend/img/logo-icon-cropped.webp" type="image/x-icon">
   <link rel="stylesheet" href="register.css" />
-  <link rel="preconnect" href="https://parksmart-ggt8.onrender.com">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap"></noscript>
+  <link rel="preconnect" href="https://parksmart-ggt8.onrender.com">  <link rel="preconnect" href="https://cdn.jsdelivr.net">  <noscript></noscript>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
   <script src="api.js" defer></script>
@@ -263,30 +261,23 @@
           numero_id: numId,
           password:  pass,
         });
+
         if (!data) {
           errEl.textContent   = 'El servidor no devolvió respuesta.';
           errEl.style.display = 'block'; return;
         }
         if (!data.ok) {
           const msg = data.message
-        || (data.errors && data.errors.map(e => e.msg).join(', '))
+            || (data.errors && data.errors.map(e => e.msg).join(', '))
             || 'Error al registrar.';
           errEl.textContent   = msg;
           errEl.style.display = 'block'; return;
         }
-        okEl.textContent   = '¡Cuenta creada! Iniciando sesión...';
+
+        okEl.textContent   = '¡Cuenta creada! Redirigiendo al inicio de sesión...';
         okEl.style.display = 'block';
-        const loginData = await apiPost('/auth/login', {
-          numero_id: numId,
-          password:  pass,
-        });
-        
-        if (loginData.ok) {
-          Auth.save(loginData);
-          setTimeout(() => window.location.href = 'dashboard.html', 1000);
-        } else {
-          setTimeout(() => window.location.href = 'login.html', 1800);
-        }
+        setTimeout(() => window.location.href = 'login.html', 1800);
+
       } catch {
         errEl.textContent   = 'No se pudo conectar al servidor.';
         errEl.style.display = 'block';

@@ -3,6 +3,9 @@
 
 <head>
   <meta charset="UTF-8" />
+  <!-- Preload fuentes críticas para renderizado inmediato -->
+  <link rel="preload" href="/Frontend/fonts/space-grotesk-v22-latin-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/Frontend/fonts/dm-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Inicio - Parksmart</title>
   <link rel="icon" href="/Frontend/img/logo-icon-cropped.webp" type="image/x-icon">
@@ -1257,20 +1260,21 @@
         setValue('p-id-num', data.data.numero_id);
         setValue('p-rol', data.data.rol);
 
-      // Primero cargar regiones para que el select tenga opciones
+        // Primero cargar regiones para que el select tenga opciones
         await loadRegiones();
 
-        // Si tiene región, cargar centros y seleccionar
+        // Luego poner la región y cargar los centros correspondientes
         if (data.data.id_region) {
           setValue('p-region', data.data.id_region);
           await loadCentros(data.data.id_region);
           setValue('p-centro', data.data.id_centro);
         }
+
         applyUserToUI(data.data);
         onRolChange();
       } catch (e) { console.warn('loadPerfil:', e); }
     }
-    
+
     async function loadRegiones() {
       try {
         const data = await apiGet('/catalogos/regiones');

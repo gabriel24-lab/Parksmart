@@ -2,21 +2,19 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <!-- Preload fuentes críticas para renderizado inmediato -->
+  <link rel="preload" href="/Frontend/fonts/space-grotesk-v22-latin-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/Frontend/fonts/dm-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inicio sesion - Parksmart</title>
 
-  <!-- Preconnect a dominios externos para acelerar carga -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <!-- Preconnect a dominios externos para acelerar carga -->  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://parksmart-ggt8.onrender.com">
 
   <!-- CSS propio primero (crítico) -->
   <link rel="stylesheet" href="login.css" />
 
-  <!-- Google Fonts en modo no bloqueante -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap"></noscript>
+  <!-- Google Fonts en modo no bloqueante -->  <noscript></noscript>
 
   <!-- Bootstrap Icons en modo no bloqueante -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
