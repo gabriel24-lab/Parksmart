@@ -13,6 +13,29 @@
 
   <!-- CSS propio (crítico, bloqueante intencionalmente) -->
   <link rel="stylesheet" href="/Frontend/admin.css"/>
+  <style>
+    /* Fix Chart.js: contenedor de altura fija para evitar conflicto con max-height del canvas */
+    .chart-canvas-wrap {
+      position: relative;
+      height: 200px;
+      width: 100%;
+    }
+    .chart-canvas-wrap canvas {
+      max-height: none !important; /* override admin.css .chart-panel canvas */
+    }
+    /* Overlay de "sin datos" */
+    .chart-no-data {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: rgba(255,255,255,0.3);
+      font-size: 13px;
+      gap: 8px;
+    }
+    .chart-no-data i { font-size: 28px; }
+  </style>
 
   <!-- Fuentes e íconos no bloqueantes -->  <noscript></noscript>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
@@ -156,11 +179,11 @@
         <div class="charts-row">
           <div class="glass-panel chart-panel">
             <div class="panel-title"><i class="bi bi-graph-up-arrow"></i> Flujo por hora (hoy)</div>
-            <canvas id="chartHora" height="200"></canvas>
+            <div class="chart-canvas-wrap"><canvas id="chartHora"></canvas></div>
           </div>
           <div class="glass-panel chart-panel">
             <div class="panel-title"><i class="bi bi-calendar3"></i> Ingresos últimos 7 días</div>
-            <canvas id="chartSemana" height="200"></canvas>
+            <div class="chart-canvas-wrap"><canvas id="chartSemana"></canvas></div>
           </div>
         </div>
         <div class="glass-panel">
@@ -223,11 +246,11 @@
         <div class="charts-row">
           <div class="glass-panel chart-panel">
             <div class="panel-title"><i class="bi bi-graph-up-arrow"></i> Flujo Lado A por hora (hoy)</div>
-            <canvas id="chartHoraA" height="200"></canvas>
+            <div class="chart-canvas-wrap"><canvas id="chartHoraA"></canvas></div>
           </div>
           <div class="glass-panel chart-panel">
             <div class="panel-title"><i class="bi bi-pie-chart-fill"></i> Distribución por tipo — Lado A</div>
-            <canvas id="chartTipoA" height="200"></canvas>
+            <div class="chart-canvas-wrap"><canvas id="chartTipoA"></canvas></div>
           </div>
         </div>
         <div class="glass-panel">
@@ -295,11 +318,11 @@
         <div class="charts-row">
           <div class="glass-panel chart-panel">
             <div class="panel-title"><i class="bi bi-graph-up-arrow"></i> Flujo Lado B por hora (hoy)</div>
-            <canvas id="chartHoraB" height="200"></canvas>
+            <div class="chart-canvas-wrap"><canvas id="chartHoraB"></canvas></div>
           </div>
           <div class="glass-panel chart-panel">
             <div class="panel-title"><i class="bi bi-calendar3"></i> Ingresos Lado B — últimos 7 días</div>
-            <canvas id="chartSemanaB" height="200"></canvas>
+            <div class="chart-canvas-wrap"><canvas id="chartSemanaB"></canvas></div>
           </div>
         </div>
         <div class="glass-panel">
@@ -1443,8 +1466,14 @@
                      : 'bike';
 
           const fechaAcc = fechaColombia(r.fecha_accion);
+          const hoyStr  = hoyColombia();
+          const diaReg  = fechaAcc ? fechaAcc.toLocaleDateString('en-CA', { timeZone:'America/Bogota' }) : null;
+          const esHoy   = diaReg === hoyStr;
           const time = fechaAcc
-            ? fechaAcc.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' })
+            ? (esHoy
+                ? fechaAcc.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' })
+                : fechaAcc.toLocaleDateString('es-CO', { day:'2-digit', month:'short', timeZone:'America/Bogota' })
+                  + ' ' + fechaAcc.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' }))
             : '--:--';
 
           // Extraer solo 'A' o 'B' del nombre ("Lado A" → "A", "LADO B" → "B")
@@ -1505,76 +1534,79 @@
   // ══ CHARTS ══
   function chartDefaults() {
     return {
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { labels: { color:'rgba(255,255,255,0.7)', font:{ family:'Inter', size:11 } } } },
       scales: {
         x: { ticks:{ color:'rgba(255,255,255,0.55)', font:{family:'Inter',size:10} }, grid:{ color:'rgba(255,255,255,0.07)' } },
-        y: { ticks:{ color:'rgba(255,255,255,0.55)', font:{family:'Inter',size:10} }, grid:{ color:'rgba(255,255,255,0.07)' } }
+        y: { beginAtZero:true, ticks:{ color:'rgba(255,255,255,0.55)', font:{family:'Inter',size:10}, precision:0 }, grid:{ color:'rgba(255,255,255,0.07)' } }
       }
     };
   }
 
+  // Muestra un mensaje "sin datos" dentro del wrapper cuando no hay registros
+  function noDataMsg(wrapperId, msg) {
+    const wrap = document.getElementById(wrapperId)?.parentElement;
+    if (!wrap) return;
+    wrap.innerHTML = `<div class="chart-no-data"><i class="bi bi-bar-chart-line"></i>${msg || 'Sin actividad registrada'}</div>`;
+  }
+
   let chartHoraInst = null;
   function renderChartHora(porHora = []) {
-    if (chartHoraInst) chartHoraInst.destroy();
+    if (chartHoraInst) { chartHoraInst.destroy(); chartHoraInst = null; }
+    const wrap = document.querySelector('#chartHora')?.parentElement;
+    const total = porHora.reduce((s, r) => s + Number(r.entradas||0) + Number(r.salidas||0), 0);
+    if (!total) {
+      if (wrap) wrap.innerHTML = '<div class="chart-no-data"><i class="bi bi-bar-chart-line"></i>Sin actividad registrada hoy</div>';
+      return;
+    }
+    if (wrap && !wrap.querySelector('canvas')) {
+      wrap.innerHTML = '<canvas id="chartHora"></canvas>';
+    }
     const ctx = document.getElementById('chartHora');
     if (!ctx) return;
-    
-    const labels = [];
-    const entradas = [];
-    const salidas = [];
-    
+    const labels = [], entradas = [], salidas = [];
     for (let h = 6; h <= 18; h++) {
-       const strH = h > 12 ? (h-12)+'PM' : (h===12 ? '12PM' : h+'AM');
-       labels.push(strH);
-       const obj = porHora.find(x => Number(x.hora) === h) || { entradas: 0, salidas: 0 };
-       entradas.push(Number(obj.entradas));
-       salidas.push(Number(obj.salidas));
+      labels.push(h > 12 ? (h-12)+'PM' : (h===12 ? '12PM' : h+'AM'));
+      const obj = porHora.find(x => Number(x.hora) === h) || {};
+      entradas.push(Number(obj.entradas||0));
+      salidas.push(Number(obj.salidas||0));
     }
-
-    chartHoraInst = new Chart(ctx.getContext('2d'), {
+    chartHoraInst = new Chart(ctx, {
       type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [
-          { label:'Entradas', data: entradas, backgroundColor:'rgba(66,165,245,0.75)', borderRadius: 2 },
-          { label:'Salidas',  data: salidas, backgroundColor:'rgba(239,83,80,0.65)',  borderRadius: 2 }
-        ]
-      },
-      options: { ...chartDefaults(), responsive:true, maintainAspectRatio:false }
+      data: { labels, datasets: [
+        { label:'Entradas', data:entradas, backgroundColor:'rgba(66,165,245,0.75)', borderRadius:3 },
+        { label:'Salidas',  data:salidas,  backgroundColor:'rgba(239,83,80,0.65)',  borderRadius:3 }
+      ]},
+      options: chartDefaults()
     });
   }
 
   let chartSemanaInst = null;
   function renderChartSemana(porSemana = []) {
-    if (chartSemanaInst) chartSemanaInst.destroy();
+    if (chartSemanaInst) { chartSemanaInst.destroy(); chartSemanaInst = null; }
+    const wrap = document.querySelector('#chartSemana')?.parentElement;
+    const total = porSemana.reduce((s, r) => s + Number(r.ingresos||0), 0);
+    if (!total) {
+      if (wrap) wrap.innerHTML = '<div class="chart-no-data"><i class="bi bi-graph-up"></i>Sin ingresos en los últimos 7 días</div>';
+      return;
+    }
+    if (wrap && !wrap.querySelector('canvas')) {
+      wrap.innerHTML = '<canvas id="chartSemana"></canvas>';
+    }
     const ctx = document.getElementById('chartSemana');
     if (!ctx) return;
-    
     const weekMap = { 2:'Lun', 3:'Mar', 4:'Mié', 5:'Jue', 6:'Vie', 7:'Sáb', 1:'Dom' };
-    const dias = [2, 3, 4, 5, 6, 7, 1]; 
-    
-    const labels = dias.map(d => weekMap[d]);
-    const ingresos = dias.map(d => {
-       const obj = porSemana.find(x => Number(x.dia_semana) === d);
-       return obj ? Number(obj.ingresos) : 0;
-    });
-
-    chartSemanaInst = new Chart(ctx.getContext('2d'), {
+    const dias = [2,3,4,5,6,7,1];
+    const labels   = dias.map(d => weekMap[d]);
+    const ingresos = dias.map(d => { const o = porSemana.find(x => Number(x.dia_semana)===d); return o ? Number(o.ingresos) : 0; });
+    chartSemanaInst = new Chart(ctx, {
       type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label:'Ingresos',
-          data: ingresos,
-          borderColor:'#42a5f5',
-          backgroundColor:'rgba(66,165,245,0.12)',
-          fill:true,
-          tension:0.4,
-          pointBackgroundColor:'#42a5f5',
-          pointRadius:4
-        }]
-      },
-      options: { ...chartDefaults(), responsive:true, maintainAspectRatio:false }
+      data: { labels, datasets: [{ label:'Ingresos', data:ingresos,
+        borderColor:'#42a5f5', backgroundColor:'rgba(66,165,245,0.12)',
+        fill:true, tension:0.4, pointBackgroundColor:'#42a5f5', pointRadius:4
+      }]},
+      options: chartDefaults()
     });
   }
 
@@ -1746,9 +1778,7 @@
       const data = await res.json();
       if (!data.ok || !data.data) return;
       const { por_hora, por_tipo, por_semana } = data.data;
-      // Esperar un tick para que el panel sea visible antes de renderizar
-      // Chart.js necesita que el canvas tenga dimensiones reales
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise(r => setTimeout(r, 60));
       if (id_lado === 1) {
         renderChartHoraA(por_hora);
         renderChartTipoA(por_tipo);
@@ -1759,91 +1789,109 @@
     } catch(e) { console.warn('Error stats-lado:', e); }
   }
 
+  function _rebuildCanvas(id) {
+    const wrap = document.getElementById(id)?.parentElement;
+    if (!wrap) return null;
+    if (!wrap.querySelector('canvas#' + id)) {
+      wrap.innerHTML = `<canvas id="${id}"></canvas>`;
+    }
+    return document.getElementById(id);
+  }
+
   function renderChartHoraA(porHora = []) {
     if (_chartHoraAInst) { _chartHoraAInst.destroy(); _chartHoraAInst = null; }
-    const ctx = document.getElementById('chartHoraA');
+    const total = porHora.reduce((s, r) => s + Number(r.entradas||0) + Number(r.salidas||0), 0);
+    const wrap = document.getElementById('chartHoraA')?.parentElement;
+    if (!total) {
+      if (wrap) wrap.innerHTML = '<div class="chart-no-data"><i class="bi bi-bar-chart-line"></i>Sin actividad en Lado A hoy</div>';
+      return;
+    }
+    const ctx = _rebuildCanvas('chartHoraA');
     if (!ctx) return;
     const labels = [], entradas = [], salidas = [];
     for (let h = 6; h <= 18; h++) {
-      const strH = h > 12 ? (h-12)+'PM' : (h === 12 ? '12PM' : h+'AM');
-      labels.push(strH);
-      const obj = porHora.find(x => Number(x.hora) === h) || { entradas: 0, salidas: 0 };
-      entradas.push(Number(obj.entradas));
-      salidas.push(Number(obj.salidas));
+      labels.push(h > 12 ? (h-12)+'PM' : (h===12 ? '12PM' : h+'AM'));
+      const obj = porHora.find(x => Number(x.hora)===h) || {};
+      entradas.push(Number(obj.entradas||0));
+      salidas.push(Number(obj.salidas||0));
     }
     _chartHoraAInst = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
       { label:'Entradas A', data:entradas, backgroundColor:'rgba(99,179,237,0.75)', borderRadius:4 },
       { label:'Salidas A',  data:salidas,  backgroundColor:'rgba(252,129,74,0.7)',  borderRadius:4 }
-    ]}, options:{ ...chartDefaults(), responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
+    ]}, options: chartDefaults() });
   }
 
   function renderChartTipoA(porTipo = []) {
     if (_chartTipoAInst) { _chartTipoAInst.destroy(); _chartTipoAInst = null; }
-    const ctx = document.getElementById('chartTipoA');
-    if (!ctx) return;
-    // Tipos tal como los devuelve la BD (tv.nombre): Auto, Motocicleta, Bicicleta, Furgoneta
     const tipoMap = [
-      { label: 'Carros',     match: ['auto', 'carro', 'furgoneta', 'automóvil'] },
-      { label: 'Motos',      match: ['motocicleta', 'moto'] },
-      { label: 'Bicicletas', match: ['bicicleta'] },
+      { label:'Carros',     match:['auto','carro','furgoneta','automóvil'] },
+      { label:'Motos',      match:['motocicleta','moto'] },
+      { label:'Bicicletas', match:['bicicleta'] },
     ];
-    const labels  = tipoMap.map(t => t.label);
-    const colors  = ['rgba(99,179,237,0.85)', 'rgba(252,211,77,0.85)', 'rgba(72,187,120,0.85)'];
-    const valores = tipoMap.map(({ match }) => {
-      return porTipo
-        .filter(r => r.tipo && match.includes(r.tipo.toLowerCase()))
-        .reduce((s, r) => s + Number(r.cantidad), 0);
-    });
-    const total = valores.reduce((s, v) => s + v, 0);
-    _chartTipoAInst = new Chart(ctx, { type:'doughnut', data:{ labels, datasets:[{
-      data: valores,
-      backgroundColor: colors,
-      borderColor:'rgba(255,255,255,0.1)', borderWidth:2
+    const valores = tipoMap.map(({ match }) =>
+      porTipo.filter(r => r.tipo && match.includes(r.tipo.toLowerCase())).reduce((s,r) => s+Number(r.cantidad),0)
+    );
+    const total = valores.reduce((s,v) => s+v, 0);
+    const wrap = document.getElementById('chartTipoA')?.parentElement;
+    if (!total) {
+      if (wrap) wrap.innerHTML = '<div class="chart-no-data"><i class="bi bi-pie-chart"></i>Sin registros de tipos hoy</div>';
+      return;
+    }
+    const ctx = _rebuildCanvas('chartTipoA');
+    if (!ctx) return;
+    const colors = ['rgba(99,179,237,0.85)','rgba(252,211,77,0.85)','rgba(72,187,120,0.85)'];
+    _chartTipoAInst = new Chart(ctx, { type:'doughnut', data:{ labels:tipoMap.map(t=>t.label), datasets:[{
+      data:valores, backgroundColor:colors, borderColor:'rgba(255,255,255,0.1)', borderWidth:2
     }]}, options:{
+      responsive:true, maintainAspectRatio:false, cutout:'65%',
       plugins:{
-        legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:12 } } },
-        tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${ctx.raw} (${total > 0 ? Math.round(ctx.raw*100/total) : 0}%)` } }
-      },
-      cutout:'65%', responsive:true, maintainAspectRatio:false
-    } });
+        legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{size:12} } },
+        tooltip:{ callbacks:{ label: c => ` ${c.label}: ${c.raw} (${total>0?Math.round(c.raw*100/total):0}%)` } }
+      }
+    }});
   }
 
   function renderChartHoraB(porHora = []) {
     if (_chartHoraBInst) { _chartHoraBInst.destroy(); _chartHoraBInst = null; }
-    const ctx = document.getElementById('chartHoraB');
+    const total = porHora.reduce((s,r) => s+Number(r.entradas||0)+Number(r.salidas||0), 0);
+    const wrap = document.getElementById('chartHoraB')?.parentElement;
+    if (!total) {
+      if (wrap) wrap.innerHTML = '<div class="chart-no-data"><i class="bi bi-bar-chart-line"></i>Sin actividad en Lado B hoy</div>';
+      return;
+    }
+    const ctx = _rebuildCanvas('chartHoraB');
     if (!ctx) return;
     const labels = [], entradas = [], salidas = [];
     for (let h = 6; h <= 18; h++) {
-      const strH = h > 12 ? (h-12)+'PM' : (h === 12 ? '12PM' : h+'AM');
-      labels.push(strH);
-      const obj = porHora.find(x => Number(x.hora) === h) || { entradas: 0, salidas: 0 };
-      entradas.push(Number(obj.entradas));
-      salidas.push(Number(obj.salidas));
+      labels.push(h > 12 ? (h-12)+'PM' : (h===12 ? '12PM' : h+'AM'));
+      const obj = porHora.find(x => Number(x.hora)===h) || {};
+      entradas.push(Number(obj.entradas||0));
+      salidas.push(Number(obj.salidas||0));
     }
     _chartHoraBInst = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
       { label:'Entradas B', data:entradas, backgroundColor:'rgba(159,122,234,0.75)', borderRadius:4 },
-      { label:'Salidas B',  data:salidas,  backgroundColor:'rgba(237,137,54,0.7)',  borderRadius:4 }
-    ]}, options:{ ...chartDefaults(), responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
+      { label:'Salidas B',  data:salidas,  backgroundColor:'rgba(237,137,54,0.7)',   borderRadius:4 }
+    ]}, options: chartDefaults() });
   }
 
   function renderChartSemanaB(porSemana = []) {
     if (_chartSemanaBInst) { _chartSemanaBInst.destroy(); _chartSemanaBInst = null; }
-    const ctx = document.getElementById('chartSemanaB');
+    const total = porSemana.reduce((s,r) => s+Number(r.ingresos||0), 0);
+    const wrap = document.getElementById('chartSemanaB')?.parentElement;
+    if (!total) {
+      if (wrap) wrap.innerHTML = '<div class="chart-no-data"><i class="bi bi-graph-up"></i>Sin ingresos en los últimos 7 días (Lado B)</div>';
+      return;
+    }
+    const ctx = _rebuildCanvas('chartSemanaB');
     if (!ctx) return;
-    const weekMap = { 2:'Lun', 3:'Mar', 4:'Mié', 5:'Jue', 6:'Vie', 7:'Sáb', 1:'Dom' };
-    const dias = [2, 3, 4, 5, 6, 7, 1];
-    const labels  = dias.map(d => weekMap[d]);
-    const ingresos = dias.map(d => {
-      const obj = porSemana.find(x => Number(x.dia_semana) === d);
-      return obj ? Number(obj.ingresos) : 0;
-    });
+    const weekMap = { 2:'Lun',3:'Mar',4:'Mié',5:'Jue',6:'Vie',7:'Sáb',1:'Dom' };
+    const dias = [2,3,4,5,6,7,1];
+    const labels   = dias.map(d => weekMap[d]);
+    const ingresos = dias.map(d => { const o = porSemana.find(x => Number(x.dia_semana)===d); return o ? Number(o.ingresos) : 0; });
     _chartSemanaBInst = new Chart(ctx, { type:'line', data:{ labels, datasets:[{ label:'Ingresos Lado B', data:ingresos,
       borderColor:'rgba(159,122,234,0.9)', backgroundColor:'rgba(159,122,234,0.15)',
       tension:0.4, fill:true, pointBackgroundColor:'rgba(159,122,234,1)', pointRadius:4
-    }]}, options:{ ...chartDefaults(), responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{ size:11 } } } } } });
+    }]}, options: chartDefaults() });
   }
 
   // ══ ESCÁNER QR ══
@@ -2528,7 +2576,46 @@ async function adminSalida(id_usuario) {
     try {
       const data = await apiGet(`/parqueadero/historial-admin?fecha=${fecha}`);
       if (!data.ok) { showToast(data.message || 'Error al cargar historial', 'error'); return; }
-      haRegistros = data.data || [];
+
+      // Si no hay registros para la fecha pedida y es "hoy" o "ayer",
+      // buscar automáticamente el día más reciente con datos (hasta 60 días atrás)
+      if ((!data.data || data.data.length === 0) && (tipo === 'hoy' || tipo === 'ayer')) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;opacity:.4;">
+          <i class="bi bi-search" style="display:block;font-size:20px;margin-bottom:8px;"></i>
+          Sin registros para hoy. Buscando el día más reciente con actividad...</td></tr>`;
+
+        let encontrado = false;
+        for (let i = 1; i <= 60 && !encontrado; i++) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const prevFecha = d.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+          const prevData = await apiGet(`/parqueadero/historial-admin?fecha=${prevFecha}`);
+          if (prevData.ok && prevData.data && prevData.data.length > 0) {
+            encontrado = true;
+            fecha = prevFecha;
+            haFechaActual = fecha;
+            document.getElementById('hist-admin-fecha').value = fecha;
+            const fLabelPrev = new Date(fecha + 'T12:00:00').toLocaleDateString('es-CO', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+            label.innerHTML = `<i class="bi bi-calendar-event" style="color:var(--brand-color);margin-right:5px;"></i>${fLabelPrev}`
+              + ` <span style="background:rgba(255,193,7,0.18);color:#ffe082;font-size:11px;padding:2px 8px;border-radius:20px;margin-left:6px;">Último día con registros</span>`;
+            haRegistros = prevData.data;
+          }
+        }
+
+        if (!encontrado) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;opacity:.4;">
+            <i class="bi bi-calendar-x" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+            No se encontraron registros en los últimos 60 días</td></tr>`;
+          haRegistros = [];
+          calcularResumenAdmin();
+          renderTiposBar();
+          filtrarTablaAdmin();
+          return;
+        }
+      } else {
+        haRegistros = data.data || [];
+      }
+
       haPage = 1;
       document.getElementById('ha-buscar').value = '';
       document.getElementById('ha-filtro-tipo').value = '';
@@ -2536,6 +2623,7 @@ async function adminSalida(id_usuario) {
       renderTiposBar();
       filtrarTablaAdmin();
     } catch (e) {
+      console.error('cargarDia error:', e);
       tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:36px;opacity:.4;">Error de conexión</td></tr>`;
     }
   }
