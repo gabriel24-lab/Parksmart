@@ -373,21 +373,18 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
 // ── GET /api/parqueadero/reciente ─────────────────────────────────────
 router.get('/reciente', requireRol('admin'), async (req, res) => {
   try {
-    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
     const result = await query(
       `SELECT u.nombre_completo, u.qr_code,
               tv.nombre AS tipo_vehiculo, r.estado, l.nombre AS lado,
+              r.fecha_entrada,
               CASE WHEN r.estado = 'activo' THEN r.fecha_entrada ELSE r.fecha_salida END AS fecha_accion
        FROM registros_uso r
        JOIN usuarios       u  ON u.id_usuario  = r.id_usuario
        JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
        JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
        JOIN lados          l  ON l.id_lado     = r.id_lado
-       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE
-          OR (r.fecha_salida  AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE
        ORDER BY CASE WHEN r.estado = 'activo' THEN r.fecha_entrada ELSE r.fecha_salida END DESC NULLS LAST
-       LIMIT 200`,
-      { hoy }
+       LIMIT 50`
     );
     return res.json({ ok: true, data: result.rows.map(normalizeRegistroFechas) });
   } catch (err) {
