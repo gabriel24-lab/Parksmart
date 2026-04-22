@@ -337,12 +337,13 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
 
     const [porHora, porTipo, porSemana] = await Promise.all([
       query(
-        `SELECT EXTRACT(HOUR FROM r.fecha_entrada)::INT AS hora,
+        `SELECT EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))::INT AS hora,
                 COUNT(*) AS entradas,
                 SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
          FROM registros_uso r
          WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE AND r.id_lado = @id_lado
-         GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota')) ORDER BY hora`,
+         GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))
+         ORDER BY hora`,
         { hoy, id_lado }
       ),
       query(
@@ -355,10 +356,13 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
         { hoy, id_lado }
       ),
       query(
-        `SELECT EXTRACT(DOW FROM r.fecha_entrada)::INT AS dia_semana, COUNT(*) AS ingresos
+        `SELECT EXTRACT(DOW FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))::INT AS dia_semana,
+                COUNT(*) AS ingresos
          FROM registros_uso r
-         WHERE r.fecha_entrada >= (NOW() - INTERVAL '6 days')::DATE AND r.id_lado = @id_lado
-         GROUP BY EXTRACT(DOW FROM r.fecha_entrada) ORDER BY dia_semana`,
+         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '6 days')::DATE
+           AND r.id_lado = @id_lado
+         GROUP BY EXTRACT(DOW FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))
+         ORDER BY dia_semana`,
         { id_lado }
       ),
     ]);
