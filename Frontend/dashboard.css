@@ -43,9 +43,15 @@
   --bg-card:      #1a1a1c;
   --text-muted:   #999999;
   --glass-bg:     rgba(20, 20, 22, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.13);
   --white:        #ffffff;
   --sidebar-w:    230px;
+  /* ─ Border system ─ */
+  --border-subtle:  rgba(255,255,255,0.08);
+  --border-base:    rgba(255,255,255,0.13);
+  --border-medium:  rgba(255,255,255,0.22);
+  --border-strong:  rgba(255,255,255,0.35);
+  --border-brand:   rgba(230,25,45,0.45);
 }
 
 
@@ -1301,3 +1307,74 @@ body {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ══════════════════════════════════════════════════════
+   BORDER SYSTEM — define visualmente cada capa del UI
+   Solo override de propiedades border; sin cambios de layout.
+   ══════════════════════════════════════════════════════ */
+
+/* Sidebar y topbar */
+.sidebar        { border-right:  1px solid rgba(230,25,45,0.35); }
+.topbar         { border-bottom: 1px solid rgba(230,25,45,0.25); }
+
+/* Panels y cards principales */
+.glass-panel    { border: 1px solid var(--border-base); }
+.stat-card      { border: 1px solid var(--border-subtle); }
+.stat-card.available { border-color: rgba(76,175,80,0.22); }
+.stat-card.occupied  { border-color: rgba(244,67,54,0.22); }
+.stat-card.total     { border-color: rgba(33,150,243,0.22); }
+.stat-card:hover     { border-color: var(--border-medium); }
+
+/* Tabs parqueadero */
+.dash-lado-tab        { border: 1.5px solid var(--border-base); }
+.dash-lado-tab:hover  { border-color: var(--border-medium); }
+.dash-lado-tab.active { border-color: rgba(230,25,45,0.55); }
+
+/* Tabla historial */
+.history-table th { border-bottom: 1px solid var(--border-medium); }
+.history-table td { border-bottom: 1px solid var(--border-subtle); }
+.history-table tr:hover td { border-color: var(--border-base); }
+
+/* Inputs, selects, textareas */
+.form-group input,
+.form-group textarea,
+.form-group select { border: 1.5px solid var(--border-medium); }
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus { border-color: var(--brand-color); box-shadow: 0 0 0 3px var(--border-brand); }
+
+/* QR panel y botones */
+.qr-panel       { border: 1px solid var(--border-base); }
+.qr-box         { border: 1px solid var(--border-base); }
+.btn-download   { border: 1px solid var(--border-base); }
+.btn-download:hover { border-color: var(--border-medium); }
+
+/* Vehicle cards */
+.vehicle-card   { border: 1px solid var(--border-base); }
+.vehicle-card:hover { border-color: var(--border-medium); }
+
+/* File drop */
+.file-drop      { border: 2px dashed var(--border-medium); }
+.file-drop:hover { border-color: var(--border-strong); }
+
+/* Imagen preview */
+.img-preview    { border: 1px solid var(--border-medium); }
+
+/* Badge status */
+.badge-status   { border: 1px solid transparent; }
+.badge-status.done   { border-color: rgba(76,175,80,0.3); }
+.badge-status.active { border-color: rgba(33,150,243,0.3); }
+
+/* Toast y modales */
+.toast          { border: 1px solid var(--border-medium); }
+.modal-box      { border: 1px solid var(--border-medium); }
+
+/* Progreso */
+.progress-bar-wrap { border: 1px solid var(--border-subtle); }
+
+/* Nav items */
+.nav-item.active { border-left: 3px solid var(--brand-color); }
+
+/* Info box de rol */
+.rol-info-box.info    { border: 1px solid rgba(33,150,243,0.35); }
+.rol-info-box.warning { border: 1px solid rgba(255,152,0,0.35); }
