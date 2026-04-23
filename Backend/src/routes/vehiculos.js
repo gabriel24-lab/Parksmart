@@ -27,8 +27,8 @@ const upload = multer({
 // 1=Bicicleta, 2=Motocicleta, 3=Auto, 4=Furgoneta
 const TIPOS_POR_ROL = {
   aprendiz:    [1],
-  funcionario: [2, 3, 4],
-  instructor:  [2, 3, 4],
+  funcionario: [1, 2, 3, 4],
+  instructor:  [1, 2, 3, 4],
   admin:       [1, 2, 3, 4],
 };
 const TIPO_NOMBRES = { 1: 'Bicicleta', 2: 'Motocicleta', 3: 'Auto', 4: 'Furgoneta' };
