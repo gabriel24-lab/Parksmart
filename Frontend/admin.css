@@ -39,9 +39,16 @@
   --bg-card:      #1a1a1c;
   --text-muted:   #999999;
   --glass-bg:     rgba(20, 20, 22, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.13);
   --white:        #ffffff;
   --sidebar-w:    230px;
+  /* ─ Border system ─ */
+  --border-subtle:  rgba(255,255,255,0.08);
+  --border-base:    rgba(255,255,255,0.13);
+  --border-medium:  rgba(255,255,255,0.22);
+  --border-strong:  rgba(255,255,255,0.35);
+  --border-brand:   rgba(230,25,45,0.45);
+  --border-gold:    rgba(255,213,79,0.35);
 }
 
 
@@ -1021,3 +1028,83 @@ body {
   0%, 100% { opacity: .4; transform: scale(1); }
   50%       { opacity: .7; transform: scale(1.06); }
 }
+
+/* ══════════════════════════════════════════════════════
+   BORDER SYSTEM — define visualmente cada capa del UI
+   Solo override de propiedades border; sin cambios de layout.
+   ══════════════════════════════════════════════════════ */
+
+/* Sidebar y topbar */
+.sidebar        { border-right:  1px solid var(--border-gold); }
+.topbar         { border-bottom: 1px solid var(--border-gold); }
+
+/* Panels y cards principales */
+.glass-panel    { border: 1px solid var(--border-base); }
+.stat-card      { border: 1px solid var(--border-subtle); }
+.stat-card:hover{ border-color: var(--border-medium); }
+
+/* Tabs de navegación lateral (Lado A / B) */
+.side-tab,
+.dash-lado-tab  { border: 1.5px solid var(--border-base); }
+.side-tab:hover,
+.dash-lado-tab:hover { border-color: var(--border-medium); }
+.side-tab.active    { border-color: var(--border-gold); }
+.dash-lado-tab.active { border-color: var(--border-gold); }
+
+/* Tabla */
+.history-table th  { border-bottom: 1px solid var(--border-medium); }
+.history-table td  { border-bottom: 1px solid var(--border-subtle); }
+.history-table tr:hover td { border-color: var(--border-base); }
+
+/* Inputs, selects, textareas */
+.form-group input,
+.form-group textarea,
+.form-group select { border: 1.5px solid var(--border-medium); }
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus { border-color: var(--brand-color); box-shadow: 0 0 0 3px var(--border-brand); }
+
+/* Barra de búsqueda */
+.search-wrap    { border: 1px solid var(--border-medium); }
+
+/* Contador manual Lado A */
+.a-counter-card { border: 1px solid var(--border-base); }
+
+/* Cupo libre / ocupado */
+.cupo-slot.free { border: 1px solid rgba(76,175,80,0.4); }
+.cupo-slot.occ  { border: 1px solid rgba(244,67,54,0.4); }
+
+/* Botones de cupo +/- */
+.btn-cupo.minus { border: 1px solid rgba(244,67,54,0.45); }
+.btn-cupo.plus  { border: 1px solid rgba(76,175,80,0.45); }
+
+/* Scanner */
+.qr-viewport    { border: 1.5px dashed var(--border-medium); }
+.scan-upload-area { border: 1.5px dashed var(--border-medium); }
+
+/* Modal */
+.modal-card     { border: 1px solid var(--border-medium); }
+
+/* Toast */
+.toast          { border: 1px solid var(--border-medium); }
+
+/* Nav activo — resaltar borde izquierdo */
+.nav-item.active { border-left: 3px solid var(--border-gold); }
+
+/* Imagen preview vehículo */
+.img-preview    { border: 1px solid var(--border-medium); }
+
+/* Botones de acción en tabla */
+.act-btn        { border: 1px solid var(--border-subtle); }
+.act-btn:hover  { border-color: var(--border-base); }
+
+/* Inline select de entrada/salida */
+.inline-select  { border: 1px solid var(--border-base); }
+.inline-action-btn.entry-btn { border: 1px solid rgba(72,187,120,0.4); }
+.inline-action-btn.exit-btn  { border: 1px solid rgba(252,129,74,0.4); }
+
+/* Barra de ocupación */
+.progress-bar-wrap { border: 1px solid var(--border-subtle); }
+
+/* Nota informativa */
+.cupos-info-note { border: 1px solid var(--border-base); }
