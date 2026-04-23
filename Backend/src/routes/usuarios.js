@@ -42,7 +42,9 @@ router.put('/perfil',
     if (!errors.isEmpty())
       return res.status(400).json({ ok: false, message: errors.array()[0].msg, errors: errors.array() });
 
-    const { nombre_completo, tipo_id, numero_id, id_centro, rol, email } = req.body;
+    const { nombre_completo, tipo_id, numero_id, id_centro, email } = req.body;
+    // El rol NUNCA se actualiza aquí: solo el admin puede cambiarlo desde /auth/admin-register
+    // Aceptarlo aquí permitiría que cualquier usuario se auto-asigne admin.
 
     try {
       const dup = await query(
@@ -55,14 +57,13 @@ router.put('/perfil',
       await query(
         `UPDATE usuarios
          SET nombre_completo = @nombre, tipo_id = @tipo_id, numero_id = @nid,
-             id_centro = @centro, rol = @rol, email = @email
+             id_centro = @centro, email = @email
          WHERE id_usuario = @uid`,
         {
           nombre:  nombre_completo,
           tipo_id,
           nid:     numero_id,
           centro:  id_centro || null,
-          rol:     rol       || null,
           email:   email     || null,
           uid:     req.user.id_usuario,
         }
