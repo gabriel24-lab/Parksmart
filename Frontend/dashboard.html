@@ -84,7 +84,7 @@
       </div>
 
       <!-- ── BANNER SIN VEHÍCULO ── -->
-      <div id="banner-sin-vehiculo" style="display:none;background:rgba(230,25,45,0.08);border:1px solid rgba(230,25,45,0.25);border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div id="banner-sin-vehiculo" style="display:none;background:rgba(230,25,45,0.08);border:1px solid rgba(230,25,45,0.25);border-radius:10px;padding:14px 18px;margin-bottom:18px;align-items:center;gap:14px;flex-wrap:wrap;">
         <i class="bi bi-exclamation-triangle-fill" style="color:#e6192d;font-size:20px;flex-shrink:0;"></i>
         <span style="color:rgba(255,255,255,0.85);font-size:14px;flex:1;min-width:180px;">Termina de completar tu perfil añadiendo tu vehículo.</span>
         <button onclick="showSection('vehiculo',null)" style="background:var(--brand-color);border:none;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
@@ -674,9 +674,9 @@
             <label><i class="bi bi-car-front"></i> Tipo de vehículo</label>
             <select id="hist-tipo" onchange="aplicarFiltros()">
               <option value="">Todos</option>
-              <option value="Carro">Carro</option>
-              <option value="Moto">Moto</option>
-              <option value="Bicicleta">Bicicleta</option>
+              <option value="auto">Carro / Auto</option>
+              <option value="motocicleta">Moto</option>
+              <option value="bicicleta">Bicicleta</option>
             </select>
           </div>
           <div class="form-group" style="margin:0;">
@@ -1034,33 +1034,34 @@
     async function loadHistorial(page = 1) {
       histPage = page;
       try {
-        // Cargamos hasta 200 para poder filtrar/paginar en cliente
+        // Una sola llamada para todo: mini-tabla del dashboard y sección historial
         const data = await apiGet(`/parqueadero/historial?page=1&limit=200`);
         if (!data.ok) return;
-        histTodosLosRegistros = data.data || [];
+        // Normalizar duracion_min a número (PostgreSQL puede devolverlo como string)
+        histTodosLosRegistros = (data.data || []).map(r => ({
+          ...r,
+          duracion_min: r.duracion_min != null ? Number(r.duracion_min) : null,
+        }));
         calcularResumen(histTodosLosRegistros);
         aplicarFiltros();
-      } catch (e) { console.warn('loadHistorial:', e); }
 
-      // También actualiza la mini-tabla del dashboard
-      try {
-        const data = await apiGet(`/parqueadero/historial?page=1&limit=4`);
-        if (!data.ok) return;
+        // Mini-tabla del dashboard: los 4 más recientes del mismo resultado
         const tbody = document.getElementById('dash-history-tbody');
         if (!tbody) return;
-        if (!data.data.length) {
+        const ultimos = histTodosLosRegistros.slice(0, 4);
+        if (!ultimos.length) {
           tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;opacity:.5;padding:20px;">
             <i class="bi bi-inbox" style="display:block;font-size:22px;margin-bottom:6px;"></i>
             Sin registros aún
           </td></tr>`;
           return;
         }
-        tbody.innerHTML = data.data.map(r => {
+        tbody.innerHTML = ultimos.map(r => {
           const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
-          const salida = r.fecha_salida
+          const salida  = r.fecha_salida
             ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' })
             : '—';
-          const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : '—';
+          const dur = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${Math.round(r.duracion_min % 60)}m` : '—';
           const badge = r.estado === 'completado'
             ? `<span class="badge-status done">Completado</span>`
             : `<span class="badge-status active" style="animation:pulse 1.5s infinite;">En curso</span>`;
@@ -1068,29 +1069,28 @@
             <td>${entrada}</td>
             <td>${r.tipo_vehiculo} · ${r.identificador}</td>
             <td>${salida}</td>
-            <td>${duracion}</td>
+            <td>${dur}</td>
             <td>${badge}</td>
           </tr>`;
         }).join('');
-      } catch (e) { console.warn('loadHistorialDash:', e); }
+      } catch (e) { console.warn('loadHistorial:', e); }
     }
 
     function calcularResumen(registros) {
-      const total = registros.length;
-      const activos = registros.filter(r => r.estado !== 'completado').length;
+      const total     = registros.length;
+      const activos   = registros.filter(r => r.estado !== 'completado').length;
       const completados = registros.filter(r => r.duracion_min != null);
-      const promMin = completados.length
-        ? Math.round(completados.reduce((s, r) => s + r.duracion_min, 0) / completados.length)
+      const promMin   = completados.length
+        ? Math.round(completados.reduce((s, r) => s + Number(r.duracion_min), 0) / completados.length)
         : 0;
       const promH = Math.floor(promMin / 60);
-      const promM = promMin % 60;
-
+      const promM = Math.round(promMin % 60);
       const elTotal = document.getElementById('hist-total');
-      const elProm = document.getElementById('hist-promedio');
-      const elAct = document.getElementById('hist-activos');
+      const elProm  = document.getElementById('hist-promedio');
+      const elAct   = document.getElementById('hist-activos');
       if (elTotal) elTotal.textContent = total;
-      if (elProm) elProm.textContent = promH > 0 ? `${promH}h ${promM}m` : `${promM}m`;
-      if (elAct) elAct.textContent = activos;
+      if (elProm)  elProm.textContent  = promH > 0 ? `${promH}h ${promM}m` : `${promM}m`;
+      if (elAct)   elAct.textContent   = activos;
     }
 
     function aplicarFiltros() {
@@ -1102,7 +1102,16 @@
       let filtrados = [...histTodosLosRegistros];
       if (ini) filtrados = filtrados.filter(r => new Date(r.fecha_entrada) >= new Date(ini));
       if (fin) filtrados = filtrados.filter(r => new Date(r.fecha_entrada) <= new Date(fin + 'T23:59:59'));
-      if (tipo) filtrados = filtrados.filter(r => r.tipo_vehiculo?.toLowerCase().includes(tipo.toLowerCase()));
+      // Normalizar tipos: BD devuelve 'Auto','Motocicleta','Bicicleta','Furgoneta'
+      const tipoGroups = {
+        'auto':       ['auto','carro','furgoneta','automóvil'],
+        'motocicleta':['motocicleta','moto'],
+        'bicicleta':  ['bicicleta'],
+      };
+      if (tipo) filtrados = filtrados.filter(r => {
+        const t = (r.tipo_vehiculo || '').toLowerCase();
+        return (tipoGroups[tipo] || [tipo]).includes(t);
+      });
       if (estado) filtrados = filtrados.filter(r => estado === 'activo' ? r.estado !== 'completado' : r.estado === estado);
 
       renderTablaHistorial(filtrados);
@@ -1139,10 +1148,11 @@
         const num = inicio + i + 1;
         const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
         const salida = r.fecha_salida ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }) : '—';
-        const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : '—';
+        const duracion = r.duracion_min != null ? `${Math.floor(Number(r.duracion_min) / 60)}h ${Math.round(Number(r.duracion_min) % 60)}m` : '—';
 
-        const tipoIcon = r.tipo_vehiculo === 'Carro' ? 'bi-car-front-fill'
-          : r.tipo_vehiculo === 'Moto' ? 'bi-bicycle'
+        const tLow = (r.tipo_vehiculo || '').toLowerCase();
+        const tipoIcon = (tLow === 'auto' || tLow === 'carro' || tLow === 'furgoneta') ? 'bi-car-front-fill'
+          : (tLow === 'motocicleta' || tLow === 'moto') ? 'bi-scooter'
             : 'bi-bicycle';
 
         const badge = r.estado === 'completado'
@@ -1203,7 +1213,7 @@
 
       const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' });
       const salida = r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' }) : 'Aún en el parqueadero';
-      const duracion = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${r.duracion_min % 60}m` : 'En progreso';
+      const duracion = r.duracion_min != null ? `${Math.floor(Number(r.duracion_min) / 60)}h ${Math.round(Number(r.duracion_min) % 60)}m` : 'En progreso';
 
       const campo = (icon, label, val) => `
         <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 16px;">
@@ -1366,7 +1376,7 @@
           tipo_id,
           numero_id: num_id,
           id_centro: centro || null,
-          rol: rol || null,
+          // rol se omite: solo el admin puede cambiarlo desde el panel de administración
         });
         if (!data.ok) { showToast(data.message || 'Error al guardar.', 'error'); return; }
 
@@ -1529,7 +1539,7 @@
     <div class="vehicle-card">
       <div class="vc-left">
         ${v.foto_url
-          ? `<img class="vc-thumb" src="${window.BACKEND_URL}${v.foto_url}" alt="foto"/>`
+          ? `<img class="vc-thumb" src="${v.foto_url}" alt="foto"/>`
           : `<div class="vc-icon-box tipo-${v.tipo}"><i class="bi ${TIPO_ICONS[v.tipo] || 'bi-car-front-fill'}"></i></div>`
         }
       </div>
