@@ -1,17 +1,16 @@
-
 const API = 'https://parksmart-ggt8.onrender.com/api';
 
 // ── Tokens ────────────────────────────────────────────────────────────
 const Auth = {
   save(data) {
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    sessionStorage.setItem('access_token', data.access_token);
+    sessionStorage.setItem('refresh_token', data.refresh_token);
+    sessionStorage.setItem('user', JSON.stringify(data.user));
   },
-  getToken() { return localStorage.getItem('access_token'); },
-  getRefreshToken() { return localStorage.getItem('refresh_token'); },
-  getUser() { const u = localStorage.getItem('user'); return u ? JSON.parse(u) : null; },
-  clear() { localStorage.removeItem('access_token'); localStorage.removeItem('refresh_token'); localStorage.removeItem('user'); },
+  getToken() { return sessionStorage.getItem('access_token'); },
+  getRefreshToken() { return sessionStorage.getItem('refresh_token'); },
+  getUser() { const u = sessionStorage.getItem('user'); return u ? JSON.parse(u) : null; },
+  clear() { sessionStorage.removeItem('access_token'); sessionStorage.removeItem('refresh_token'); sessionStorage.removeItem('user'); },
   isLogged() { return !!this.getToken(); },
 };
 
@@ -51,7 +50,7 @@ async function tryRefresh() {
     });
     if (!res.ok) return false;
     const data = await res.json();
-    localStorage.setItem('access_token', data.access_token);
+    sessionStorage.setItem('access_token', data.access_token);
     return true;
   } catch { return false; }
 }
