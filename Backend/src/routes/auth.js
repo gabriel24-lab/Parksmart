@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
 const { authMiddleware } = require('../middlewares/auth');
-const { enviarCodigoRecuperacion, enviarBienvenidaAdmin } = require('../config/mailer');
+const { enviarCodigoRecuperacion, enviarBienvenidaAdmin, enviarBienvenidaAprendiz } = require('../config/mailer');
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function generateQR(numeroId) {
@@ -126,6 +126,13 @@ router.post('/register',
         "INSERT INTO usuarios (nombre_completo, numero_id, password_hash, qr_code, activo, email, rol, tipo_id) VALUES (@nombre, @nid, @hash, @qr, true, @email, 'aprendiz', @tipo_id)",
         { nombre: nombre_completo, nid: numero_id, hash, qr, email, tipo_id }
       );
+
+      // Enviar correo de bienvenida si el aprendiz tiene correo en la BD del SENA
+      if (email) {
+        const urlLogin = process.env.FRONTEND_URL || 'https://parksmart.vercel.app';
+        enviarBienvenidaAprendiz(email, nombre_completo, urlLogin)
+          .catch(err => console.error('[mailer] Error enviando bienvenida aprendiz:', err));
+      }
 
       return res.status(201).json({ ok: true, message: 'Usuario registrado correctamente.' });
     } catch (err) {
