@@ -282,8 +282,8 @@ router.get('/estado-actual', async (req, res) => {
 // ── GET /api/parqueadero/stats-hoy ────────────────────────────────────
 router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
   try {
-    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
-
+    // FIX: "hoy" se calcula en PostgreSQL en zona Colombia para evitar
+    // desface con el UTC del servidor de Render
     const [stats, porHora, porSemana] = await Promise.all([
       query(
         `SELECT COUNT(*) AS entradas_hoy,
@@ -295,24 +295,26 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
          FROM registros_uso r
          JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
          JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
-         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE`,
-        { hoy }
+         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE
+             = (NOW() AT TIME ZONE 'America/Bogota')::DATE`
       ),
       query(
         `SELECT EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))::INT AS hora,
                 COUNT(*) AS entradas,
                 SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
          FROM registros_uso r
-         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE
+         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE
+             = (NOW() AT TIME ZONE 'America/Bogota')::DATE
          GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))
-         ORDER BY hora`,
-        { hoy }
+         ORDER BY hora`
       ),
       query(
-        `SELECT EXTRACT(DOW FROM r.fecha_entrada)::INT AS dia_semana, COUNT(*) AS ingresos
+        `SELECT EXTRACT(DOW FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))::INT AS dia_semana,
+                COUNT(*) AS ingresos
          FROM registros_uso r
-         WHERE r.fecha_entrada >= (NOW() - INTERVAL '6 days')::DATE
-         GROUP BY EXTRACT(DOW FROM r.fecha_entrada)
+         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE
+             >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '6 days')::DATE
+         GROUP BY EXTRACT(DOW FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))
          ORDER BY dia_semana`
       ),
     ]);
@@ -333,27 +335,28 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
     const id_lado = parseInt(req.query.id_lado);
     if (!id_lado) return res.status(400).json({ ok: false, message: 'id_lado requerido.' });
 
-    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
-
+    // FIX: igual que stats-hoy, calcular "hoy" directo en PostgreSQL
     const [porHora, porTipo, porSemana] = await Promise.all([
       query(
         `SELECT EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))::INT AS hora,
                 COUNT(*) AS entradas,
                 SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
          FROM registros_uso r
-         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE AND r.id_lado = @id_lado
+         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE
+             = (NOW() AT TIME ZONE 'America/Bogota')::DATE AND r.id_lado = @id_lado
          GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))
          ORDER BY hora`,
-        { hoy, id_lado }
+        { id_lado }
       ),
       query(
         `SELECT tv.nombre AS tipo, COUNT(*) AS cantidad
          FROM registros_uso r
          JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
          JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
-         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE = @hoy::DATE AND r.id_lado = @id_lado
+         WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE
+             = (NOW() AT TIME ZONE 'America/Bogota')::DATE AND r.id_lado = @id_lado
          GROUP BY tv.nombre`,
-        { hoy, id_lado }
+        { id_lado }
       ),
       query(
         `SELECT EXTRACT(DOW FROM (r.fecha_entrada AT TIME ZONE 'America/Bogota'))::INT AS dia_semana,
@@ -377,6 +380,8 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
 // ── GET /api/parqueadero/reciente ─────────────────────────────────────
 router.get('/reciente', requireRol('admin'), async (req, res) => {
   try {
+    // FIX: solo muestra registros de HOY en zona Colombia
+    // Los activos se ordenan por fecha_entrada, los completados por fecha_salida
     const result = await query(
       `SELECT u.nombre_completo, u.qr_code,
               tv.nombre AS tipo_vehiculo, r.estado, l.nombre AS lado,
@@ -387,6 +392,8 @@ router.get('/reciente', requireRol('admin'), async (req, res) => {
        JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
        JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
        JOIN lados          l  ON l.id_lado     = r.id_lado
+       WHERE (r.fecha_entrada AT TIME ZONE 'America/Bogota')::DATE
+           = (NOW() AT TIME ZONE 'America/Bogota')::DATE
        ORDER BY CASE WHEN r.estado = 'activo' THEN r.fecha_entrada ELSE r.fecha_salida END DESC NULLS LAST
        LIMIT 50`
     );
