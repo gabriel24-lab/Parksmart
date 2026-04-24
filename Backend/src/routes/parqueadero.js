@@ -126,7 +126,7 @@ router.get('/ocupacion-rol', async (req, res) => {
     const mapB = grupos[2] || {};
     const totalA = Object.values(mapA).reduce((s, v) => s + v, 0);
     const totalB = Object.values(mapB).reduce((s, v) => s + v, 0);
-    const CAPACIDAD_B = 25;
+    const CAPACIDAD_B = 21;
 
     return res.json({
       ok: true,
