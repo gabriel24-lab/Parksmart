@@ -159,4 +159,86 @@ async function enviarBienvenidaAdmin(destino, nombre, numero_id, rol, urlLogin) 
   await transporter.sendMail(mailOptions);
 }
 
-module.exports = { enviarCodigoRecuperacion, enviarBienvenidaAdmin };
+
+/**
+ * Envía correo de bienvenida al aprendiz que se registra desde la página pública.
+ * @param {string} destino   - Correo del destinatario (viene de la BD del SENA)
+ * @param {string} nombre    - Nombre completo del aprendiz
+ * @param {string} urlLogin  - URL del login de Parksmart
+ */
+async function enviarBienvenidaAprendiz(destino, nombre, urlLogin) {
+  const mailOptions = {
+    from: `"SENA Parksmart" <${process.env.MAIL_USER}>`,
+    to: destino,
+    subject: '¡Bienvenido/a a Parksmart! — Tu cuenta está lista',
+    html: `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+      <body style="margin:0;padding:0;background:#f4f4f5;">
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:32px auto;background:#0a0a0c;color:#e6edf3;border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+
+          <!-- HEADER -->
+          <div style="background:linear-gradient(135deg,#e6192d 0%,#a8101f 100%);padding:32px 36px;">
+            <h1 style="margin:0;font-size:22px;color:#fff;font-weight:800;">🅿 Parksmart</h1>
+            <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.75);">Sistema de parqueadero · SENA-CENTRO CIGEC</p>
+          </div>
+
+          <!-- CUERPO -->
+          <div style="padding:36px;">
+
+            <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#fff;">¡Hola, ${nombre}! 👋</p>
+            <p style="margin:0 0 28px;font-size:14px;color:#8b949e;line-height:1.6;">
+              Tu registro en <strong style="color:#e6edf3;">Parksmart</strong> fue exitoso. 
+              Ya puedes acceder al sistema y empezar a usar el parqueadero del SENA.
+            </p>
+
+            <!-- Badge aprendiz -->
+            <div style="display:inline-block;background:rgba(21,101,192,0.15);border:1px solid rgba(21,101,192,0.4);border-radius:20px;padding:5px 14px;margin-bottom:28px;">
+              <span style="font-size:12px;color:#79c0ff;font-weight:600;">● Aprendiz</span>
+            </div>
+
+            <!-- Qué puedes hacer -->
+            <p style="margin:0 0 14px;font-size:13px;font-weight:600;color:#e6edf3;">¿Qué puedes hacer en Parksmart?</p>
+            <div style="margin-bottom:32px;">
+              <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+                <span style="font-size:16px;">🚲</span>
+                <span style="font-size:13px;color:#8b949e;line-height:1.5;">Registrar tu bicicleta y gestionar tus entradas y salidas del parqueadero.</span>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+                <span style="font-size:16px;">📊</span>
+                <span style="font-size:13px;color:#8b949e;line-height:1.5;">Consultar tu historial de uso y ver los cupos disponibles en tiempo real.</span>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <span style="font-size:16px;">📱</span>
+                <span style="font-size:13px;color:#8b949e;line-height:1.5;">Usar tu código QR personal para registrar entradas de forma rápida.</span>
+              </div>
+            </div>
+
+            <!-- Botón -->
+            <div style="text-align:center;">
+              <a href="${urlLogin}"
+                style="display:inline-block;background:linear-gradient(135deg,#e6192d,#a8101f);color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 40px;border-radius:8px;">
+                Ingresar a Parksmart →
+              </a>
+            </div>
+          </div>
+
+          <!-- FOOTER -->
+          <div style="padding:18px 36px;border-top:1px solid #21262d;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#484f58;">
+              Este correo fue generado automáticamente por Parksmart · SENA-CENTRO CIGEC.<br>
+              Si crees que lo recibiste por error, ignóralo o contacta al administrador.
+            </p>
+          </div>
+
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+
+module.exports = { enviarCodigoRecuperacion, enviarBienvenidaAdmin, enviarBienvenidaAprendiz };
