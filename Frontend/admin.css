@@ -1108,3 +1108,170 @@ body {
 
 /* Nota informativa */
 .cupos-info-note { border: 1px solid var(--border-base); }
+
+/* ══ SCAN RESULT — REDISEÑO CON FOTO DE VEHÍCULO ══════════════════════ */
+
+/* Contenedor principal del resultado */
+.scan-result-wrap {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+/* ── Selector de vehículo (aparece cuando hay 2+) ── */
+.scan-veh-selector {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.25);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.scan-veh-btn {
+  flex: 1;
+  min-width: 90px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.65);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+  white-space: nowrap;
+  font-family: 'Inter', sans-serif;
+}
+.scan-veh-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.scan-veh-btn.active {
+  border-color: rgba(230,25,45,0.6);
+  background: rgba(230,25,45,0.15);
+  color: #fff;
+  font-weight: 700;
+}
+.scan-veh-type {
+  display: block;
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 2px;
+  text-transform: capitalize;
+}
+.scan-veh-btn.active .scan-veh-type { color: rgba(255,130,130,0.8); }
+
+/* ── Foto del vehículo ── */
+.scan-foto-wrap {
+  position: relative;
+  width: 100%;
+  height: 170px;          /* móvil */
+  background: #0d1117;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.scan-foto-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.scan-foto-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255,255,255,0.2);
+  font-size: 12px;
+}
+.scan-foto-placeholder i { font-size: 2.4rem !important; opacity: .25; }
+.scan-foto-label {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.75);
+  font-weight: 500;
+}
+
+/* ── Cuerpo de info del usuario ── */
+.scan-user-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+.scan-user-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.scan-user-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.scan-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+}
+.scan-rol-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+.scan-rol-aprendiz   { background: rgba(21,101,192,0.2);  border-color: rgba(21,101,192,0.5);  color: #79c0ff; }
+.scan-rol-funcionario{ background: rgba(46,125,50,0.2);   border-color: rgba(46,125,50,0.5);   color: #56d364; }
+.scan-rol-instructor { background: rgba(106,27,154,0.2);  border-color: rgba(106,27,154,0.5);  color: #d2a8ff; }
+.scan-rol-admin      { background: rgba(183,28,28,0.2);   border-color: rgba(183,28,28,0.5);   color: #ffa198; }
+.scan-centro { font-size: 11px; color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 4px; }
+
+/* ── Fila de estado ── */
+.scan-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.2);
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+}
+.scan-status-extra { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+/* ── Fila de acciones ── */
+.scan-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.scan-action-row select {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.07);
+  color: #e6edf3;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  flex: 1;
+  min-width: 100px;
+}
+.scan-action-row select option { background: #1c2128; }
+
+/* ── Desktop: foto más alta ── */
+@media (min-width: 900px) {
+  .scan-foto-wrap { height: 210px; }
+}
+
+/* ── Móvil pequeño ── */
+@media (max-width: 480px) {
+  .scan-foto-wrap { height: 150px; }
+  .scan-veh-btn { min-width: 80px; padding: 7px 8px; }
+  .scan-user-body { padding: 12px 12px; }
+}
