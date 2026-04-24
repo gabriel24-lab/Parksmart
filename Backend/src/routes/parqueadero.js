@@ -126,7 +126,15 @@ router.get('/ocupacion-rol', async (req, res) => {
     const mapB = grupos[2] || {};
     const totalA = Object.values(mapA).reduce((s, v) => s + v, 0);
     const totalB = Object.values(mapB).reduce((s, v) => s + v, 0);
-    const CAPACIDAD_B = 25;
+
+    // MEJORA: capacidad del lado B leída desde la BD en lugar de hardcodeada
+    const capResult = await query(
+      `SELECT l.id_lado, l.capacidad FROM lados l WHERE l.id_lado IN (1, 2)`
+    );
+    const capacidades = {};
+    capResult.rows.forEach(r => { capacidades[r.id_lado] = Number(r.capacidad); });
+    const CAPACIDAD_A = capacidades[1] || 0;
+    const CAPACIDAD_B = capacidades[2] || 25; // 25 como fallback de seguridad
 
     return res.json({
       ok: true,
@@ -139,6 +147,7 @@ router.get('/ocupacion-rol', async (req, res) => {
           bicicletas: (mapA['bicicleta'] || 0),
           furgonetas: (mapA['furgoneta'] || 0),
           total:      totalA,
+          capacidad:  CAPACIDAD_A,
         },
         lado_b: {
           ocupados:    totalB,
