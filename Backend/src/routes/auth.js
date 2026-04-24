@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
 const { authMiddleware } = require('../middlewares/auth');
-const { enviarCodigoRecuperacion } = require('../config/mailer');
+const { enviarCodigoRecuperacion, enviarBienvenidaAdmin } = require('../config/mailer');
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function generateQR(numeroId) {
@@ -181,6 +181,14 @@ router.post('/admin-register',
           centro:  id_centro ? parseInt(id_centro) : null,
         }
       );
+
+
+      // Enviar correo de bienvenida si el usuario tiene email registrado
+      if (email) {
+        const urlLogin = process.env.FRONTEND_URL || 'https://parksmart.vercel.app';
+        enviarBienvenidaAdmin(email, nombre_completo, numero_id, rol, urlLogin)
+          .catch(err => console.error('[mailer] Error enviando bienvenida:', err));
+      }
 
       return res.status(201).json({ ok: true, message: 'Usuario registrado correctamente.' });
     } catch (err) {
