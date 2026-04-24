@@ -296,7 +296,7 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
          JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
          JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
          WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
-             = (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE`
+             = (NOW() AT TIME ZONE 'America/Bogota')::DATE`
       ),
       query(
         `SELECT EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))::INT AS hora,
@@ -304,7 +304,7 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
                 SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
          FROM registros_uso r
          WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
-             = (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
+             = (NOW() AT TIME ZONE 'America/Bogota')::DATE
          GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))
          ORDER BY hora`
       ),
@@ -313,7 +313,7 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
                 COUNT(*) AS ingresos
          FROM registros_uso r
          WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
-             >= (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota' - INTERVAL '6 days')::DATE
+             >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '6 days')::DATE
          GROUP BY EXTRACT(DOW FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))
          ORDER BY dia_semana`
       ),
@@ -343,7 +343,7 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
                 SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
          FROM registros_uso r
          WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
-             = (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE AND r.id_lado = @id_lado
+             = (NOW() AT TIME ZONE 'America/Bogota')::DATE AND r.id_lado = @id_lado
          GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))
          ORDER BY hora`,
         { id_lado }
@@ -354,7 +354,7 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
          JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
          JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
          WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
-             = (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE AND r.id_lado = @id_lado
+             = (NOW() AT TIME ZONE 'America/Bogota')::DATE AND r.id_lado = @id_lado
          GROUP BY tv.nombre`,
         { id_lado }
       ),
@@ -362,7 +362,7 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
         `SELECT EXTRACT(DOW FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))::INT AS dia_semana,
                 COUNT(*) AS ingresos
          FROM registros_uso r
-         WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE >= (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota' - INTERVAL '6 days')::DATE
+         WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '6 days')::DATE
            AND r.id_lado = @id_lado
          GROUP BY EXTRACT(DOW FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))
          ORDER BY dia_semana`,
@@ -393,7 +393,7 @@ router.get('/reciente', requireRol('admin'), async (req, res) => {
        JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
        JOIN lados          l  ON l.id_lado     = r.id_lado
        WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
-           = (NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
+           = (NOW() AT TIME ZONE 'America/Bogota')::DATE
        ORDER BY CASE WHEN r.estado = 'activo' THEN r.fecha_entrada ELSE r.fecha_salida END DESC NULLS LAST
        LIMIT 50`
     );
