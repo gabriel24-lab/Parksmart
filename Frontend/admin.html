@@ -2129,9 +2129,18 @@ async function processQRResult(rawText) {
 
   // Cambia el vehículo activo: actualiza botones y foto
   function switchScanVehiculo(idx) {
+    // 1. Actualizar botones visuales de arriba
     document.querySelectorAll('.scan-veh-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+
+    // 2. Actualizar la foto
     const wrap = document.getElementById('scan-foto-wrap');
     if (wrap && _scanVehiculos[idx]) wrap.innerHTML = buildFotoHTML(_scanVehiculos[idx]);
+
+    // 3. Sincronizar el select de abajo para que adminEntrada() tome el vehículo correcto
+    if (_scanUsuario) {
+      const sel = document.getElementById('sel-vehiculo-' + _scanUsuario.id_usuario);
+      if (sel) sel.selectedIndex = idx;
+    }
   }
 
 function buildActionButtons(usuario, vehiculos, dentro) {
