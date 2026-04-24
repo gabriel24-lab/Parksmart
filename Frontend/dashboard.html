@@ -438,13 +438,17 @@
           </div>
 
           <div class="form-group full-width">
-            <label><i class="bi bi-person-badge-fill"></i> Rol</label>
-            <select id="p-rol" onchange="onRolChange()">
-              <option value="">Selecciona tu rol</option>
-              <option value="aprendiz">Aprendiz</option>
-              <option value="funcionario">Funcionario</option>
-              <option value="instructor">Instructor</option>
-            </select>
+            <label><i class="bi bi-person-badge-fill"></i> Rol
+              <span style="margin-left:8px;font-size:11px;font-weight:500;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 8px;color:rgba(255,255,255,0.5);vertical-align:middle;">
+                <i class="bi bi-lock-fill" style="margin-right:3px;"></i>Solo el administrador puede cambiar tu rol
+              </span>
+            </label>
+            <!-- El rol es de solo lectura: asignado en el registro y solo modificable por el admin -->
+            <input type="text" id="p-rol-display"
+              style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);cursor:not-allowed;color:rgba(255,255,255,0.5);"
+              disabled readonly />
+            <!-- Campo oculto que guarda el valor real para onRolChange() -->
+            <input type="hidden" id="p-rol" />
           </div>
 
           <div id="rol-info-box" class="rol-info-box" style="display:none"></div>
@@ -1268,7 +1272,12 @@
         setValue('p-email', data.data.email);
         setValue('p-tipo-id', data.data.tipo_id);
         setValue('p-id-num', data.data.numero_id);
-        setValue('p-rol', data.data.rol);
+        // Rol: solo lectura — mostrar en el campo visual y guardar en el hidden
+        const rolLabels = { aprendiz: 'Aprendiz', funcionario: 'Funcionario', instructor: 'Instructor', admin: 'Administrador' };
+        const rolDisplay = document.getElementById('p-rol-display');
+        const rolHidden  = document.getElementById('p-rol');
+        if (rolDisplay) rolDisplay.value = rolLabels[data.data.rol] || data.data.rol || 'Sin rol';
+        if (rolHidden)  rolHidden.value  = data.data.rol || '';
 
         // Primero cargar regiones para que el select tenga opciones
         await loadRegiones();
@@ -1366,7 +1375,7 @@
       if (!nombre) { showToast('Ingresa tu nombre completo.', 'error'); return; }
       if (!tipo_id) { showToast('Selecciona tu tipo de identificación.', 'error'); return; }
       if (!num_id) { showToast('Ingresa tu número de identificación.', 'error'); return; }
-      if (!rol) { showToast('Debes seleccionar un rol.', 'error'); return; }
+      // El rol no se valida aquí — es de solo lectura, asignado por el sistema o el admin
       if (!centro) { showToast('Debes seleccionar tu centro de formación.', 'error'); return; }
 
       try {
@@ -1388,7 +1397,7 @@
         Auth.save({
           access_token: Auth.getToken(),
           refresh_token: Auth.getRefreshToken(),
-          user: { ...user, nombre_completo: nombre, email: email, tipo_id, numero_id: num_id, rol: rol || null, id_centro: centro || null },
+          user: { ...user, nombre_completo: nombre, email: email, tipo_id, numero_id: num_id, id_centro: centro || null },
         });
 
         liveUpdateHeader();
