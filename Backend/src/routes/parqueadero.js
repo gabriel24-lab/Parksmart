@@ -481,7 +481,7 @@ router.post('/escanear', requireRol('admin'), async (req, res) => {
     // Consultar vehículos y estado actual en paralelo
     const [vResult, estadoResult] = await Promise.all([
       query(
-        `SELECT v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo, v.color
+        `SELECT v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo, v.color, v.foto_url
          FROM vehiculos v JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
          WHERE v.id_usuario = @uid AND v.activo = true`,
         { uid: usuario.id_usuario }
