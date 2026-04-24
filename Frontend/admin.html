@@ -2025,68 +2025,153 @@ async function processQRResult(rawText) {
   }
 }
 
+  // Vehículo actualmente seleccionado en el scanner (para actualizar foto al cambiar)
+  let _scanVehiculos = [];
+  let _scanUsuario   = null;
+  let _scanDentro    = false;
+
   function showScanResult(data) {
-  const { usuario, vehiculos, dentro, estado_actual } = data;
-  const content = document.getElementById('scan-result-content');
+    const { usuario, vehiculos, dentro, estado_actual } = data;
+    _scanVehiculos = vehiculos;
+    _scanUsuario   = usuario;
+    _scanDentro    = dentro;
 
-  const ROL_LABELS = { aprendiz:'Aprendiz', funcionario:'Funcionario', instructor:'Instructor', admin:'Administrador' };
-  const initials = usuario.nombre_completo.split(' ').map(w=>w[0]).slice(0,2).join('');
+    const content    = document.getElementById('scan-result-content');
+    const ROL_LABELS = { aprendiz:'Aprendiz', funcionario:'Funcionario', instructor:'Instructor', admin:'Administrador' };
+    const initials   = usuario.nombre_completo.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+    const idMask     = '*'.repeat(Math.max(0, String(usuario.numero_id).length - 4)) + String(usuario.numero_id).slice(-4);
 
-  // Construir lista de vehículos
-  const vehHTML = vehiculos.length === 0
-    ? `<span style="opacity:.6">Sin vehículos registrados</span>`
-    : vehiculos.map(v => {
-        const vtag = v.tipo==='carro'?'car':v.tipo==='moto'?'moto':'bike';
-        const id   = v.placa || v.modelo || v.color;
-        return `<span class="vtag ${vtag}">${v.tipo}</span> ${id}`;
-      }).join('<br>');
+    // Selector de vehículo: solo aparece si hay 2 o más
+    const selectorHTML = vehiculos.length >= 2
+      ? `<div class="scan-veh-selector">
+          ${vehiculos.map((v, i) => `
+            <button class="scan-veh-btn ${i === 0 ? 'active' : ''}"
+              onclick="switchScanVehiculo(${i})" data-idx="${i}">
+              <span class="scan-veh-type">${v.tipo}</span>
+              ${v.placa || v.modelo || v.color || '—'}
+            </button>`).join('')}
+         </div>`
+      : '';
 
-  content.innerHTML = `
-    <div class="result-user">
-      <div class="result-av">${initials}</div>
-      <div class="result-details">
-        <div class="result-name">${usuario.nombre_completo}</div>
-        <div class="result-id"><i class="bi bi-fingerprint"></i> ${usuario.tipo_id} ${'*'.repeat(Math.max(0, String(usuario.numero_id).length - 4))}${String(usuario.numero_id).slice(-4)}</div>
-        <div class="result-id"><i class="bi bi-person-badge"></i> ${ROL_LABELS[usuario.rol] || usuario.rol || 'Sin rol'}</div>
-        ${usuario.centro_nombre ? `<div class="result-id"><i class="bi bi-building"></i> ${usuario.centro_nombre}</div>` : ''}
-        <div class="result-vehicle" style="margin-top:6px">${vehHTML}</div>
-        <div class="result-status" style="margin-top:6px">
-          Estado: <span class="event-badge ${dentro?'in':'out'}">${dentro ? 'Dentro' : 'Fuera'}</span>
-          ${estado_actual ? `· ${estado_actual.lado} · desde ${fechaColombia(estado_actual.fecha_entrada).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'})}` : ''}
+    // Estado + info adicional si está dentro
+    const estadoHTML = `
+      <div class="scan-status-row">
+        Estado: <span class="event-badge ${dentro ? 'in' : 'out'}">${dentro ? 'Dentro' : 'Fuera'}</span>
+        ${estado_actual
+          ? `<span class="scan-status-extra">· ${estado_actual.lado} · desde ${
+              fechaColombia(estado_actual.fecha_entrada)
+                .toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' })
+            }</span>`
+          : ''}
+      </div>`;
+
+    content.innerHTML = `
+      <div class="scan-result-wrap">
+
+        ${selectorHTML}
+
+        <div class="scan-foto-wrap" id="scan-foto-wrap">
+          ${buildFotoHTML(vehiculos[0] || null)}
         </div>
+
+        <div class="scan-user-body">
+          <div class="scan-user-row">
+            <div class="result-av">${initials}</div>
+            <div class="scan-user-info">
+              <div class="result-name">${usuario.nombre_completo}</div>
+              <div class="scan-meta-row">
+                <span><i class="bi bi-fingerprint"></i> ${usuario.tipo_id} ${idMask}</span>
+                <span class="scan-rol-chip scan-rol-${usuario.rol}">${ROL_LABELS[usuario.rol] || usuario.rol}</span>
+              </div>
+              ${usuario.centro_nombre
+                ? `<div class="scan-centro"><i class="bi bi-building"></i> ${usuario.centro_nombre}</div>`
+                : ''}
+            </div>
+          </div>
+
+          ${estadoHTML}
+
+          <div class="result-action-btns" id="action-btns-area">
+            ${buildActionButtons(usuario, vehiculos, dentro)}
+          </div>
+        </div>
+
+      </div>`;
+  }
+
+  // HTML de la foto para un vehículo — con fallback elegante si no hay foto
+  function buildFotoHTML(veh) {
+    if (!veh) return `
+      <div class="scan-foto-placeholder">
+        <i class="bi bi-car-front" style="font-size:2.4rem;opacity:.15;"></i>
+        <span>Sin vehículos registrados</span>
+      </div>`;
+
+    const label = [veh.tipo, veh.placa || veh.modelo || veh.color].filter(Boolean).join(' ');
+
+    if (veh.foto_url) {
+      // Escapar comillas para el onerror inline
+      const fallbackLabel = label.replace(/'/g, "\'");
+      return `
+        <img src="${veh.foto_url}" alt="${label}"
+          onerror="this.parentElement.innerHTML=buildFotoHTML({tipo:'${veh.tipo}',placa:'${(veh.placa||'').replace(/'/g,"\'")}',modelo:'${(veh.modelo||'').replace(/'/g,"\'")}',color:'${(veh.color||'').replace(/'/g,"\'")}',foto_url:null})"
+          style="width:100%;height:100%;object-fit:cover;display:block;" />
+        <div class="scan-foto-label">${label}</div>`;
+    }
+
+    return `
+      <div class="scan-foto-placeholder">
+        <i class="bi bi-image" style="font-size:2.4rem;opacity:.15;"></i>
+        <span>Sin foto del vehículo</span>
       </div>
-    </div>
-    <div class="result-action-btns" id="action-btns-area">
-      ${buildActionButtons(usuario, vehiculos, dentro)}
-    </div>`;
-}
+      <div class="scan-foto-label">${label}</div>`;
+  }
+
+  // Cambia el vehículo activo: actualiza botones y foto
+  function switchScanVehiculo(idx) {
+    document.querySelectorAll('.scan-veh-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+    const wrap = document.getElementById('scan-foto-wrap');
+    if (wrap && _scanVehiculos[idx]) wrap.innerHTML = buildFotoHTML(_scanVehiculos[idx]);
+  }
 
 function buildActionButtons(usuario, vehiculos, dentro) {
-  if (dentro) {
-    // Solo mostrar salida
-    return `<button class="btn-exit" onclick="adminSalida(${usuario.id_usuario})">
-      <i class="bi bi-arrow-up-circle-fill"></i> Registrar Salida
-    </button>`;
+    if (dentro) {
+      return `<button class="btn-exit" onclick="adminSalida(${usuario.id_usuario})">
+        <i class="bi bi-arrow-up-circle-fill"></i> Registrar Salida
+      </button>`;
+    }
+    if (vehiculos.length === 0) {
+      return `<div style="opacity:.6;font-size:.85rem;padding:8px 0;">Sin vehículos para registrar entrada.</div>`;
+    }
+    // Con 2+ vehículos, el selector de foto ya muestra cuál está activo.
+    // Aquí el select sincroniza con el selector visual usando onchange.
+    const optsVeh = vehiculos.map((v, i) => {
+      const label = `${v.tipo} ${v.placa || v.modelo || v.color || ''}`.trim();
+      return `<option value="${v.id_vehiculo}">${label}</option>`;
+    }).join('');
+    return `
+      <div class="scan-action-row">
+        <select id="sel-vehiculo-${usuario.id_usuario}"
+          onchange="syncScanVehSelector(this)"
+          style="flex:2;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:inherit;font-size:13px;">
+          ${optsVeh}
+        </select>
+        <select id="sel-lado-${usuario.id_usuario}"
+          style="flex:1;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:inherit;font-size:13px;">
+          <option value="1">Lado A</option>
+          <option value="2">Lado B</option>
+        </select>
+      </div>
+      <button class="btn-entry" onclick="adminEntrada(${usuario.id_usuario}, '${usuario.id_usuario}')">
+        <i class="bi bi-arrow-down-circle-fill"></i> Registrar Entrada
+      </button>`;
   }
-  if (vehiculos.length === 0) {
-    return `<div style="opacity:.6;font-size:.85rem">Sin vehículos para registrar entrada.</div>`;
+
+  // Sincroniza el select de vehículo con los botones visuales del selector
+  function syncScanVehSelector(selectEl) {
+    const idx = selectEl.selectedIndex;
+    switchScanVehiculo(idx);
   }
-  // Mostrar selector de vehículo + lado
-  const optsVeh = vehiculos.map(v =>
-    `<option value="${v.id_vehiculo}">${v.tipo} ${v.placa || v.modelo || v.color}</option>`
-  ).join('');
-  return `
-    <select id="sel-vehiculo-${usuario.id_usuario}" style="padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:inherit;margin-bottom:8px">
-      ${optsVeh}
-    </select>
-    <select id="sel-lado-${usuario.id_usuario}" style="padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:inherit;margin-bottom:8px">
-      <option value="1">Lado A</option>
-      <option value="2">Lado B</option>
-    </select>
-    <button class="btn-entry" onclick="adminEntrada(${usuario.id_usuario}, '${usuario.id_usuario}')">
-      <i class="bi bi-arrow-down-circle-fill"></i> Registrar Entrada
-    </button>`;
-}
 
 async function adminEntrada(id_usuario, uid_key) {
   const key = uid_key || id_usuario;
