@@ -128,7 +128,7 @@
 
       <!-- ── LADO B ── -->
       <div id="inicio-ladob-titulo" class="panel-title" style="margin-bottom:10px;margin-top:18px;"><i
-          class="bi bi-p-square"></i> Lado B <span style="font-size:11px;font-weight:400;opacity:.55;">(máx. 20
+          class="bi bi-p-square"></i> Lado B <span style="font-size:11px;font-weight:400;opacity:.55;">(máx. 21
           cupos)</span></div>
       <div class="cards-row" id="inicio-ladob-cards">
         <div class="stat-card occupied">
@@ -150,7 +150,7 @@
         <div class="stat-card total">
           <div class="stat-icon"><i class="bi bi-grid-3x3-gap"></i></div>
           <div class="stat-info">
-            <span class="stat-number">20</span>
+            <span class="stat-number">21</span>
             <span class="stat-label">Capacidad máxima</span>
           </div>
           <div class="stat-badge blue">Total B</div>
@@ -306,7 +306,7 @@
           <div>
             <strong style="font-size:15px;">Lado B — Espacios Controlados</strong>
             <span style="display:block;font-size:12px;opacity:.65;margin-top:2px;">Mayormente carros · Capacidad máxima:
-              20 cupos</span>
+              21 cupos</span>
           </div>
         </div>
 
@@ -1009,7 +1009,7 @@
         if (pbBarPct) pbBarPct.textContent = pct + '%';
 
         // ── Mapa de cupos Lado B (20 espacios: fila1=10, fila2=10) ────
-        renderParkBGrid(ocup, d.lado_b.capacidad ?? 20);
+        renderParkBGrid(ocup, d.lado_b.capacidad ?? 21);
 
       } catch (e) { console.warn('loadCupos:', e); }
     }
