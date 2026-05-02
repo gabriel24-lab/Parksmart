@@ -1610,8 +1610,8 @@
     }
     const ctx = document.getElementById('chartSemana');
     if (!ctx) return;
-    const weekMap = { 2:'Lun', 3:'Mar', 4:'Mié', 5:'Jue', 6:'Vie', 7:'Sáb', 1:'Dom' };
-    const dias = [2,3,4,5,6,7,1];
+    const weekMap = { 1:'Lun', 2:'Mar', 3:'Mié', 4:'Jue', 5:'Vie', 6:'Sáb', 0:'Dom' };
+    const dias = [1,2,3,4,5,6,0];
     const labels   = dias.map(d => weekMap[d]);
     const ingresos = dias.map(d => { const o = porSemana.find(x => Number(x.dia_semana)===d); return o ? Number(o.ingresos) : 0; });
     chartSemanaInst = new Chart(ctx, {
@@ -1898,8 +1898,8 @@
     }
     const ctx = _rebuildCanvas('chartSemanaB');
     if (!ctx) return;
-    const weekMap = { 2:'Lun',3:'Mar',4:'Mié',5:'Jue',6:'Vie',7:'Sáb',1:'Dom' };
-    const dias = [2,3,4,5,6,7,1];
+    const weekMap = { 1:'Lun',2:'Mar',3:'Mié',4:'Jue',5:'Vie',6:'Sáb',0:'Dom' };
+    const dias = [1,2,3,4,5,6,0];
     const labels   = dias.map(d => weekMap[d]);
     const ingresos = dias.map(d => { const o = porSemana.find(x => Number(x.dia_semana)===d); return o ? Number(o.ingresos) : 0; });
     _chartSemanaBInst = new Chart(ctx, { type:'line', data:{ labels, datasets:[{ label:'Ingresos Lado B', data:ingresos,
