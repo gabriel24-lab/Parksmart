@@ -23,6 +23,11 @@
       ? API.replace(/\/api$/, "")
       : "https://parksmart-ggt8.onrender.com";
   </script>
+  <style>
+    .avatar-photo-wrap { position: relative; cursor: pointer; display: inline-block; border-radius: 50%; }
+    .avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .2s; font-size: 18px; color: #fff; }
+    .avatar-photo-wrap:hover .avatar-overlay { opacity: 1; }
+  </style>
 </head>
 
 <body>
@@ -383,11 +388,17 @@
       <div class="glass-panel">
         <!-- Cabecera avatar -->
         <div class="profile-avatar-area">
-          <div class="avatar-circle" id="profile-avatar-initials">U</div>
+          <div class="avatar-photo-wrap" onclick="document.getElementById('foto-perfil-input').click()" title="Cambiar foto de perfil">
+            <div class="avatar-circle" id="profile-avatar-initials">U</div>
+            <img id="profile-avatar-img" src="" alt="Foto de perfil" style="display:none;width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--brand-color);"/>
+            <div class="avatar-overlay"><i class="bi bi-camera-fill"></i></div>
+          </div>
           <div>
             <div class="profile-name" id="profile-display-name">Usuario</div>
             <div class="profile-role-badge" id="profile-role-badge">Sin rol asignado</div>
+            <button id="btn-quitar-foto" onclick="quitarFotoPerfil()" style="display:none;background:none;border:none;color:rgba(255,100,100,.7);font-size:11px;cursor:pointer;padding:0;margin-top:4px;"><i class="bi bi-trash3"></i> Quitar foto</button>
           </div>
+          <input type="file" id="foto-perfil-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="subirFotoPerfil(this)"/>
         </div>
 
         <!-- Campos -->
@@ -1312,6 +1323,23 @@
           setValue('p-centro', data.data.id_centro);
         }
 
+        // Mostrar foto de perfil si existe
+        const imgEl  = document.getElementById('profile-avatar-img');
+        const initEl = document.getElementById('profile-avatar-initials');
+        const btnQui = document.getElementById('btn-quitar-foto');
+        if (data.data.foto_perfil && imgEl) {
+          imgEl.src          = data.data.foto_perfil;
+          imgEl.style.display = 'block';
+          if (initEl) initEl.style.display = 'none';
+          if (btnQui) btnQui.style.display = 'inline-block';
+          // Topbar avatar
+          const tbAv = document.getElementById('topbar-av');
+          if (tbAv) { tbAv.style.backgroundImage = `url(${data.data.foto_perfil})`; tbAv.style.backgroundSize = 'cover'; tbAv.textContent = ''; }
+        } else {
+          if (imgEl)  imgEl.style.display = 'none';
+          if (initEl) initEl.style.display = '';
+          if (btnQui) btnQui.style.display = 'none';
+        }
         applyUserToUI(data.data);
         onRolChange();
       } catch (e) { console.warn('loadPerfil:', e); }
@@ -1573,6 +1601,48 @@
       if (p) { p.src = ''; p.style.display = 'none'; }
       const f = document.getElementById(tipo === 'bicicleta' ? 'foto-bici' : 'foto-' + tipo);
       if (f) f.value = '';
+    }
+
+    // ════════ FOTO DE PERFIL ════════
+    async function subirFotoPerfil(input) {
+      if (!input.files[0]) return;
+      const formData = new FormData();
+      formData.append('foto', input.files[0]);
+      try {
+        const res  = await apiFetch('/usuarios/foto-perfil', { method: 'POST', body: formData });
+        if (!res) return;
+        const data = await res.json();
+        if (!data.ok) { showToast(data.message || 'Error al subir foto', 'error'); return; }
+        const imgEl  = document.getElementById('profile-avatar-img');
+        const initEl = document.getElementById('profile-avatar-initials');
+        const btnQui = document.getElementById('btn-quitar-foto');
+        imgEl.src          = data.foto_url + '?t=' + Date.now();
+        imgEl.style.display = 'block';
+        if (initEl) initEl.style.display = 'none';
+        if (btnQui) btnQui.style.display = 'inline-block';
+        const tbAv = document.getElementById('topbar-av');
+        if (tbAv) { tbAv.style.backgroundImage = `url(${data.foto_url})`; tbAv.style.backgroundSize = 'cover'; tbAv.textContent = ''; }
+        showToast('Foto de perfil actualizada ✓');
+      } catch { showToast('No se pudo subir la foto', 'error'); }
+      input.value = '';
+    }
+
+    async function quitarFotoPerfil() {
+      try {
+        const res  = await apiFetch('/usuarios/foto-perfil', { method: 'DELETE' });
+        if (!res) return;
+        const data = await res.json();
+        if (!data.ok) return;
+        const imgEl  = document.getElementById('profile-avatar-img');
+        const initEl = document.getElementById('profile-avatar-initials');
+        const btnQui = document.getElementById('btn-quitar-foto');
+        if (imgEl)  { imgEl.src = ''; imgEl.style.display = 'none'; }
+        if (initEl) initEl.style.display = '';
+        if (btnQui) btnQui.style.display = 'none';
+        const tbAv = document.getElementById('topbar-av');
+        if (tbAv) { tbAv.style.backgroundImage = ''; tbAv.textContent = tbAv.textContent || 'U'; }
+        showToast('Foto eliminada');
+      } catch { showToast('Error al eliminar foto', 'error'); }
     }
 
     // ════════ LISTA VEHÍCULOS ════════
