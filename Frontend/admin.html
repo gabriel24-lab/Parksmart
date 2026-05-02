@@ -271,7 +271,7 @@
           <i class="bi bi-buildings-fill"></i>
           <div>
             <strong>Lado B — Espacios Controlados</strong>
-            <span>Solo carros · Exclusivo funcionarios e instructores</span>
+            <span>Carros y bicicletas · Funcionarios, instructores y aprendices</span>
           </div>
         </div>
         <div class="cards-row four">
@@ -286,10 +286,18 @@
           <div class="stat-card red">
             <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
             <div class="stat-info">
-              <span class="stat-number" id="dB-ocupados">0</span>
+              <span class="stat-number" id="dB-carros">0</span>
               <span class="stat-label">Carros dentro</span>
             </div>
             <div class="stat-badge red-b" id="dB-pct">0%</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="dB-bicis">0</span>
+              <span class="stat-label">Bicicletas dentro</span>
+            </div>
+            <div class="stat-badge green-b">Lado B</div>
           </div>
           <div class="stat-card blue">
             <div class="stat-icon"><i class="bi bi-arrow-down-circle-fill"></i></div>
@@ -1362,6 +1370,12 @@
         if (d.lado_b) {
           ladoB.ocupados = Number(d.lado_b.ocupados  || ladoB.ocupados);
           ladoB.total    = Number(d.lado_b.capacidad || ladoB.total);
+          const elCarros = document.getElementById('dB-carros');
+          const elBicis  = document.getElementById('dB-bicis');
+          const elOcup   = document.getElementById('dB-ocupados');
+          if (elCarros) elCarros.textContent = d.lado_b.carros     || 0;
+          if (elBicis)  elBicis.textContent  = d.lado_b.bicicletas || 0;
+          if (elOcup)   elOcup.textContent   = d.lado_b.ocupados   || 0;
         }
       }
 
@@ -2076,7 +2090,10 @@ async function processQRResult(rawText) {
 
         <div class="scan-user-body">
           <div class="scan-user-row">
-            <div class="result-av">${initials}</div>
+            ${usuario.foto_perfil
+              ? `<img src="${usuario.foto_perfil}" alt="Foto" class="result-av-foto" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--brand-color);flex-shrink:0;"/>`
+              : `<div class="result-av">${initials}</div>`
+            }
             <div class="scan-user-info">
               <div class="result-name">${usuario.nombre_completo}</div>
               <div class="scan-meta-row">
