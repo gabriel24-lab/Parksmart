@@ -144,6 +144,10 @@ router.get('/ocupacion-rol', async (req, res) => {
           ocupados:    totalB,
           capacidad:   CAPACIDAD_B,
           disponibles: Math.max(0, CAPACIDAD_B - totalB),
+          carros:      (mapB['auto'] || mapB['carro'] || mapB['automóvil'] || 0),
+          motos:       (mapB['motocicleta'] || mapB['moto'] || 0),
+          bicicletas:  (mapB['bicicleta'] || 0),
+          furgonetas:  (mapB['furgoneta'] || 0),
         },
       },
     });
@@ -475,7 +479,7 @@ router.post('/escanear', requireRol('admin'), async (req, res) => {
   try {
     const uResult = await query(
       `SELECT u.id_usuario, u.nombre_completo, u.tipo_id, u.numero_id,
-              u.rol, u.qr_code, c.nombre AS centro_nombre
+              u.rol, u.qr_code, u.foto_perfil, c.nombre AS centro_nombre
        FROM usuarios u
        LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
        WHERE u.qr_code = @qr AND u.activo = true`,
