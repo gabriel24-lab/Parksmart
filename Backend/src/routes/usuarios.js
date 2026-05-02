@@ -1,6 +1,22 @@
 // src/routes/usuarios.js
-const router = require('express').Router();
-const bcrypt = require('bcryptjs'); // al nivel de módulo, no dentro del handler
+const router  = require('express').Router();
+const bcrypt  = require('bcryptjs');
+const multer  = require('multer');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
+const uploadMem = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Solo JPG, PNG o WEBP.'));
+  },
+}); // al nivel de módulo, no dentro del handler
 const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
 const { authMiddleware } = require('../middlewares/auth');
@@ -13,6 +29,7 @@ router.get('/perfil', async (req, res) => {
     const result = await query(
       `SELECT u.id_usuario, u.nombre_completo, u.tipo_id, u.numero_id,
               u.email, u.rol, u.qr_code, u.fecha_registro, u.id_centro,
+              u.foto_perfil,
               c.nombre AS centro_nombre, c.id_region,
               r.nombre AS region_nombre
        FROM usuarios u
@@ -113,5 +130,73 @@ router.put('/cambiar-password',
     }
   }
 );
+
+// ── POST /api/usuarios/foto-perfil ───────────────────────────────────
+router.post('/foto-perfil', uploadMem.single('foto'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ ok: false, message: 'No se recibió ninguna foto.' });
+
+  try {
+    const ext      = req.file.mimetype.split('/')[1].replace('jpeg', 'jpg');
+    const fileName = `perfil-${req.user.id_usuario}-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('perfiles')
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error('Error subiendo foto de perfil:', uploadError);
+      return res.status(500).json({ ok: false, message: 'Error al subir la foto.' });
+    }
+
+    const { data: urlData } = supabase.storage.from('perfiles').getPublicUrl(fileName);
+    const foto_url = urlData.publicUrl;
+
+    // Borrar foto anterior si existe
+    const old = await require('../config/db').query(
+      'SELECT foto_perfil FROM usuarios WHERE id_usuario = @uid',
+      { uid: req.user.id_usuario }
+    );
+    if (old.rows[0]?.foto_perfil) {
+      const oldFile = old.rows[0].foto_perfil.split('/').pop();
+      await supabase.storage.from('perfiles').remove([oldFile]).catch(() => {});
+    }
+
+    await require('../config/db').query(
+      'UPDATE usuarios SET foto_perfil = @foto WHERE id_usuario = @uid',
+      { foto: foto_url, uid: req.user.id_usuario }
+    );
+
+    return res.json({ ok: true, foto_url });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+// ── DELETE /api/usuarios/foto-perfil ─────────────────────────────────
+router.delete('/foto-perfil', async (req, res) => {
+  try {
+    const result = await require('../config/db').query(
+      'SELECT foto_perfil FROM usuarios WHERE id_usuario = @uid',
+      { uid: req.user.id_usuario }
+    );
+    const foto = result.rows[0]?.foto_perfil;
+    if (foto) {
+      const fileName = foto.split('/').pop();
+      await supabase.storage.from('perfiles').remove([fileName]).catch(() => {});
+      await require('../config/db').query(
+        'UPDATE usuarios SET foto_perfil = NULL WHERE id_usuario = @uid',
+        { uid: req.user.id_usuario }
+      );
+    }
+    return res.json({ ok: true, message: 'Foto eliminada.' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
 
 module.exports = router;
