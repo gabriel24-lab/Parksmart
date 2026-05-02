@@ -1610,10 +1610,22 @@
     }
     const ctx = document.getElementById('chartSemana');
     if (!ctx) return;
-    const weekMap = { 1:'Lun', 2:'Mar', 3:'Mié', 4:'Jue', 5:'Vie', 6:'Sáb', 0:'Dom' };
-    const dias = [1,2,3,4,5,6,0];
-    const labels   = dias.map(d => weekMap[d]);
-    const ingresos = dias.map(d => { const o = porSemana.find(x => Number(x.dia_semana)===d); return o ? Number(o.ingresos) : 0; });
+
+    // Generar las fechas reales de los últimos 7 días en hora Colombia
+    const diasNombres = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    const labels   = [];
+    const ingresos = [];
+    for (let i = 6; i >= 0; i--) {
+      const fecha = new Date(hoy);
+      fecha.setDate(hoy.getDate() - i);
+      const dow   = fecha.getDay(); // 0=Dom, 1=Lun, ..., 6=Sáb
+      const dia   = fecha.getDate();
+      labels.push(`${diasNombres[dow]} ${dia}`);
+      const o = porSemana.find(x => Number(x.dia_semana) === dow);
+      ingresos.push(o ? Number(o.ingresos) : 0);
+    }
+
     chartSemanaInst = new Chart(ctx, {
       type: 'line',
       data: { labels, datasets: [{ label:'Ingresos', data:ingresos,
@@ -1898,10 +1910,20 @@
     }
     const ctx = _rebuildCanvas('chartSemanaB');
     if (!ctx) return;
-    const weekMap = { 1:'Lun',2:'Mar',3:'Mié',4:'Jue',5:'Vie',6:'Sáb',0:'Dom' };
-    const dias = [1,2,3,4,5,6,0];
-    const labels   = dias.map(d => weekMap[d]);
-    const ingresos = dias.map(d => { const o = porSemana.find(x => Number(x.dia_semana)===d); return o ? Number(o.ingresos) : 0; });
+    // Fechas reales de los últimos 7 días en hora Colombia
+    const diasNombres = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    const labels   = [];
+    const ingresos = [];
+    for (let i = 6; i >= 0; i--) {
+      const fecha = new Date(hoy);
+      fecha.setDate(hoy.getDate() - i);
+      const dow = fecha.getDay();
+      const dia = fecha.getDate();
+      labels.push(`${diasNombres[dow]} ${dia}`);
+      const o = porSemana.find(x => Number(x.dia_semana) === dow);
+      ingresos.push(o ? Number(o.ingresos) : 0);
+    }
     _chartSemanaBInst = new Chart(ctx, { type:'line', data:{ labels, datasets:[{ label:'Ingresos Lado B', data:ingresos,
       borderColor:'rgba(159,122,234,0.9)', backgroundColor:'rgba(159,122,234,0.15)',
       tension:0.4, fill:true, pointBackgroundColor:'rgba(159,122,234,1)', pointRadius:4
