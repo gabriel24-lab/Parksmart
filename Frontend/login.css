@@ -84,22 +84,21 @@ body {
 
 .logo {
   text-align: center;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  max-height: 120px;
 }
 
 .logo img {
   width: auto;
-  max-width: 100%;
-  max-height: 120px;
+  max-width: 260px;
+  height: auto;
   object-fit: contain;
   display: block;
   mix-blend-mode: lighten;
-  filter: drop-shadow(0 0 3px rgba(230,25,45,.25));
+  filter: drop-shadow(0 0 6px rgba(230,25,45,.35));
 }
 
 .title {
