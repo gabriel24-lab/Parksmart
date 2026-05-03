@@ -2111,12 +2111,18 @@ async function processQRResult(rawText) {
         </div>
 
         <div class="scan-user-body">
+          ${usuario.foto_perfil
+            ? `<div style="text-align:center;padding:12px 0 4px;">
+                <img src="${usuario.foto_perfil}" alt="Foto de perfil" class="result-av-foto"/>
+               </div>`
+            : ''
+          }
           <div class="scan-user-row">
-            ${usuario.foto_perfil
-              ? `<img src="${usuario.foto_perfil}" alt="Foto" class="result-av-foto" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--brand-color);flex-shrink:0;"/>`
-              : `<div class="result-av">${initials}</div>`
+            ${!usuario.foto_perfil
+              ? `<div class="result-av">${initials}</div>`
+              : ''
             }
-            <div class="scan-user-info">
+            <div class="scan-user-info" style="${usuario.foto_perfil ? 'text-align:center;align-items:center;width:100%' : ''}">
               <div class="result-name">${usuario.nombre_completo}</div>
               <div class="scan-meta-row">
                 <span><i class="bi bi-fingerprint"></i> ${usuario.tipo_id} ${idMask}</span>
