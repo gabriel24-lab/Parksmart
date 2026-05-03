@@ -92,7 +92,7 @@ body {
 }
 .logo img {
   width: auto;
-  max-width: 260px;
+  max-width: 200px;
   height: auto;
   object-fit: contain;
   display: block;
