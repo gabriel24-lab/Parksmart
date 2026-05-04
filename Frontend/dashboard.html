@@ -470,7 +470,6 @@
             <label>
               <i class="bi bi-person-badge-fill"></i> Rol asignado
               <span style="margin-left:8px;font-size:11px;font-weight:500;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:4px;padding:2px 8px;color:rgba(255,255,255,0.4);vertical-align:middle;">
-                <i class="bi bi-lock-fill" style="margin-right:3px;"></i>Solo el administrador puede cambiar el rol
               </span>
             </label>
             <!-- Badge visual del rol -->
@@ -1423,15 +1422,6 @@
         badge.style.background = ROL_COLORS[rol] + '44';
         badge.style.color = '#fff';
       }
-      actualizarRolBadge(rol);
-      box.style.display = 'flex';
-      const msgs = {
-        aprendiz:   `<i class="bi bi-bicycle"></i> Como <strong>Aprendiz</strong> puedes ingresar en ambos lados si el celador te da el permiso.`,
-        funcionario:`<i class="bi bi-car-front-fill"></i> Como <strong>Funcionario</strong> puedes registrar <strong>carros y motos</strong>. Carros: Lado A y B · Motos: solo Lado A.`,
-        instructor: `<i class="bi bi-car-front-fill"></i> Como <strong>Instructor</strong> puedes registrar <strong>carros y motos</strong>. Carros: Lado A y B · Motos: solo Lado A.`,
-      };
-      box.className = 'rol-info-box full-width ' + (rol === 'aprendiz' ? 'info' : 'warning');
-      box.innerHTML = msgs[rol] || '';
     }
 
     async function saveProfile() {
