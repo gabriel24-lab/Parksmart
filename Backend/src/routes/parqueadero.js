@@ -31,16 +31,27 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
   if (activeCheck.rows.length > 0)
     throw new Error('Ya tienes una entrada activa en el parqueadero.');
 
-  const cupoCheck = await client.query(
-    `SELECT l.capacidad, c.ocupados
-     FROM lados l JOIN cupos c ON c.id_lado = l.id_lado
-     WHERE l.id_lado = $1`,
-    [id_lado]
+  // Verificar si el vehículo es bicicleta (id_tipo = 1)
+  // Las bicicletas NO consumen cupos — solo se contabilizan
+  const tipoCheck = await client.query(
+    `SELECT id_tipo FROM vehiculos WHERE id_vehiculo = $1`,
+    [id_vehiculo]
   );
-  if (!cupoCheck.rows.length) throw new Error('Lado de parqueo no encontrado.');
-  const { capacidad, ocupados } = cupoCheck.rows[0];
-  if (Number(ocupados) >= Number(capacidad))
-    throw new Error('No hay cupos disponibles en este lado del parqueadero.');
+  const esBicicleta = tipoCheck.rows.length > 0 && Number(tipoCheck.rows[0].id_tipo) === 1;
+
+  if (!esBicicleta) {
+    // Solo verificar y descontar cupos para vehículos que NO son bicicleta
+    const cupoCheck = await client.query(
+      `SELECT l.capacidad, c.ocupados
+       FROM lados l JOIN cupos c ON c.id_lado = l.id_lado
+       WHERE l.id_lado = $1`,
+      [id_lado]
+    );
+    if (!cupoCheck.rows.length) throw new Error('Lado de parqueo no encontrado.');
+    const { capacidad, ocupados } = cupoCheck.rows[0];
+    if (Number(ocupados) >= Number(capacidad))
+      throw new Error('No hay cupos disponibles en este lado del parqueadero.');
+  }
 
   const insert = await client.query(
     `INSERT INTO registros_uso (id_usuario, id_vehiculo, id_lado, estado)
@@ -48,11 +59,14 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
     [id_usuario, id_vehiculo, id_lado]
   );
 
-  await client.query(
-    `UPDATE cupos SET ocupados = ocupados + 1, ultima_actualizacion = NOW()
-     WHERE id_lado = $1`,
-    [id_lado]
-  );
+  // Solo actualizar cupos si NO es bicicleta
+  if (!esBicicleta) {
+    await client.query(
+      `UPDATE cupos SET ocupados = ocupados + 1, ultima_actualizacion = NOW()
+       WHERE id_lado = $1`,
+      [id_lado]
+    );
+  }
 
   return insert.rows[0].id_registro;
 }
@@ -60,16 +74,18 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
 // ── Lógica de salida ──────────────────────────────────────────────────
 async function registrarSalida(client, id_usuario) {
   const activeEntry = await client.query(
-    `SELECT id_registro, id_lado, fecha_entrada
-     FROM registros_uso
-     WHERE id_usuario = $1 AND estado = 'activo'
-     ORDER BY fecha_entrada DESC LIMIT 1`,
+    `SELECT r.id_registro, r.id_lado, r.fecha_entrada, v.id_tipo
+     FROM registros_uso r
+     JOIN vehiculos v ON v.id_vehiculo = r.id_vehiculo
+     WHERE r.id_usuario = $1 AND r.estado = 'activo'
+     ORDER BY r.fecha_entrada DESC LIMIT 1`,
     [id_usuario]
   );
   if (!activeEntry.rows.length)
     throw new Error('No tienes una entrada activa en el parqueadero.');
 
-  const { id_registro, id_lado, fecha_entrada } = activeEntry.rows[0];
+  const { id_registro, id_lado, fecha_entrada, id_tipo } = activeEntry.rows[0];
+  const esBicicleta = Number(id_tipo) === 1;
 
   await client.query(
     `UPDATE registros_uso
@@ -79,12 +95,15 @@ async function registrarSalida(client, id_usuario) {
     [id_registro]
   );
 
-  await client.query(
-    `UPDATE cupos
-     SET ocupados = GREATEST(0, ocupados - 1), ultima_actualizacion = NOW()
-     WHERE id_lado = $1`,
-    [id_lado]
-  );
+  // Solo liberar cupo si NO es bicicleta
+  if (!esBicicleta) {
+    await client.query(
+      `UPDATE cupos
+       SET ocupados = GREATEST(0, ocupados - 1), ultima_actualizacion = NOW()
+       WHERE id_lado = $1`,
+      [id_lado]
+    );
+  }
 
   return id_registro;
 }
