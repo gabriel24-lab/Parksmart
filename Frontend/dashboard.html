@@ -48,11 +48,11 @@
       <button class="nav-item active" onclick="showSection('dashboard',this)">
         <i class="bi bi-grid-1x2-fill"></i><span>Inicio</span>
       </button>
-      <button class="nav-item" onclick="showSection('parqueadero',this)">
-        <i class="bi bi-p-square-fill"></i><span>Parqueadero</span>
-      </button>
       <button class="nav-item" onclick="showSection('perfil',this)">
         <i class="bi bi-person-circle"></i><span>Perfil</span>
+      </button>
+      <button class="nav-item" onclick="showSection('seguridad',this)">
+        <i class="bi bi-shield-lock-fill"></i><span>Seguridad</span>
       </button>
       <button class="nav-item" onclick="showSection('vehiculo',this)">
         <i class="bi bi-car-front-fill"></i><span>Mi Vehículo</span>
@@ -221,161 +221,6 @@
       </div>
     </section>
 
-    <!-- ─── PARQUEADERO ─── -->
-    <section id="section-parqueadero" class="section">
-      <div class="section-header">
-        <div>
-          <h1><i class="bi bi-p-square-fill" style="color:var(--brand-color);margin-right:8px;"></i>Estado del <span
-              class="name-highlight">Parqueadero</span></h1>
-          <p class="section-sub">Ocupación en tiempo real · Solo visualización</p>
-        </div>
-        <button class="btn-download" onclick="loadCupos()" style="align-self:flex-start">
-          <i class="bi bi-arrow-clockwise"></i> Actualizar
-        </button>
-      </div>
-
-      <!-- Tabs Lado A / Lado B -->
-      <div class="dash-lado-tabs" style="margin-bottom:20px;">
-        <button class="dash-lado-tab active" id="park-tab-a" onclick="switchParkLado('A',this)">
-          <i class="bi bi-sign-turn-right-fill"></i> Lado A
-          <span class="side-tab-sub">Espacio abierto</span>
-        </button>
-        <button class="dash-lado-tab" id="park-tab-b" onclick="switchParkLado('B',this)">
-          <i class="bi bi-buildings-fill"></i> Lado B
-          <span class="side-tab-sub">Espacios controlados</span>
-        </button>
-      </div>
-
-      <!-- ══ PANEL LADO A ══ -->
-      <div id="park-panel-A">
-        <!-- Banner -->
-        <div class="lado-banner lado-a-banner"
-          style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-radius:14px;background:linear-gradient(135deg,rgba(21,101,192,.35),rgba(21,101,192,.1));border:1px solid rgba(21,101,192,.3);margin-bottom:18px;">
-          <i class="bi bi-sign-turn-right-fill" style="font-size:28px;color:#64b5f6;"></i>
-          <div>
-            <strong style="font-size:15px;">Lado A — Espacio Abierto</strong>
-            <span style="display:block;font-size:12px;opacity:.65;margin-top:2px;">Carros, motos y bicicletas · Acceso
-              general · Sin cupos fijos</span>
-          </div>
-        </div>
-
-        <!-- Nota informativa -->
-        <div class="rol-info-box info" style="margin-bottom:18px;">
-          <i class="bi bi-info-circle-fill"></i>
-          El Lado A es un espacio abierto sin distribución fija. Solo se lleva conteo por tipo de vehículo.
-        </div>
-
-        <!-- Tarjetas por tipo (todas visibles) -->
-        <div class="cards-row" id="park-a-cards">
-          <div class="stat-card available" id="park-a-carros-card">
-            <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
-            <div class="stat-info">
-              <span class="stat-number" id="park-a-carros">—</span>
-              <span class="stat-label">Carros dentro</span>
-            </div>
-            <div class="stat-badge green">Lado A</div>
-          </div>
-          <div class="stat-card occupied" id="park-a-motos-card">
-            <div class="stat-icon"><i class="bi bi-scooter"></i></div>
-            <div class="stat-info">
-              <span class="stat-number" id="park-a-motos">—</span>
-              <span class="stat-label">Motos dentro</span>
-            </div>
-            <div class="stat-badge red">Lado A</div>
-          </div>
-          <div class="stat-card total">
-            <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
-            <div class="stat-info">
-              <span class="stat-number" id="park-a-bicis">—</span>
-              <span class="stat-label">Bicicletas dentro</span>
-            </div>
-            <div class="stat-badge blue">Lado A</div>
-          </div>
-          <div class="stat-card" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
-            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
-            <div class="stat-info">
-              <span class="stat-number" id="park-a-total">—</span>
-              <span class="stat-label">Total dentro</span>
-            </div>
-            <div class="stat-badge" style="background:rgba(255,255,255,0.15);color:#fff;">Total A</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ══ PANEL LADO B ══ -->
-      <div id="park-panel-B" style="display:none;">
-        <!-- Banner -->
-        <div class="lado-banner lado-b-banner"
-          style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-radius:14px;background:linear-gradient(135deg,rgba(106,27,154,.35),rgba(106,27,154,.1));border:1px solid rgba(106,27,154,.3);margin-bottom:18px;">
-          <i class="bi bi-buildings-fill" style="font-size:28px;color:#ce93d8;"></i>
-          <div>
-            <strong style="font-size:15px;">Lado B — Espacios Controlados</strong>
-            <span style="display:block;font-size:12px;opacity:.65;margin-top:2px;">Mayormente carros · Capacidad máxima:
-              21 cupos</span>
-          </div>
-        </div>
-
-        <!-- Tarjetas Lado B -->
-        <div class="cards-row">
-          <div class="stat-card available">
-            <div class="stat-icon"><i class="bi bi-p-circle-fill"></i></div>
-            <div class="stat-info">
-              <span class="stat-number" id="park-b-disp">—</span>
-              <span class="stat-label">Cupos disponibles</span>
-            </div>
-            <div class="stat-badge green">Libre</div>
-          </div>
-          <div class="stat-card occupied">
-            <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
-            <div class="stat-info">
-              <span class="stat-number" id="park-b-ocup">—</span>
-              <span class="stat-label">Vehículos dentro</span>
-            </div>
-            <div class="stat-badge red" id="park-b-pct-badge">0%</div>
-          </div>
-          <div class="stat-card total">
-            <div class="stat-icon"><i class="bi bi-grid-3x3-gap"></i></div>
-            <div class="stat-info">
-              <span class="stat-number">20</span>
-              <span class="stat-label">Capacidad máxima</span>
-            </div>
-            <div class="stat-badge blue">Total B</div>
-          </div>
-        </div>
-
-        <!-- Barra ocupación -->
-        <div class="glass-panel" style="margin-top:18px;">
-          <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Ocupación Lado B</div>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar-fill" id="park-b-bar" style="width:0%"><span id="park-b-bar-pct">0%</span></div>
-          </div>
-          <div class="progress-labels"><span>0</span><span>10</span><span>20</span></div>
-        </div>
-
-        <!-- Mapa de cupos -->
-        <div class="glass-panel" style="margin-top:18px;">
-          <div class="panel-title"><i class="bi bi-map-fill"></i> Mapa de espacios — Lado B <span
-              style="font-size:11px;font-weight:400;opacity:.5;">(solo lectura)</span></div>
-          <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
-            <span style="font-size:12px;display:flex;align-items:center;gap:5px;"><i class="bi bi-square-fill"
-                style="color:#4caf50;"></i> Libre</span>
-            <span style="font-size:12px;display:flex;align-items:center;gap:5px;"><i class="bi bi-square-fill"
-                style="color:#ef5350;"></i> Ocupado</span>
-          </div>
-          <div style="overflow-x:auto;">
-            <div style="min-width:300px;">
-              <div style="font-size:11px;opacity:.5;text-align:center;margin-bottom:8px;">&#8593; Entrada / Salida</div>
-              <div style="margin-bottom:6px;font-size:11px;opacity:.55;">Fila 1</div>
-              <div id="park-b-grid-row1" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
-              <div style="height:10px;background:rgba(255,255,255,0.07);border-radius:4px;margin-bottom:14px;"></div>
-              <div style="margin-bottom:6px;font-size:11px;opacity:.55;">Fila 2</div>
-              <div id="park-b-grid-row2" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- ─── PERFIL ─── -->
     <section id="section-perfil" class="section">
       <div class="section-header">
@@ -491,23 +336,6 @@
         </div>
 
         <button class="btn-save" onclick="saveProfile()"><i class="bi bi-check2-circle"></i> Guardar cambios</button>
-      </div>
-
-      <!-- Seguridad / Cambiar contraseña -->
-      <div class="glass-panel">
-        <div class="panel-title"><i class="bi bi-shield-lock-fill"></i> Seguridad</div>
-        <div class="profile-form-grid">
-          <div class="form-group">
-            <label><i class="bi bi-key"></i> Contraseña actual</label>
-            <input type="password" id="p-pass-act" placeholder="Ingresa tu contraseña actual" />
-          </div>
-          <div class="form-group">
-            <label><i class="bi bi-key-fill"></i> Nueva contraseña</label>
-            <input type="password" id="p-pass-new" placeholder="Mínimo 8 caracteres" />
-          </div>
-        </div>
-        <button class="btn-save" onclick="changePassword()" style="background:var(--brand-color);"><i
-            class="bi bi-lock-fill"></i> Cambiar contraseña</button>
       </div>
 
       <!-- Vehículos registrados -->
@@ -651,6 +479,57 @@
               vehículo</button>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ─── SEGURIDAD ─── -->
+    <section id="section-seguridad" class="section">
+      <div class="section-header">
+        <div>
+          <h1><i class="bi bi-shield-lock-fill" style="color:var(--brand-color);margin-right:8px;"></i>Seguridad</h1>
+          <p class="section-sub">Cambia tu contraseña cuando lo necesites</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-key-fill"></i> Cambiar contraseña</div>
+        <p style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:18px;">
+          Por seguridad, necesitas ingresar tu contraseña actual antes de establecer una nueva.
+          La nueva contraseña debe tener mínimo 8 caracteres.
+        </p>
+        <div class="profile-form-grid">
+          <div class="form-group full-width">
+            <label><i class="bi bi-lock"></i> Contraseña actual</label>
+            <div class="password-wrapper" style="position:relative;">
+              <input type="password" id="sec-pass-act" placeholder="Ingresa tu contraseña actual" />
+              <span class="eye-icon" onclick="toggleSecPass('sec-pass-act','eye-sec-act')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;font-size:18px;">
+                <i id="eye-sec-act" class="bi bi-eye"></i>
+              </span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-lock-fill"></i> Nueva contraseña</label>
+            <div class="password-wrapper" style="position:relative;">
+              <input type="password" id="sec-pass-new" placeholder="Mínimo 8 caracteres" />
+              <span class="eye-icon" onclick="toggleSecPass('sec-pass-new','eye-sec-new')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;font-size:18px;">
+                <i id="eye-sec-new" class="bi bi-eye"></i>
+              </span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-lock-fill"></i> Confirmar nueva contraseña</label>
+            <div class="password-wrapper" style="position:relative;">
+              <input type="password" id="sec-pass-confirm" placeholder="Repite la nueva contraseña" />
+              <span class="eye-icon" onclick="toggleSecPass('sec-pass-confirm','eye-sec-conf')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;font-size:18px;">
+                <i id="eye-sec-conf" class="bi bi-eye"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div id="sec-pass-match-hint" style="display:none;font-size:12px;margin-bottom:12px;padding:8px 12px;border-radius:8px;"></div>
+        <button class="btn-save" onclick="changePassword()" style="background:var(--brand-color);">
+          <i class="bi bi-shield-check"></i> Actualizar contraseña
+        </button>
       </div>
     </section>
 
@@ -963,15 +842,44 @@
         const cardMotos = document.getElementById('card-motos-a');
 
         if (rol === 'aprendiz') {
+          // Aprendiz ve: bicicletas en Lado A
           if (cardBicis) { cardBicis.style.display = ''; document.getElementById('num-bicis-a').textContent = d.lado_a.bicicletas ?? 0; }
           if (cardCarros) cardCarros.style.display = 'none';
-          if (cardMotos) cardMotos.style.display = 'none';
+          if (cardMotos)  cardMotos.style.display = 'none';
 
-          // Aprendices: ocultar toda la sección de Lado B en el Inicio
-          const hide = id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
-          hide('inicio-ladob-titulo');
-          hide('inicio-ladob-cards');
-          hide('inicio-ladob-barra');
+          // Aprendiz SÍ ve Lado B — pero mostrando bicicletas de ese lado
+          const show = id => { const el = document.getElementById(id); if (el) el.style.display = ''; };
+          show('inicio-ladob-titulo');
+          show('inicio-ladob-cards');
+          show('inicio-ladob-barra');
+
+          // Reemplazar el título de Lado B para aprendices
+          const tituloB = document.getElementById('inicio-ladob-titulo');
+          if (tituloB) tituloB.innerHTML = '<i class="bi bi-p-square"></i> Lado B — Bicicletas <span style="font-size:11px;font-weight:400;opacity:.55;">(en tiempo real)</span>';
+
+          // Remplazar tarjetas de Lado B por el conteo de bicis en ese lado
+          const cardsB = document.getElementById('inicio-ladob-cards');
+          if (cardsB) {
+            const bicisB = d.lado_b.bicicletas ?? 0;
+            const dispB  = d.lado_b.disponibles ?? 0;
+            cardsB.innerHTML = `
+              <div class="stat-card available">
+                <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+                <div class="stat-info">
+                  <span class="stat-number">${bicisB}</span>
+                  <span class="stat-label">Bicicletas adentro</span>
+                </div>
+                <div class="stat-badge green">Lado B</div>
+              </div>
+              <div class="stat-card total">
+                <div class="stat-icon"><i class="bi bi-sign-parking"></i></div>
+                <div class="stat-info">
+                  <span class="stat-number">${dispB}</span>
+                  <span class="stat-label">Cupos disponibles</span>
+                </div>
+                <div class="stat-badge blue">Lado B</div>
+              </div>`;
+          }
         } else {
           if (cardBicis) cardBicis.style.display = 'none';
           if (cardCarros) { cardCarros.style.display = ''; document.getElementById('num-carros-a').textContent = d.lado_a.carros ?? 0; }
@@ -1467,24 +1375,55 @@
     }
 
     async function changePassword() {
-      const actual = document.getElementById('p-pass-act').value;
-      const nuevo = document.getElementById('p-pass-new').value;
-      if (!actual || !nuevo) { showToast('Completa ambos campos de contraseña.', 'error'); return; }
+      const actual   = document.getElementById('sec-pass-act').value;
+      const nuevo    = document.getElementById('sec-pass-new').value;
+      const confirm  = document.getElementById('sec-pass-confirm').value;
+      const hint     = document.getElementById('sec-pass-match-hint');
+
+      if (!actual || !nuevo || !confirm) { showToast('Completa los tres campos de contraseña.', 'error'); return; }
       if (nuevo.length < 8) { showToast('La nueva contraseña debe tener al menos 8 caracteres.', 'error'); return; }
+      if (nuevo !== confirm) {
+        if (hint) { hint.style.display = 'block'; hint.style.background = 'rgba(239,83,80,.12)'; hint.style.color = '#ef9a9a'; hint.style.border = '1px solid rgba(239,83,80,.3)'; hint.textContent = '⚠ Las contraseñas no coinciden.'; }
+        showToast('Las contraseñas nuevas no coinciden.', 'error'); return;
+      }
+      if (hint) hint.style.display = 'none';
 
       try {
         const data = await apiPut('/usuarios/cambiar-password', { password_actual: actual, password_nuevo: nuevo });
-        if (!data.ok) {
-          showToast(data.message || (data.errors && data.errors[0].msg) || 'Error al cambiar contraseña.', 'error');
-          return;
-        }
-        document.getElementById('p-pass-act').value = '';
-        document.getElementById('p-pass-new').value = '';
-        showToast('Contraseña actualizada correctamente.', 'success');
-      } catch {
-        showToast('Error de conexión.', 'error');
-      }
+        if (!data.ok) { showToast(data.message || (data.errors && data.errors[0].msg) || 'Error al cambiar contraseña.', 'error'); return; }
+        document.getElementById('sec-pass-act').value = '';
+        document.getElementById('sec-pass-new').value = '';
+        document.getElementById('sec-pass-confirm').value = '';
+        showToast('Contraseña actualizada correctamente ✓', 'success');
+      } catch { showToast('Error de conexión.', 'error'); }
     }
+
+    function toggleSecPass(inputId, iconId) {
+      const inp = document.getElementById(inputId);
+      const ico = document.getElementById(iconId);
+      if (!inp) return;
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      if (ico) { ico.className = inp.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash'; }
+    }
+
+    // Validación en tiempo real del campo "confirmar contraseña"
+    document.addEventListener('DOMContentLoaded', () => {
+      const newPass  = document.getElementById('sec-pass-new');
+      const confPass = document.getElementById('sec-pass-confirm');
+      const hint     = document.getElementById('sec-pass-match-hint');
+      if (!newPass || !confPass || !hint) return;
+      const check = () => {
+        if (!confPass.value) { hint.style.display = 'none'; return; }
+        const ok = newPass.value === confPass.value;
+        hint.style.display = 'block';
+        hint.style.background  = ok ? 'rgba(76,175,80,.12)' : 'rgba(239,83,80,.12)';
+        hint.style.color       = ok ? '#a5d6a7' : '#ef9a9a';
+        hint.style.border      = ok ? '1px solid rgba(76,175,80,.3)' : '1px solid rgba(239,83,80,.3)';
+        hint.textContent       = ok ? '✓ Las contraseñas coinciden.' : '⚠ Las contraseñas no coinciden.';
+      };
+      newPass.addEventListener('input', check);
+      confPass.addEventListener('input', check);
+    });
 
     // ════════ VEHÍCULOS ════════
     async function loadVehiculos() {
@@ -1715,9 +1654,8 @@
       else { const nb = document.querySelector(`.nav-item[onclick*="'${name}'"]`); if (nb) nb.classList.add('active'); }
       document.getElementById('sidebar').classList.remove('open');
       document.getElementById('overlay').classList.remove('show');
-      if (name === 'vehiculo') applyRolToVehicleSection();
+      if (name === 'vehiculo')  applyRolToVehicleSection();
       if (name === 'historial') { histPage = 1; loadHistorial(); }
-      if (name === 'parqueadero') loadCupos();
     }
 
     function toggleSidebar() {
