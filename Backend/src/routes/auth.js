@@ -175,8 +175,8 @@ router.post('/admin-register',
       const hash = await bcrypt.hash(password, 10);
       const qr   = generateQR(numero_id);
 
-      await query(
-        'INSERT INTO usuarios (nombre_completo, numero_id, password_hash, qr_code, activo, email, rol, tipo_id, id_centro) VALUES (@nombre, @nid, @hash, @qr, true, @email, @rol, @tipo_id, @centro)',
+      const insResult = await query(
+        'INSERT INTO usuarios (nombre_completo, numero_id, password_hash, qr_code, activo, email, rol, tipo_id, id_centro) VALUES (@nombre, @nid, @hash, @qr, true, @email, @rol, @tipo_id, @centro) RETURNING id_usuario',
         {
           nombre:  nombre_completo,
           nid:     numero_id,
@@ -189,6 +189,7 @@ router.post('/admin-register',
         }
       );
 
+      const id_usuario = insResult.rows[0]?.id_usuario;
 
       // Enviar correo de bienvenida si el usuario tiene email registrado
       if (email) {
@@ -197,7 +198,7 @@ router.post('/admin-register',
           .catch(err => console.error('[mailer] Error enviando bienvenida:', err));
       }
 
-      return res.status(201).json({ ok: true, message: 'Usuario registrado correctamente.' });
+      return res.status(201).json({ ok: true, message: 'Usuario registrado correctamente.', id_usuario });
     } catch (err) {
       console.error('Error en admin-register:', err);
       return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
