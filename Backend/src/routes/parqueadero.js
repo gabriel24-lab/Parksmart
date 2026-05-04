@@ -88,7 +88,8 @@ async function registrarSalida(client, id_usuario) {
     throw new Error('No tienes una entrada activa en el parqueadero.');
 
   const { id_registro, id_lado, fecha_entrada, id_tipo } = activeEntry.rows[0];
-  const esBicicleta = Number(id_tipo) === 1;
+const esBicicleta = Number(id_tipo) === 1;
+console.log('[DEBUG salida] id_tipo:', id_tipo, '| esBicicleta:', esBicicleta);
 
   await client.query(
     `UPDATE registros_uso
