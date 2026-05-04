@@ -38,6 +38,7 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
     [id_vehiculo]
   );
   const esBicicleta = tipoCheck.rows.length > 0 && Number(tipoCheck.rows[0].id_tipo) === 1;
+console.log('[DEBUG] id_tipo:', tipoCheck.rows[0]?.id_tipo, '| esBicicleta:', esBicicleta);
 
   if (!esBicicleta) {
     // Solo verificar y descontar cupos para vehículos que NO son bicicleta
