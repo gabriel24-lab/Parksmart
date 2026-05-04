@@ -23,7 +23,54 @@ const upload = multer({
   },
 });
 
-// Tipos según la tabla tipos_vehiculo en Supabase:
+const { requireRol } = require('../middlewares/auth');
+
+// ── POST /api/vehiculos/admin ─────────────────────────────────────────
+// Solo admins. Registra un vehículo para otro usuario (sin foto).
+router.post('/admin',
+  requireRol('admin'),
+  [
+    body('id_usuario').isInt({ min: 1 }).withMessage('id_usuario requerido.'),
+    body('id_tipo').isInt({ min: 1, max: 4 }).withMessage('Tipo de vehículo inválido.'),
+    body('color').trim().notEmpty().withMessage('Color requerido.'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+
+    const { id_usuario, id_tipo, placa, modelo, color, descripcion } = req.body;
+    const tipoNum = parseInt(id_tipo);
+
+    if (tipoNum !== 1 && !placa?.trim())
+      return res.status(400).json({ ok: false, message: 'La placa es obligatoria para este tipo de vehículo.' });
+    if (tipoNum === 1 && !modelo?.trim())
+      return res.status(400).json({ ok: false, message: 'El modelo es obligatorio para bicicletas.' });
+
+    try {
+      const result = await query(
+        `INSERT INTO vehiculos (id_usuario, id_tipo, placa, modelo, color, descripcion)
+         VALUES (@uid, @tipo, @placa, @modelo, @color, @desc)
+         RETURNING id_vehiculo`,
+        {
+          uid:    parseInt(id_usuario),
+          tipo:   tipoNum,
+          placa:  placa?.trim()       || null,
+          modelo: modelo?.trim()      || null,
+          color:  color.trim(),
+          desc:   descripcion?.trim() || null,
+        }
+      );
+      return res.status(201).json({
+        ok:          true,
+        message:     'Vehículo registrado por administrador.',
+        id_vehiculo: result.rows[0].id_vehiculo,
+      });
+    } catch (err) {
+      console.error('vehiculos/admin POST:', err);
+      return res.status(500).json({ ok: false, message: 'Error interno.' });
+    }
+  }
+);
 // 1=Bicicleta, 2=Motocicleta, 3=Auto, 4=Furgoneta
 const TIPOS_POR_ROL = {
   aprendiz:    [1],
