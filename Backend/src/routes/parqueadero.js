@@ -60,7 +60,8 @@ console.log('[DEBUG] id_tipo:', tipoCheck.rows[0]?.id_tipo, '| esBicicleta:', es
     [id_usuario, id_vehiculo, id_lado]
   );
 
-  // Solo actualizar cupos si NO es bicicleta
+// Solo actualizar cupos si NO es bicicleta
+  console.log('[DEBUG] actualizando cupos:', !esBicicleta);
   if (!esBicicleta) {
     await client.query(
       `UPDATE cupos SET ocupados = ocupados + 1, ultima_actualizacion = NOW()
@@ -69,6 +70,7 @@ console.log('[DEBUG] id_tipo:', tipoCheck.rows[0]?.id_tipo, '| esBicicleta:', es
     );
   }
 
+  console.log('[DEBUG] entrada completada sin tocar cupos:', esBicicleta);
   return insert.rows[0].id_registro;
 }
 
