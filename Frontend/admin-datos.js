@@ -1,9 +1,7 @@
 // admin-datos.js — Carga de datos, gráficas e historial
 'use strict';
 
-      cargarStatsAvanzados(),
-    ]), 60000);
-  });
+  setInterval(() => cargarStatsAvanzados(), 60000);
 
   async function cargarStatsAvanzados() {
     try {

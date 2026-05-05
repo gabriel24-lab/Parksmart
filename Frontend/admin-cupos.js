@@ -168,3 +168,5 @@
       cargarCuposDesdeAPI(),
       cargarRecientesDesdeAPI(),
       cargarUsuariosDesdeAPI(),
+    ]), 60000);
+  });
