@@ -1681,9 +1681,9 @@
             </button>
           </div>`;
       } else {
-        const ladoOpts = tieneCarro
-          ? '<option value="1">Lado A</option><option value="2">Lado B</option>'
-          : '<option value="1">Lado A</option>';
+        // Ambos lados disponibles para todos los roles:
+        // las bicicletas pueden entrar al Lado B sin consumir cupos
+        const ladoOpts = '<option value="1">Lado A</option><option value="2">Lado B</option>';
 
         let vehiculoOpts = '';
         if (u.vehiculos && u.vehiculos.length > 1) {
