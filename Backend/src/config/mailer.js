@@ -1,16 +1,20 @@
 //  Configuración de Nodemailer
 const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,           // Puerto 587 con STARTTLS — funciona en Render free
+  secure: false,       // false = STARTTLS (no SSL directo)
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
   },
-  // Timeouts para evitar que el servidor se quede colgado
-  connectionTimeout: 10000,  // 10s para conectar
-  greetingTimeout:   8000,   // 8s para el saludo SMTP
-  socketTimeout:     15000,  // 15s por operación
-  pool: false,               // Sin pool — conexión nueva por envío
+  connectionTimeout: 15000,
+  greetingTimeout:   10000,
+  socketTimeout:     20000,
+  pool: false,
+  tls: {
+    rejectUnauthorized: false, // Evita errores de certificado en algunos entornos
+  },
 });
 
 // Verificar configuración al arrancar (solo log, no bloquea)
