@@ -338,15 +338,22 @@
       }
 
       setLoading('btn-2', true, '<i class="bi bi-envelope-fill"></i> Enviar código');
+
+      // Timeout de 20 segundos para evitar que el botón quede bloqueado indefinidamente
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
+
       try {
         const res  = await fetch(`${API}/auth/recuperar/enviar-codigo`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal:  controller.signal,
           body:    JSON.stringify({
             id_usuario:        state.id_usuario,
             email_alternativo: usandoAlternativo ? emailAlt : null,
           }),
         });
+        clearTimeout(timeout);
         const data = await res.json();
         if (!data.ok) { setErr('err-2', data.message); return; }
 
@@ -355,8 +362,13 @@
 
         irAPaso(3);
         iniciarCountdown();
-      } catch {
-        setErr('err-2', 'No se pudo enviar el correo.');
+      } catch (err) {
+        clearTimeout(timeout);
+        if (err.name === 'AbortError') {
+          setErr('err-2', 'El servidor tardó demasiado. Intenta de nuevo.');
+        } else {
+          setErr('err-2', 'No se pudo enviar el correo. Verifica tu conexión.');
+        }
       } finally {
         setLoading('btn-2', false, '<i class="bi bi-envelope-fill"></i> Enviar código');
       }
