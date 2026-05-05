@@ -147,8 +147,16 @@ router.get('/ocupacion-rol', async (req, res) => {
 
     const mapA = grupos[1] || {};
     const mapB = grupos[2] || {};
+
+    // Lado A: total incluye todos los vehículos (bicicletas solo se cuentan)
     const totalA = Object.values(mapA).reduce((s, v) => s + v, 0);
-    const totalB = Object.values(mapB).reduce((s, v) => s + v, 0);
+
+    // Lado B: los cupos son SOLO para carros, motos y furgonetas
+    // Las bicicletas en lado B se muestran pero NO consumen cupos
+    const bicisB  = mapB['bicicleta'] || 0;
+    const totalB  = Object.values(mapB).reduce((s, v) => s + v, 0);
+    const ocupadosB = totalB - bicisB; // solo vehículos que consumen cupo
+
     const CAPACIDAD_B = 21;
 
     return res.json({
@@ -164,12 +172,12 @@ router.get('/ocupacion-rol', async (req, res) => {
           total:      totalA,
         },
         lado_b: {
-          ocupados:    totalB,
+          ocupados:    ocupadosB,
           capacidad:   CAPACIDAD_B,
-          disponibles: Math.max(0, CAPACIDAD_B - totalB),
+          disponibles: Math.max(0, CAPACIDAD_B - ocupadosB),
           carros:      (mapB['auto'] || mapB['carro'] || mapB['automóvil'] || 0),
           motos:       (mapB['motocicleta'] || mapB['moto'] || 0),
-          bicicletas:  (mapB['bicicleta'] || 0),
+          bicicletas:  bicisB,
           furgonetas:  (mapB['furgoneta'] || 0),
         },
       },
