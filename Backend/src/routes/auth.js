@@ -353,7 +353,13 @@ router.post('/recuperar/enviar-codigo', async (req, res) => {
       { uid: id_usuario, codigo, email: emailDestino, expira }
     );
 
-    await enviarCodigoRecuperacion(emailDestino, codigo, user.nombre_completo);
+    try {
+      await enviarCodigoRecuperacion(emailDestino, codigo, user.nombre_completo);
+    } catch (mailErr) {
+      // Si el correo falla, el código ya está guardado en BD
+      // Se responde igual para no bloquear al usuario — el log queda en servidor
+      console.error('[mailer] Error enviando código de recuperación:', mailErr.message);
+    }
 
     return res.json({ ok: true, message: 'Código enviado correctamente.', email_masked: maskEmail(emailDestino) });
   } catch (err) {
