@@ -38,7 +38,6 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
     [id_vehiculo]
   );
   const esBicicleta = tipoCheck.rows.length > 0 && Number(tipoCheck.rows[0].id_tipo) === 1;
-console.log('[DEBUG] id_tipo:', tipoCheck.rows[0]?.id_tipo, '| esBicicleta:', esBicicleta);
 
   if (!esBicicleta) {
     // Solo verificar y descontar cupos para vehículos que NO son bicicleta
@@ -61,7 +60,6 @@ console.log('[DEBUG] id_tipo:', tipoCheck.rows[0]?.id_tipo, '| esBicicleta:', es
   );
 
 // Solo actualizar cupos si NO es bicicleta
-  console.log('[DEBUG] actualizando cupos:', !esBicicleta);
   if (!esBicicleta) {
     await client.query(
       `UPDATE cupos SET ocupados = ocupados + 1, ultima_actualizacion = NOW()
@@ -69,8 +67,6 @@ console.log('[DEBUG] id_tipo:', tipoCheck.rows[0]?.id_tipo, '| esBicicleta:', es
       [id_lado]
     );
   }
-
-  console.log('[DEBUG] entrada completada sin tocar cupos:', esBicicleta);
   return insert.rows[0].id_registro;
 }
 
@@ -89,7 +85,6 @@ async function registrarSalida(client, id_usuario) {
 
   const { id_registro, id_lado, fecha_entrada, id_tipo } = activeEntry.rows[0];
 const esBicicleta = Number(id_tipo) === 1;
-console.log('[DEBUG salida] id_tipo:', id_tipo, '| esBicicleta:', esBicicleta);
 
   await client.query(
     `UPDATE registros_uso
