@@ -148,26 +148,27 @@
         const cardMotos = document.getElementById('card-motos-a');
 
         if (rol === 'aprendiz') {
-          // Aprendiz ve: bicicletas en Lado A
+          // Aprendiz: solo ve bicicletas en Lado A
           if (cardBicis) { cardBicis.style.display = ''; document.getElementById('num-bicis-a').textContent = d.lado_a.bicicletas ?? 0; }
           if (cardCarros) cardCarros.style.display = 'none';
           if (cardMotos)  cardMotos.style.display = 'none';
 
-          // Aprendiz SÍ ve Lado B — pero mostrando bicicletas de ese lado
+          // Lado B para aprendices: solo muestra cuántas bicicletas hay
+          // No se muestran cupos disponibles ni capacidad (son solo para carros)
           const show = id => { const el = document.getElementById(id); if (el) el.style.display = ''; };
+          const hide = id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
           show('inicio-ladob-titulo');
           show('inicio-ladob-cards');
-          show('inicio-ladob-barra');
+          hide('inicio-ladob-barra'); // la barra de ocupación es de carros, no aplica
 
-          // Reemplazar el título de Lado B para aprendices
+          // Título actualizado
           const tituloB = document.getElementById('inicio-ladob-titulo');
-          if (tituloB) tituloB.innerHTML = '<i class="bi bi-p-square"></i> Lado B — Bicicletas <span style="font-size:11px;font-weight:400;opacity:.55;">(en tiempo real)</span>';
+          if (tituloB) tituloB.innerHTML = '<i class="bi bi-p-square"></i> Lado B <span style="font-size:11px;font-weight:400;opacity:.55;">(bicicletas en tiempo real)</span>';
 
-          // Remplazar tarjetas de Lado B por el conteo de bicis en ese lado
+          // Solo la tarjeta de bicicletas — sin cupos ni capacidad
           const cardsB = document.getElementById('inicio-ladob-cards');
           if (cardsB) {
             const bicisB = d.lado_b.bicicletas ?? 0;
-            const dispB  = d.lado_b.disponibles ?? 0;
             cardsB.innerHTML = `
               <div class="stat-card available">
                 <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
@@ -176,16 +177,9 @@
                   <span class="stat-label">Bicicletas adentro</span>
                 </div>
                 <div class="stat-badge green">Lado B</div>
-              </div>
-              <div class="stat-card total">
-                <div class="stat-icon"><i class="bi bi-sign-parking"></i></div>
-                <div class="stat-info">
-                  <span class="stat-number">${dispB}</span>
-                  <span class="stat-label">Cupos disponibles</span>
-                </div>
-                <div class="stat-badge blue">Lado B</div>
               </div>`;
           }
+
         } else {
           if (cardBicis) cardBicis.style.display = 'none';
           if (cardCarros) { cardCarros.style.display = ''; document.getElementById('num-carros-a').textContent = d.lado_a.carros ?? 0; }
