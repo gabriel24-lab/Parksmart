@@ -9,8 +9,14 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
 });
 
+// El evento 'connect' se dispara por cada conexión nueva del pool.
+// Solo logeamos la primera para no llenar los logs de Render.
+let _primeraConexion = true;
 pool.on('connect', () => {
-  console.log('✅ Conectado a Supabase (PostgreSQL)');
+  if (_primeraConexion) {
+    console.log('✅ Conectado a Supabase (PostgreSQL)');
+    _primeraConexion = false;
+  }
 });
 
 pool.on('error', (err) => {
