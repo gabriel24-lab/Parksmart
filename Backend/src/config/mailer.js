@@ -6,7 +6,21 @@ const transporter = nodemailer.createTransport({
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
   },
+  // Timeouts para evitar que el servidor se quede colgado
+  connectionTimeout: 10000,  // 10s para conectar
+  greetingTimeout:   8000,   // 8s para el saludo SMTP
+  socketTimeout:     15000,  // 15s por operación
+  pool: false,               // Sin pool — conexión nueva por envío
 });
+
+// Verificar configuración al arrancar (solo log, no bloquea)
+if (process.env.MAIL_USER && process.env.MAIL_PASS) {
+  transporter.verify().then(() => {
+    console.log('✅ Nodemailer conectado a Gmail correctamente');
+  }).catch(err => {
+    console.error('⚠️  Nodemailer: error de configuración Gmail:', err.message);
+  });
+}
 
 /**
  * Envía el código de recuperación de contraseña.
