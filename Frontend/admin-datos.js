@@ -476,12 +476,13 @@
       const data = await res.json();
       if (!data.ok) { showToast(data.message || 'Error al registrar salida', 'error'); return; }
     } catch (e) { showToast('Error de conexión', 'error'); return; }
-    
+
     await cargarCuposDesdeAPI();
     await cargarUsuariosDesdeAPI();
     await cargarRecientesDesdeAPI();
     showToast(`${u.nombre} → Salida registrada ✓`);
   }
+  window.toggleUserStatus = withRequestGuard(toggleUserStatus, 'toggleUserStatus');
 
   async function toggleUserStatusWithLado(id) {
     const u = usuarios.find(x => x.id === id);
@@ -489,7 +490,7 @@
     const ladoSel = document.getElementById('lado-sel-' + id);
     const lado = ladoSel ? parseInt(ladoSel.value) : 1;
     const ladoNombre = lado === 2 ? 'B' : 'A';
-    
+
     let id_vehiculo = null;
     const vehSel = document.getElementById('veh-sel-' + id);
     if (vehSel) {
@@ -497,7 +498,7 @@
     } else if (u.vehiculos && u.vehiculos.length > 0) {
       id_vehiculo = u.vehiculos[0].id_vehiculo;
     }
-    
+
     if (!id_vehiculo) {
       showToast('Este usuario no tiene vehículos registrados.', 'error');
       return;
@@ -517,6 +518,7 @@
     await cargarRecientesDesdeAPI();
     showToast(`${u.nombre} → Entrada registrada (Lado ${ladoNombre}) ✓`);
   }
+  window.toggleUserStatusWithLado = withRequestGuard(toggleUserStatusWithLado, 'toggleUserStatusWithLado');
 
   // ── Instancias de gráficas de lados A / B (para poder destruirlas y re-renderizar)
   let _chartHoraAInst = null, _chartTipoAInst = null;

@@ -92,3 +92,18 @@ async function apiPostForm(endpoint, formData) {
   if (!res) return { ok: false, message: 'Sesión expirada.' };
   return res.json();
 }
+
+// ── Sistema de protección contra dobles peticiones ──────────────────────
+const requestInProgress = new Set();
+
+function withRequestGuard(fn, key) {
+  return async function(...args) {
+    if (requestInProgress.has(key)) return;
+    requestInProgress.add(key);
+    try {
+      return await fn.apply(this, args);
+    } finally {
+      requestInProgress.delete(key);
+    }
+  };
+}

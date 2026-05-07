@@ -316,6 +316,7 @@ async function adminEntrada(id_usuario, uid_key) {
       </div>`;
   } catch { showToast('Error de conexión', 'error'); }
 }
+window.adminEntrada = withRequestGuard(adminEntrada, 'adminEntrada');
 
 async function adminSalida(id_usuario) {
   try {
@@ -336,6 +337,7 @@ async function adminSalida(id_usuario) {
       </div>`;
   } catch { showToast('Error de conexión', 'error'); }
 }
+window.adminSalida = withRequestGuard(adminSalida, 'adminSalida');
 
   function registerEvent(userId, tipo) {
     const u = usuarios.find(x => x.id === userId);
@@ -461,7 +463,6 @@ async function adminSalida(id_usuario) {
     const centro = document.getElementById('reg-centro').value || null;
     const email  = document.getElementById('reg-email').value.trim();
     const rol    = document.getElementById('reg-rol').value;
-    // La contraseña temporal es automáticamente el número de identificación
     const pass   = numId;
 
     if (!nombre || !tipoId || !numId) {
@@ -565,6 +566,7 @@ async function adminSalida(id_usuario) {
     }
     if (btn) { btn.innerHTML = '<i class="bi bi-person-check-fill"></i> Registrar usuario'; btn.disabled = false; }
   }
+  window.registrarUsuario = withRequestGuard(registrarUsuario, 'registrarUsuario');
 
   // ══ PERFIL ADMIN ══
   function updateAdminAvatar(nombre) {
@@ -596,7 +598,7 @@ async function adminSalida(id_usuario) {
     const btn = document.querySelector('#section-perfil .btn-save');
     const oldText = btn.innerHTML;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
-    
+
     const nombre_completo = document.getElementById('a-nombre').value.trim();
     const email = document.getElementById('a-email').value.trim();
     const tipo_id = document.getElementById('a-tipo-id').value;
@@ -612,12 +614,12 @@ async function adminSalida(id_usuario) {
     try {
       const res = await apiFetch('/usuarios/perfil', {
         method: 'PUT',
-        body: JSON.stringify({ 
-          nombre_completo, 
+        body: JSON.stringify({
+          nombre_completo,
           email,
-          tipo_id, 
-          numero_id, 
-          id_centro: id_centro ? parseInt(id_centro) : null 
+          tipo_id,
+          numero_id,
+          id_centro: id_centro ? parseInt(id_centro) : null
         })
       });
       const data = await res.json();
@@ -636,6 +638,7 @@ async function adminSalida(id_usuario) {
     }
     setTimeout(() => { btn.innerHTML = '<i class="bi bi-check2-circle"></i> Guardar cambios'; btn.style.background = ''; }, 2200);
   }
+  window.saveAdminProfile = withRequestGuard(saveAdminProfile, 'saveAdminProfile');
 
   async function changeAdminPassword() {
     const actual = document.getElementById('a-pass-act').value;
@@ -649,10 +652,10 @@ async function adminSalida(id_usuario) {
         body: JSON.stringify({ password_actual: actual, password_nuevo: nuevo })
       });
       const data = await res.json();
-      
-      if (!data.ok) { 
-         showToast(data.message || (data.errors && data.errors[0].msg) || 'Error al cambiar contraseña.', 'error'); 
-         return; 
+
+      if (!data.ok) {
+         showToast(data.message || (data.errors && data.errors[0].msg) || 'Error al cambiar contraseña.', 'error');
+         return;
       }
       document.getElementById('a-pass-act').value = '';
       document.getElementById('a-pass-new').value = '';
@@ -661,20 +664,22 @@ async function adminSalida(id_usuario) {
       showToast('Error de conexión.', 'error');
     }
   }
+  window.changeAdminPassword = withRequestGuard(changeAdminPassword, 'changeAdminPassword');
 
   // ════════ LOGOUT ════════
   async function handleLogout() {
     try {
       if (typeof Auth !== 'undefined' && Auth.getRefreshToken) {
-        await apiFetch('/auth/logout', { 
-          method: 'POST', 
-          body: JSON.stringify({ refresh_token: Auth.getRefreshToken() }) 
+        await apiFetch('/auth/logout', {
+          method: 'POST',
+          body: JSON.stringify({ refresh_token: Auth.getRefreshToken() })
         });
         Auth.clear();
       }
     } catch (e) { }
     window.location.href = 'login.html';
   }
+  window.handleLogout = withRequestGuard(handleLogout, 'handleLogout');
 
   // ══ VEHÍCULO ADMIN ══
   function setAdminVehicle(type, btn) {
@@ -693,11 +698,10 @@ async function adminSalida(id_usuario) {
     const formData = new FormData();
     const isBici = tipo === 'bicicleta';
     const idTipo = tipo === 'carro' ? 3 : tipo === 'moto' ? 2 : tipo === 'furgoneta' ? 4 : 1;
-    
+
     formData.append('id_tipo', idTipo);
     const pre = tipo === 'carro' ? 'c' : tipo === 'moto' ? 'm' : 'b';
-    
-    // Extracción de datos según placeholders
+
     const inputs = document.querySelectorAll(`#av-form-${tipo} input[type="text"]`);
     if (!isBici) {
       const placa = inputs[0].value.trim();
@@ -708,14 +712,14 @@ async function adminSalida(id_usuario) {
       if (!modelo) { showToast('El modelo es obligatorio', 'error'); btn.innerHTML=oldText; return; }
       formData.append('modelo', modelo);
     }
-    
+
     const color = inputs[1].value.trim();
     if (!color) { showToast('El color es obligatorio', 'error'); btn.innerHTML=oldText; return; }
     formData.append('color', color);
-    
+
     const desc = document.querySelector(`#av-form-${tipo} textarea`).value.trim();
     if (desc) formData.append('descripcion', desc);
-    
+
     const fileInput = document.getElementById(`av-foto-${pre}`);
     if (fileInput && fileInput.files[0]) {
       formData.append('foto', fileInput.files[0]);
@@ -743,6 +747,7 @@ async function adminSalida(id_usuario) {
     } catch { showToast('Error de conexión', 'error'); }
     setTimeout(() => { btn.innerHTML = oldText; btn.style.background = ''; }, 2500);
   }
+  window.saveAdminVehicle = withRequestGuard(saveAdminVehicle, 'saveAdminVehicle');
 
   // ══ NAVEGACIÓN ══
   function showSection(name, btn) {
