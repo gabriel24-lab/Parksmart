@@ -4,7 +4,8 @@ const sgMail = require('@sendgrid/mail');
 // Inicializar SendGrid con la API Key
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-const FROM_EMAIL = 'noreply@parksmart.sena.edu.co';
+// IMPORTANTE: Usar un email verificado en SendGrid o uno que venga en el plan gratuito
+const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'noreply@parksmart.sena.edu.co';
 const FROM_NAME = 'SENA Parksmart';
 
 /**
