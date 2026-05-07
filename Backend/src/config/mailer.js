@@ -48,6 +48,9 @@ async function enviarCodigoRecuperacion(destino, codigo, nombre) {
     await sgMail.send(msg);
   } catch (error) {
     console.error('Error enviando correo de recuperación:', error);
+    if (error.response?.body?.errors) {
+      console.error('SendGrid errors:', JSON.stringify(error.response.body.errors));
+    }
     throw error;
   }
 }
