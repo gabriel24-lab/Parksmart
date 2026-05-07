@@ -1,21 +1,19 @@
-// src/config/mailer.js — Configuración de Nodemailer
-const nodemailer = require('nodemailer');
+// src/config/mailer.js — Configuración de SendGrid
+const sgMail = require('@sendgrid/mail');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-});
+// Inicializar SendGrid con la API Key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+const FROM_EMAIL = 'noreply@parksmart.sena.edu.co';
+const FROM_NAME = 'SENA Parksmart';
 
 /**
  * Envía el código de recuperación de contraseña.
  */
 async function enviarCodigoRecuperacion(destino, codigo, nombre) {
-  const mailOptions = {
-    from: `"SENA Parksmart" <${process.env.MAIL_USER}>`,
+  const msg = {
     to: destino,
+    from: { email: FROM_EMAIL, name: FROM_NAME },
     subject: 'Código de recuperación de contraseña — Parksmart',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #0a0a0c; color: #fff; border-radius: 12px; overflow: hidden;">
@@ -44,12 +42,18 @@ async function enviarCodigoRecuperacion(destino, codigo, nombre) {
       </div>
     `,
   };
-  await transporter.sendMail(mailOptions);
+
+  try {
+    await sgMail.send(msg);
+  } catch (error) {
+    console.error('Error enviando correo de recuperación:', error);
+    throw error;
+  }
 }
 
-/**
- * Envía correo de bienvenida al usuario registrado manualmente por un admin.
- */
+/**sg = {
+    to: destino,
+    from: { email: FROM_EMAIL, name: FROM_NAME }
 async function enviarBienvenidaAdmin(destino, nombre, numero_id, rol, urlLogin) {
   const rolCapitalizado = rol.charAt(0).toUpperCase() + rol.slice(1);
 
@@ -99,16 +103,22 @@ async function enviarBienvenidaAdmin(destino, nombre, numero_id, rol, urlLogin) 
           </div>
           <div style="padding:18px 36px;border-top:1px solid #21262d;text-align:center;">
             <p style="margin:0;font-size:11px;color:#484f58;">Parksmart · SENA-CENTRO CIGEC</p>
-          </div>
+
+  try {
+    await sgMail.send(msg);
+  } catch (error) {
+    console.error('Error enviando correo de bienvenida admin:', error);
+    throw error;
+  }
         </div>
       </body>
       </html>
     `,
   };
   await transporter.sendMail(mailOptions);
-}
-
-/**
+}sg = {
+    to: destino,
+    from: { email: FROM_EMAIL, name: FROM_NAME }
  * Envía correo de bienvenida al aprendiz que se registra desde la página pública.
  */
 async function enviarBienvenidaAprendiz(destino, nombre, urlLogin) {
@@ -142,7 +152,13 @@ async function enviarBienvenidaAprendiz(destino, nombre, urlLogin) {
           </div>
           <div style="padding:18px 36px;border-top:1px solid #21262d;text-align:center;">
             <p style="margin:0;font-size:11px;color:#484f58;">Parksmart · SENA-CENTRO CIGEC</p>
-          </div>
+
+  try {
+    await sgMail.send(msg);
+  } catch (error) {
+    console.error('Error enviando correo de bienvenida aprendiz:', error);
+    throw error;
+  }
         </div>
       </body>
       </html>

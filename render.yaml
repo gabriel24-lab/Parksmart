@@ -22,9 +22,7 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_KEY
         sync: false
-      - key: MAIL_USER
-        sync: false
-      - key: MAIL_PASS
+      - key: SENDGRID_API_KEY
         sync: false
       - key: PORT
         value: "10000"
