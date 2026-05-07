@@ -503,7 +503,11 @@
       }
     }
 
+    let isSavingVehicle = false;
+
     async function saveVehicle(tipo) {
+      if (isSavingVehicle) return;
+
       const rol = getCurrentRol();
       if (!rol) { showToast('Configura tu rol en el perfil primero.', 'error'); return; }
 
@@ -533,6 +537,7 @@
         if (foto) formData.append('foto', foto);
       }
 
+      isSavingVehicle = true;
       try {
         const data = await apiPostForm('/vehiculos', formData);
         if (!data.ok) { showToast(data.message || 'Error al guardar.', 'error'); return; }
@@ -544,6 +549,7 @@
         await generateUserQR();
         showToast('¡Vehículo registrado!', 'success');
       } catch { showToast('Error de conexión.', 'error'); }
+      finally { isSavingVehicle = false; }
     }
 
     function clearVehicleForm(tipo) {

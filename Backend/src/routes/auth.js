@@ -353,9 +353,26 @@ router.post('/recuperar/enviar-codigo', async (req, res) => {
       { uid: id_usuario, codigo, email: emailDestino, expira }
     );
 
-    await enviarCodigoRecuperacion(emailDestino, codigo, user.nombre_completo);
+    // Timeout de 20s para el envío del correo — evita que el servidor quede colgado
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout al enviar correo')), 20000)
+    );
 
-    return res.json({ ok: true, message: 'Código enviado correctamente.', email_masked: maskEmail(emailDestino) });
+    try {
+      await Promise.race([
+        enviarCodigoRecuperacion(emailDestino, codigo, user.nombre_completo),
+        timeoutPromise,
+      ]);
+      return res.json({ ok: true, message: 'Código enviado correctamente.', email_masked: maskEmail(emailDestino) });
+    } catch (mailErr) {
+      console.error('[mailer] Error enviando código:', mailErr.message);
+      // El código está guardado aunque el correo falle — informar al usuario
+      return res.status(200).json({
+        ok: false,
+        message: 'No se pudo enviar el correo. Verifica que el correo sea correcto e intenta de nuevo.',
+        email_masked: maskEmail(emailDestino),
+      });
+    }
   } catch (err) {
     console.error('Error enviando código:', err);
     return res.status(500).json({ ok: false, message: 'No se pudo enviar el correo. Verifica la configuración del servidor.' });
