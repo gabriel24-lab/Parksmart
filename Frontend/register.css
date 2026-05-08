@@ -195,7 +195,7 @@ body {
 }
 
 .input-wrapper input::placeholder {
-  color: #aaa;
+  color: #d1d1d1;
 }
 
 .input-wrapper input:focus {
@@ -215,7 +215,7 @@ body {
   display: flex;
   align-items: center;
   font-size: 18px;
-  color: #aaa;
+  color: #d1d1d1;
 }
 
 .eye-icon:hover i {

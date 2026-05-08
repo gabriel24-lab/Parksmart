@@ -176,7 +176,7 @@ body {
 }
 
 .form-group input::placeholder {
-  color: #3dba55;
+  color: #d1d1d1;
 }
 
 .form-group input:focus {
