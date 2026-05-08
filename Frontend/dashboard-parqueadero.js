@@ -11,7 +11,7 @@
     let userProfile = null;
 
     const ROL_LABELS = { aprendiz: 'Aprendiz', funcionario: 'Funcionario', instructor: 'Instructor', admin: 'Admin' };
-    const ROL_COLORS = { aprendiz: '#1565c0', funcionario: '#2e7d32', instructor: '#6a1b9a', admin: '#b71c1c' };
+    const ROL_COLORS = { aprendiz: '#1565c0', funcionario: '#2e7d32', instructor: '#6a1b9a', admin: '#2FA440' };
     const TIPO_ICONS = { bicicleta: 'bi-bicycle', carro: 'bi-car-front-fill', moto: 'bi-scooter'};
     const TIPO_LABELS = { bicicleta: 'Bicicleta', carro: 'Carro', moto: 'Moto'};
 

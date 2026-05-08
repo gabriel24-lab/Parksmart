@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     container.appendChild(canvas);
 
     const ctx = canvas.getContext('2d');
-    const BRAND = "230,25,45";
+    const BRAND = "47,164,64";
     const MAX_DIST = 130;
     const MOUSE_DIST = 160;
     let width, height, particles = [];

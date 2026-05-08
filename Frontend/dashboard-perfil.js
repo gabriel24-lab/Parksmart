@@ -332,7 +332,7 @@
       const dot  = document.getElementById('p-rol-badge-dot');
       const text = document.getElementById('p-rol-badge-text');
       if (!dot || !text) return;
-      const colores = { aprendiz: '#1565c0', funcionario: '#2e7d32', instructor: '#6a1b9a', admin: '#b71c1c' };
+      const colores = { aprendiz: '#1565c0', funcionario: '#2e7d32', instructor: '#6a1b9a', admin: '#2FA440' };
       const labels  = { aprendiz: 'Aprendiz', funcionario: 'Funcionario', instructor: 'Instructor', admin: 'Administrador' };
       const color = colores[rol] || '#555';
       dot.style.background  = color;
@@ -366,6 +366,7 @@
       if (!nombre) { showToast('Ingresa tu nombre completo.', 'error'); return; }
       if (!tipo_id) { showToast('Selecciona tu tipo de identificación.', 'error'); return; }
       if (!num_id) { showToast('Ingresa tu número de identificación.', 'error'); return; }
+      // El rol no se valida aquí — es de solo lectura, asignado por el sistema o el admin
       if (!centro) { showToast('Debes seleccionar tu centro de formación.', 'error'); return; }
 
       try {
@@ -375,9 +376,14 @@
           tipo_id,
           numero_id: num_id,
           id_centro: centro || null,
+          // rol se omite: solo el admin puede cambiarlo desde el panel de administración
         });
         if (!data.ok) { showToast(data.message || 'Error al guardar.', 'error'); return; }
 
+        // Mapear "saveProfile();" por error recursivo anterior (eliminado por loop)
+        // en lugar de eso llamaremos a loadPerfil() si fuera necesario, pero la actualizamos acá mismo
+
+        // Actualizar user en localStorage
         const user = Auth.getUser();
         Auth.save({
           access_token: Auth.getToken(),
@@ -390,7 +396,6 @@
         showToast('¡Perfil guardado!', 'success');
       } catch { showToast('Error de conexión.', 'error'); }
     }
-    window.saveProfile = withRequestGuard(saveProfile, 'saveProfile');
 
     async function changePassword() {
       const actual   = document.getElementById('sec-pass-act').value;
@@ -415,7 +420,6 @@
         showToast('Contraseña actualizada correctamente ✓', 'success');
       } catch { showToast('Error de conexión.', 'error'); }
     }
-    window.changePassword = withRequestGuard(changePassword, 'changePassword');
 
     function toggleSecPass(inputId, iconId) {
       const inp = document.getElementById(inputId);
@@ -499,8 +503,6 @@
       }
     }
 
-    let isSavingVehicle = false;
-
     async function saveVehicle(tipo) {
       const rol = getCurrentRol();
       if (!rol) { showToast('Configura tu rol en el perfil primero.', 'error'); return; }
@@ -535,6 +537,7 @@
         const data = await apiPostForm('/vehiculos', formData);
         if (!data.ok) { showToast(data.message || 'Error al guardar.', 'error'); return; }
 
+        // Recargar lista desde la API
         await loadVehiculos();
         renderVehicleList();
         clearVehicleForm(tipo);
@@ -542,7 +545,6 @@
         showToast('¡Vehículo registrado!', 'success');
       } catch { showToast('Error de conexión.', 'error'); }
     }
-    window.saveVehicle = withRequestGuard(saveVehicle, 'saveVehicle');
 
     function clearVehicleForm(tipo) {
       const ids = tipo === 'bicicleta' ? ['bici-modelo', 'bici-color', 'bici-desc'] : [tipo + '-placa', tipo + '-color', tipo + '-desc'];
@@ -553,6 +555,7 @@
       if (f) f.value = '';
     }
 
+    // ════════ FOTO DE PERFIL ════════
     async function subirFotoPerfil(input) {
       if (!input.files[0]) return;
       const formData = new FormData();
@@ -575,7 +578,6 @@
       } catch { showToast('No se pudo subir la foto', 'error'); }
       input.value = '';
     }
-    window.subirFotoPerfil = withRequestGuard(subirFotoPerfil, 'subirFotoPerfil');
 
     async function quitarFotoPerfil() {
       try {
@@ -594,7 +596,6 @@
         showToast('Foto eliminada');
       } catch { showToast('Error al eliminar foto', 'error'); }
     }
-    window.quitarFotoPerfil = withRequestGuard(quitarFotoPerfil, 'quitarFotoPerfil');
 
     // ════════ LISTA VEHÍCULOS ════════
     function renderVehicleList() {
@@ -657,7 +658,6 @@
         showToast('Vehículo eliminado.', 'info');
       } catch { showToast('Error de conexión.', 'error'); closeDeleteModal(); }
     }
-    window.confirmDelete = withRequestGuard(confirmDelete, 'confirmDelete');
 
     // ════════ LOGOUT ════════
     async function handleLogout() {
@@ -667,7 +667,6 @@
       Auth.clear();
       window.location.href = 'login.html';
     }
-    window.handleLogout = withRequestGuard(handleLogout, 'handleLogout');
 
     // ════════ NAVEGACIÓN ════════
     function showSection(name, btn) {

@@ -18,7 +18,7 @@ async function enviarCodigoRecuperacion(destino, codigo, nombre) {
     subject: 'Código de recuperación de contraseña — Parksmart',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #0a0a0c; color: #fff; border-radius: 12px; overflow: hidden;">
-        <div style="background: #e6192d; padding: 28px 32px;">
+        <div style="background: #2FA440; padding: 28px 32px;">
           <h1 style="margin: 0; font-size: 22px; color: #fff;">🅿 Parksmart</h1>
           <p style="margin: 4px 0 0; font-size: 13px; opacity: .8; color: #fff;">Sistema de parqueadero SENA</p>
         </div>
@@ -28,7 +28,7 @@ async function enviarCodigoRecuperacion(destino, codigo, nombre) {
             Recibimos una solicitud para restablecer tu contraseña. Usa el siguiente código:
           </p>
           <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 24px; text-align: center; margin-bottom: 24px;">
-            <span style="font-size: 38px; font-weight: 700; letter-spacing: 10px; color: #e6192d;">${codigo}</span>
+            <span style="font-size: 38px; font-weight: 700; letter-spacing: 10px; color: #2FA440;">${codigo}</span>
           </div>
           <p style="margin: 0 0 8px; font-size: 13px; opacity: .6;">
             ⏱ Este código expira en <strong>15 minutos</strong>.
@@ -70,15 +70,15 @@ async function enviarBienvenidaAdmin(destino, nombre, numero_id, rol, urlLogin) 
       <html lang="es">
       <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
       <body style="margin:0;padding:0;background:#f4f4f5;">
-        <div style="font-family:Arial,sans-serif;max-width:520px;margin:32px auto;background:#0a0a0c;color:#e6edf3;border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
-          <div style="background:linear-gradient(135deg,#e6192d 0%,#a8101f 100%);padding:32px 36px;">
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:32px auto;background:#0a0a0c;color:#2FA440;border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+          <div style="background:linear-gradient(135deg,#2FA440 0%,#1E7E2F 100%);padding:32px 36px;">
             <h1 style="margin:0;font-size:22px;color:#fff;font-weight:800;">🅿 Parksmart</h1>
             <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.75);">Sistema de parqueadero · SENA-CENTRO CIGEC</p>
           </div>
           <div style="padding:36px;">
             <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#fff;">¡Hola, ${nombre}! 👋</p>
             <p style="margin:0 0 28px;font-size:14px;color:#8b949e;line-height:1.6;">
-              Tu cuenta en <strong style="color:#e6edf3;">Parksmart</strong> ha sido creada exitosamente por un administrador.
+              Tu cuenta en <strong style="color:#2FA440;">Parksmart</strong> ha sido creada exitosamente por un administrador.
             </p>
             <div style="display:inline-block;background:rgba(230,25,45,0.15);border:1px solid rgba(230,25,45,0.4);border-radius:20px;padding:5px 14px;margin-bottom:28px;">
               <span style="font-size:12px;color:#ff6b7a;font-weight:600;">● ${rolCapitalizado}</span>
@@ -100,7 +100,7 @@ async function enviarBienvenidaAdmin(destino, nombre, numero_id, rol, urlLogin) 
               </p>
             </div>
             <div style="text-align:center;">
-              <a href="${urlLogin}" style="display:inline-block;background:linear-gradient(135deg,#e6192d,#a8101f);color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 40px;border-radius:8px;">
+              <a href="${urlLogin}" style="display:inline-block;background:linear-gradient(135deg,#2FA440,#a8101f);color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 40px;border-radius:8px;">
                 Ingresar a Parksmart →
               </a>
             </div>
@@ -135,21 +135,21 @@ async function enviarBienvenidaAprendiz(destino, nombre, urlLogin) {
       <html lang="es">
       <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
       <body style="margin:0;padding:0;background:#f4f4f5;">
-        <div style="font-family:Arial,sans-serif;max-width:520px;margin:32px auto;background:#0a0a0c;color:#e6edf3;border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
-          <div style="background:linear-gradient(135deg,#e6192d 0%,#a8101f 100%);padding:32px 36px;">
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:32px auto;background:#0a0a0c;color:#2FA440;border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+          <div style="background:linear-gradient(135deg,#2FA440 0%,#1E7E2F 100%);padding:32px 36px;">
             <h1 style="margin:0;font-size:22px;color:#fff;font-weight:800;">🅿 Parksmart</h1>
             <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.75);">Sistema de parqueadero · SENA-CENTRO CIGEC</p>
           </div>
           <div style="padding:36px;">
             <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#fff;">¡Hola, ${nombre}! 👋</p>
             <p style="margin:0 0 28px;font-size:14px;color:#8b949e;line-height:1.6;">
-              Tu registro en <strong style="color:#e6edf3;">Parksmart</strong> fue exitoso. Ya puedes acceder al sistema.
+              Tu registro en <strong style="color:#2FA440;">Parksmart</strong> fue exitoso. Ya puedes acceder al sistema.
             </p>
             <div style="display:inline-block;background:rgba(21,101,192,0.15);border:1px solid rgba(21,101,192,0.4);border-radius:20px;padding:5px 14px;margin-bottom:28px;">
               <span style="font-size:12px;color:#79c0ff;font-weight:600;">● Aprendiz</span>
             </div>
             <div style="text-align:center;">
-              <a href="${urlLogin}" style="display:inline-block;background:linear-gradient(135deg,#e6192d,#a8101f);color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 40px;border-radius:8px;">
+              <a href="${urlLogin}" style="display:inline-block;background:linear-gradient(135deg,#2FA440,#a8101f);color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 40px;border-radius:8px;">
                 Ingresar a Parksmart →
               </a>
             </div>
