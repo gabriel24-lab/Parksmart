@@ -164,12 +164,46 @@ router.post('/admin-register',
     const { nombre_completo, numero_id, password, rol, tipo_id, email, id_centro } = req.body;
 
     try {
-      const dup = await query(
-        'SELECT id_usuario FROM usuarios WHERE numero_id = @nid',
+      // ── 1. Verificar numero_id duplicado en usuarios ──────────────────
+      const dupNid = await query(
+        'SELECT id_usuario, nombre_completo FROM usuarios WHERE numero_id = @nid',
         { nid: numero_id }
       );
-      if (dup.rows.length > 0) {
-        return res.status(409).json({ ok: false, message: 'Ese número de identificación ya está registrado.' });
+      if (dupNid.rows.length > 0) {
+        const otro = dupNid.rows[0].nombre_completo;
+        return res.status(409).json({
+          ok: false,
+          message: `El número de identificación ${numero_id} ya está registrado y pertenece a: ${otro}.`,
+        });
+      }
+
+      // ── 2. Verificar numero_id duplicado en tabla Personas ────────────
+      const dupPersona = await query(
+        'SELECT "Nombre", "Apellidos" FROM "Personas" WHERE "Numero de Documento" = @nid',
+        { nid: numero_id }
+      );
+      if (dupPersona.rows.length > 0) {
+        const p = dupPersona.rows[0];
+        const nombrePersona = `${p['Nombre'] || ''} ${p['Apellidos'] || ''}`.trim();
+        return res.status(409).json({
+          ok: false,
+          message: `El número de identificación ${numero_id} ya existe en la base de datos del SENA y corresponde a: ${nombrePersona}.`,
+        });
+      }
+
+      // ── 3. Verificar email duplicado ──────────────────────────────────
+      if (email) {
+        const dupEmail = await query(
+          'SELECT id_usuario, nombre_completo FROM usuarios WHERE LOWER(email) = LOWER(@email)',
+          { email }
+        );
+        if (dupEmail.rows.length > 0) {
+          const otro = dupEmail.rows[0].nombre_completo;
+          return res.status(409).json({
+            ok: false,
+            message: `El correo electrónico "${email}" ya está en uso por otro usuario: ${otro}.`,
+          });
+        }
       }
 
       const hash = await bcrypt.hash(password, 10);
@@ -201,7 +235,23 @@ router.post('/admin-register',
       return res.status(201).json({ ok: true, message: 'Usuario registrado correctamente.', id_usuario });
     } catch (err) {
       console.error('Error en admin-register:', err);
-      return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
+
+      // Capturar errores de constraint de la base de datos (PostgreSQL unique violation)
+      if (err.code === '23505') {
+        const detail = (err.detail || err.message || '').toLowerCase();
+        if (detail.includes('email')) {
+          return res.status(409).json({ ok: false, message: `El correo electrónico "${email}" ya está registrado en el sistema por otro usuario.` });
+        }
+        if (detail.includes('numero_id')) {
+          return res.status(409).json({ ok: false, message: `El número de identificación ${numero_id} ya está registrado en el sistema.` });
+        }
+        if (detail.includes('qr_code')) {
+          return res.status(409).json({ ok: false, message: 'Error al generar código QR único. Intenta de nuevo.' });
+        }
+        return res.status(409).json({ ok: false, message: `Dato duplicado: ${err.detail || 'un campo único ya existe en el sistema.'}` });
+      }
+
+      return res.status(500).json({ ok: false, message: `Error interno del servidor: ${err.message || 'contacta al administrador.'}` });
     }
   }
 );

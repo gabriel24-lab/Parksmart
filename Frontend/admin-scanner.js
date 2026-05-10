@@ -784,11 +784,24 @@ async function adminSalida(id_usuario) {
   }
 
   // ══ TOAST ══
-  function showToast(msg) {
+  function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
+    // Ícono según tipo
+    const icons = {
+      error:   'bi-x-circle-fill',
+      success: 'bi-check-circle-fill',
+      info:    'bi-info-circle-fill',
+      warning: 'bi-exclamation-triangle-fill',
+    };
+    const icon = icons[type] || icons.success;
+    t.innerHTML = `<i class="bi ${icon}" style="margin-right:7px;font-size:1.05em;"></i>${msg}`;
+    // Quitar clases anteriores y aplicar la nueva
+    t.className = 'toast-msg';
+    t.classList.add('show', `toast-${type}`);
+    clearTimeout(t._timeout);
+    t._timeout = setTimeout(() => {
+      t.classList.remove('show');
+    }, type === 'error' ? 5000 : 3500);
   }
 
   // ════════ UTILIDAD ZONA HORARIA COLOMBIA (UTC-5) ════════
