@@ -39,8 +39,11 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
   );
   const esBicicleta = tipoCheck.rows.length > 0 && Number(tipoCheck.rows[0].id_tipo) === 1;
 
-  if (!esBicicleta) {
-    // Solo verificar y descontar cupos para vehículos que NO son bicicleta
+  // Solo el Lado A (id_lado=1) tiene cupos controlados. El Lado B es espacio abierto.
+  const esLadoA = Number(id_lado) === 1;
+
+  if (!esBicicleta && esLadoA) {
+    // Verificar y descontar cupos solo para vehículos no-bicicleta en Lado A
     const cupoCheck = await client.query(
       `SELECT l.capacidad, c.ocupados
        FROM lados l JOIN cupos c ON c.id_lado = l.id_lado
@@ -59,8 +62,8 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
     [id_usuario, id_vehiculo, id_lado]
   );
 
-// Solo actualizar cupos si NO es bicicleta
-  if (!esBicicleta) {
+  // Solo actualizar cupos si NO es bicicleta Y está en Lado A (controlado)
+  if (!esBicicleta && esLadoA) {
     await client.query(
       `UPDATE cupos SET ocupados = ocupados + 1, ultima_actualizacion = NOW()
        WHERE id_lado = $1`,
@@ -84,7 +87,9 @@ async function registrarSalida(client, id_usuario) {
     throw new Error('No tienes una entrada activa en el parqueadero.');
 
   const { id_registro, id_lado, fecha_entrada, id_tipo } = activeEntry.rows[0];
-const esBicicleta = Number(id_tipo) === 1;
+  const esBicicleta = Number(id_tipo) === 1;
+  // Solo el Lado A (id_lado=1) tiene cupos controlados
+  const esLadoA = Number(id_lado) === 1;
 
   await client.query(
     `UPDATE registros_uso
@@ -94,8 +99,8 @@ const esBicicleta = Number(id_tipo) === 1;
     [id_registro]
   );
 
-  // Solo liberar cupo si NO es bicicleta
-  if (!esBicicleta) {
+  // Solo liberar cupo si NO es bicicleta Y estaba en Lado A (controlado)
+  if (!esBicicleta && esLadoA) {
     await client.query(
       `UPDATE cupos
        SET ocupados = GREATEST(0, ocupados - 1), ultima_actualizacion = NOW()
@@ -140,19 +145,17 @@ router.get('/ocupacion-rol', async (req, res) => {
       grupos[row.id_lado][row.tipo.toLowerCase()] = Number(row.cantidad);
     });
 
-    const mapA = grupos[1] || {};
-    const mapB = grupos[2] || {};
+    const mapA = grupos[1] || {};  // Lado A = id_lado 1 (CONTROLADO)
+    const mapB = grupos[2] || {};  // Lado B = id_lado 2 (ABIERTO)
 
-    // Lado A: total incluye todos los vehículos (bicicletas solo se cuentan)
-    const totalA = Object.values(mapA).reduce((s, v) => s + v, 0);
+    // Lado A: cupos son para carros, motos y furgonetas (bicicletas solo se cuentan)
+    const bicisA    = mapA['bicicleta'] || 0;
+    const totalA    = Object.values(mapA).reduce((s, v) => s + v, 0);
+    const ocupadosA = totalA - bicisA; // solo vehículos que consumen cupo
+    const CAPACIDAD_A = 21;
 
-    // Lado B: los cupos son SOLO para carros, motos y furgonetas
-    // Las bicicletas en lado B se muestran pero NO consumen cupos
-    const bicisB  = mapB['bicicleta'] || 0;
-    const totalB  = Object.values(mapB).reduce((s, v) => s + v, 0);
-    const ocupadosB = totalB - bicisB; // solo vehículos que consumen cupo
-
-    const CAPACIDAD_B = 21;
+    // Lado B: espacio abierto — solo conteo total por tipo
+    const totalB = Object.values(mapB).reduce((s, v) => s + v, 0);
 
     return res.json({
       ok: true,
@@ -160,20 +163,20 @@ router.get('/ocupacion-rol', async (req, res) => {
         rol,
         vista: rol === 'aprendiz' ? 'aprendiz' : 'funcionario',
         lado_a: {
-          carros:     (mapA['auto'] || mapA['carro'] || mapA['automóvil'] || 0),
-          motos:      (mapA['motocicleta'] || mapA['moto'] || 0),
-          bicicletas: (mapA['bicicleta'] || 0),
-          furgonetas: (mapA['furgoneta'] || 0),
-          total:      totalA,
+          ocupados:    ocupadosA,
+          capacidad:   CAPACIDAD_A,
+          disponibles: Math.max(0, CAPACIDAD_A - ocupadosA),
+          carros:      (mapA['auto'] || mapA['carro'] || mapA['automóvil'] || 0),
+          motos:       (mapA['motocicleta'] || mapA['moto'] || 0),
+          bicicletas:  bicisA,
+          furgonetas:  (mapA['furgoneta'] || 0),
         },
         lado_b: {
-          ocupados:    ocupadosB,
-          capacidad:   CAPACIDAD_B,
-          disponibles: Math.max(0, CAPACIDAD_B - ocupadosB),
           carros:      (mapB['auto'] || mapB['carro'] || mapB['automóvil'] || 0),
           motos:       (mapB['motocicleta'] || mapB['moto'] || 0),
-          bicicletas:  bicisB,
+          bicicletas:  (mapB['bicicleta'] || 0),
           furgonetas:  (mapB['furgoneta'] || 0),
+          total:       totalB,
         },
       },
     });

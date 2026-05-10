@@ -132,7 +132,6 @@
       }
     }
 
-    // ════════ CUPOS (por rol) ════════
     async function loadCupos() {
       try {
         const user = Auth.getUser();
@@ -142,33 +141,31 @@
         if (!data.ok) return;
         const d = data.data;
 
-        // ── Tarjetas del inicio: filtradas por rol ─────────────────────
-        const cardBicis = document.getElementById('card-bicis-a');
+        // ── Tarjetas del inicio: filtradas por rol ──────────────────────────────────────────
+        const cardBicis  = document.getElementById('card-bicis-a');
         const cardCarros = document.getElementById('card-carros-a');
-        const cardMotos = document.getElementById('card-motos-a');
+        const cardMotos  = document.getElementById('card-motos-a');
 
         if (rol === 'aprendiz') {
-          // Aprendiz: solo ve bicicletas en Lado A
-          if (cardBicis) { cardBicis.style.display = ''; document.getElementById('num-bicis-a').textContent = d.lado_a.bicicletas ?? 0; }
+          // Aprendiz: solo ve bicicletas en Lado A (controlado)
+          if (cardBicis)  { cardBicis.style.display  = ''; document.getElementById('num-bicis-a').textContent  = d.lado_a.bicicletas ?? 0; }
           if (cardCarros) cardCarros.style.display = 'none';
-          if (cardMotos)  cardMotos.style.display = 'none';
+          if (cardMotos)  cardMotos.style.display  = 'none';
 
-          // Lado B para aprendices: solo muestra cuántas bicicletas hay
-          // No se muestran cupos disponibles ni capacidad (son solo para carros)
+          // Lado B para aprendices: muestra conteo total (espacio abierto)
           const show = id => { const el = document.getElementById(id); if (el) el.style.display = ''; };
           const hide = id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
           show('inicio-ladob-titulo');
           show('inicio-ladob-cards');
-          hide('inicio-ladob-barra'); // la barra de ocupación es de carros, no aplica
+          hide('inicio-ladob-barra'); // no hay barra en espacio abierto
 
-          // Título actualizado
           const tituloB = document.getElementById('inicio-ladob-titulo');
-          if (tituloB) tituloB.innerHTML = '<i class="bi bi-p-square"></i> Lado B <span style="font-size:11px;font-weight:400;opacity:.55;">(bicicletas en tiempo real)</span>';
+          if (tituloB) tituloB.innerHTML = '<i class="bi bi-p-square"></i> Lado B <span style="font-size:11px;font-weight:400;opacity:.55;">(espacio abierto)</span>';
 
-          // Solo la tarjeta de bicicletas — sin cupos ni capacidad
           const cardsB = document.getElementById('inicio-ladob-cards');
           if (cardsB) {
             const bicisB = d.lado_b.bicicletas ?? 0;
+            const totalB = d.lado_b.total ?? 0;
             cardsB.innerHTML = `
               <div class="stat-card available">
                 <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
@@ -177,63 +174,74 @@
                   <span class="stat-label">Bicicletas adentro</span>
                 </div>
                 <div class="stat-badge green">Lado B</div>
+              </div>
+              <div class="stat-card total">
+                <div class="stat-icon"><i class="bi bi-people"></i></div>
+                <div class="stat-info">
+                  <span class="stat-number">${totalB}</span>
+                  <span class="stat-label">Total adentro</span>
+                </div>
+                <div class="stat-badge blue">Lado B</div>
               </div>`;
           }
 
         } else {
-          if (cardBicis) cardBicis.style.display = 'none';
+          // Funcionarios/instructores: ven cupos de Lado A
+          if (cardBicis)  cardBicis.style.display  = 'none';
           if (cardCarros) { cardCarros.style.display = ''; document.getElementById('num-carros-a').textContent = d.lado_a.carros ?? 0; }
-          if (cardMotos) { cardMotos.style.display = ''; document.getElementById('num-motos-a').textContent = d.lado_a.motos ?? 0; }
+          if (cardMotos)  { cardMotos.style.display  = ''; document.getElementById('num-motos-a').textContent  = d.lado_a.motos  ?? 0; }
 
-          // Funcionarios/instructores: asegurarse que Lado B sea visible
+          // Lado B visible (espacio abierto)
           const show = id => { const el = document.getElementById(id); if (el) el.style.display = ''; };
           show('inicio-ladob-titulo');
           show('inicio-ladob-cards');
           show('inicio-ladob-barra');
         }
 
-        // ── Barra/tarjetas Lado B del inicio (solo para no-aprendices) ──
-        const ocup = d.lado_b.ocupados ?? 0;
-        const disp = d.lado_b.disponibles ?? 0;
-        const pct = d.lado_b.capacidad > 0 ? Math.round(ocup * 100 / d.lado_b.capacidad) : 0;
+        // ── Barra/tarjetas Lado A del inicio (cupos controlados) ──────────────────────
+        const ocup = d.lado_a.ocupados    ?? 0;
+        const disp = d.lado_a.disponibles ?? 0;
+        const pct  = d.lado_a.capacidad > 0 ? Math.round(ocup * 100 / d.lado_a.capacidad) : 0;
 
-        const elOcup = document.getElementById('num-ocup-b');
-        const elDisp = document.getElementById('num-disp-b');
-        const elPct = document.getElementById('badge-pct-b');
-        const elBar = document.getElementById('bar-fill-b');
+        const elOcup   = document.getElementById('num-ocup-b');
+        const elDisp   = document.getElementById('num-disp-b');
+        const elPct    = document.getElementById('badge-pct-b');
+        const elBar    = document.getElementById('bar-fill-b');
         const elBarPct = document.getElementById('bar-pct-b');
 
-        if (elOcup) elOcup.textContent = ocup;
-        if (elDisp) elDisp.textContent = disp;
-        if (elPct) elPct.textContent = pct + '%';
-        if (elBar) elBar.style.width = pct + '%';
+        if (elOcup)   elOcup.textContent   = ocup;
+        if (elDisp)   elDisp.textContent   = disp;
+        if (elPct)    elPct.textContent    = pct + '%';
+        if (elBar)    elBar.style.width    = pct + '%';
         if (elBarPct) elBarPct.textContent = pct + '%';
 
-        // ── Sección "Parqueadero" — Lado A completo ────────────────────
+        // ── Sección "Parqueadero" — Lado A (controlado) ────────────────────────
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        set('park-a-disp',  disp);
+        set('park-a-ocup',  ocup);
         set('park-a-carros', d.lado_a.carros ?? 0);
-        set('park-a-motos', d.lado_a.motos ?? 0);
-        set('park-a-bicis', d.lado_a.bicicletas ?? 0);
-        set('park-a-total', d.lado_a.total ?? 0);
+        set('park-a-bicis',  d.lado_a.bicicletas ?? 0);
+        const pa = document.getElementById('park-a-pct-badge');
+        if (pa) pa.textContent = pct + '%';
+        const paBar    = document.getElementById('park-a-bar');
+        const paBarPct = document.getElementById('park-a-bar-pct');
+        if (paBar)    paBar.style.width    = pct + '%';
+        if (paBarPct) paBarPct.textContent = pct + '%';
 
-        // ── Sección "Parqueadero" — Lado B ────────────────────────────
-        set('park-b-disp', disp);
-        set('park-b-ocup', ocup);
-        const pb = document.getElementById('park-b-pct-badge');
-        if (pb) pb.textContent = pct + '%';
-        const pbBar = document.getElementById('park-b-bar');
-        const pbBarPct = document.getElementById('park-b-bar-pct');
-        if (pbBar) pbBar.style.width = pct + '%';
-        if (pbBarPct) pbBarPct.textContent = pct + '%';
+        // ── Sección "Parqueadero" — Lado B (abierto) ─────────────────────────
+        set('park-b-carros', d.lado_b.carros ?? 0);
+        set('park-b-motos',  d.lado_b.motos  ?? 0);
+        set('park-b-bicis',  d.lado_b.bicicletas ?? 0);
+        set('park-b-total',  d.lado_b.total ?? 0);
 
-        // ── Mapa de cupos Lado B (20 espacios: fila1=10, fila2=10) ────
-        renderParkBGrid(ocup, d.lado_b.capacidad ?? 21);
+        // ── Mapa de cupos Lado A (21 espacios: fila1=11, fila2=10) ────────────
+        renderParkAGrid(ocup, d.lado_a.capacidad ?? 21);
 
       } catch (e) { console.warn('loadCupos:', e); }
     }
 
-    // Genera visualmente el mapa de cupos del Lado B
-    function renderParkBGrid(ocupados, total) {
+    // Genera visualmente el mapa de cupos del Lado A (ahora controlado)
+    function renderParkAGrid(ocupados, total) {
       const row1 = document.getElementById('park-b-grid-row1');
       const row2 = document.getElementById('park-b-grid-row2');
       if (!row1 || !row2) return;

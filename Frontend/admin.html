@@ -126,10 +126,10 @@
           <i class="bi bi-grid-fill"></i> Vista General
         </button>
         <button class="dash-lado-tab" id="dash-tab-a" onclick="switchDashLado('A', this)">
-          <i class="bi bi-sign-turn-right-fill"></i> Lado A <span class="side-tab-sub">Espacio abierto</span>
+          <i class="bi bi-buildings-fill"></i> Lado A <span class="side-tab-sub">Espacios controlados</span>
         </button>
         <button class="dash-lado-tab" id="dash-tab-b" onclick="switchDashLado('B', this)">
-          <i class="bi bi-buildings-fill"></i> Lado B <span class="side-tab-sub">Espacios controlados</span>
+          <i class="bi bi-sign-turn-right-fill"></i> Lado B <span class="side-tab-sub">Espacio abierto</span>
         </button>
       </div>
 
@@ -203,45 +203,52 @@
       <!-- ══ PANEL LADO A ══ -->
       <div id="dash-panel-A" class="dash-side-panel" style="display:none">
         <div class="lado-banner lado-a-banner">
-          <i class="bi bi-sign-turn-right-fill"></i>
+          <i class="bi bi-buildings-fill"></i>
           <div>
-            <strong>Lado A — Espacio Abierto</strong>
-            <span>Carros, motos y bicicletas · Acceso general</span>
+            <strong>Lado A — Espacios Controlados</strong>
+            <span>21 cupos para carros · Parqueadero principal SENA</span>
           </div>
         </div>
         <div class="cards-row four">
-          <div class="stat-card blue">
+          <div class="stat-card green">
+            <div class="stat-icon"><i class="bi bi-p-circle-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="dA-disponibles">21</span>
+              <span class="stat-label">Cupos disponibles</span>
+            </div>
+            <div class="stat-badge green-b">Libre</div>
+          </div>
+          <div class="stat-card red">
             <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
             <div class="stat-info">
-              <span class="stat-number" id="dA-carros-dentro">0</span>
+              <span class="stat-number" id="dA-carros">0</span>
               <span class="stat-label">Carros dentro</span>
             </div>
-            <div class="stat-badge blue-b" id="dA-carros-hoy">12 hoy</div>
-          </div>
-          <div class="stat-card yellow">
-            <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
-            <div class="stat-info">
-              <span class="stat-number" id="dA-motos-dentro">0</span>
-              <span class="stat-label">Motos dentro</span>
-            </div>
-            <div class="stat-badge yellow-b" id="dA-motos-hoy">8 hoy</div>
+            <div class="stat-badge red-b" id="dA-pct">0%</div>
           </div>
           <div class="stat-card green">
             <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
             <div class="stat-info">
-              <span class="stat-number" id="dA-bicis-dentro">0</span>
+              <span class="stat-number" id="dA-bicis">0</span>
               <span class="stat-label">Bicicletas dentro</span>
             </div>
-            <div class="stat-badge green-b" id="dA-bicis-hoy">21 hoy</div>
+            <div class="stat-badge green-b">Lado A</div>
           </div>
-          <div class="stat-card red">
-            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+          <div class="stat-card blue">
+            <div class="stat-icon"><i class="bi bi-arrow-down-circle-fill"></i></div>
             <div class="stat-info">
-              <span class="stat-number" id="dA-total-dentro">0</span>
-              <span class="stat-label">Total dentro</span>
+              <span class="stat-number" id="dA-ocupados">0</span>
+              <span class="stat-label">Ocupados hoy</span>
             </div>
-            <div class="stat-badge red-b" id="dA-total-hoy">41 hoy</div>
+            <div class="stat-badge blue-b">Hoy</div>
           </div>
+        </div>
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Ocupación Lado A</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="occ-bar-A" style="width:0%"><span>0%</span></div>
+          </div>
+          <div class="progress-labels"><span>0</span><span>10</span><span>21</span></div>
         </div>
         <div class="charts-row">
           <div class="glass-panel chart-panel">
@@ -258,8 +265,7 @@
           <div class="table-wrap">
             <table class="history-table">
               <thead><tr><th>Usuario</th><th>Vehículo</th><th>Hora</th><th>Evento</th></tr></thead>
-              <tbody id="recent-tbody-A">
-              </tbody>
+              <tbody id="recent-tbody-A"></tbody>
             </table>
           </div>
         </div>
@@ -268,60 +274,45 @@
       <!-- ══ PANEL LADO B ══ -->
       <div id="dash-panel-B" class="dash-side-panel" style="display:none">
         <div class="lado-banner lado-b-banner">
-          <i class="bi bi-buildings-fill"></i>
+          <i class="bi bi-sign-turn-right-fill"></i>
           <div>
-            <strong>Lado B — Espacios Controlados</strong>
-            <span>Carros y bicicletas · Funcionarios, instructores y aprendices</span>
+            <strong>Lado B — Espacio Abierto</strong>
+            <span>Carros, motos y bicicletas · Acceso general sin cupos</span>
           </div>
         </div>
         <div class="cards-row four">
-          <div class="stat-card green">
-            <div class="stat-icon"><i class="bi bi-p-circle-fill"></i></div>
-            <div class="stat-info">
-              <span class="stat-number" id="dB-disponibles">30</span>
-              <span class="stat-label">Cupos disponibles</span>
-            </div>
-            <div class="stat-badge green-b">Libre</div>
-          </div>
-          <div class="stat-card red">
+          <div class="stat-card blue">
             <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
             <div class="stat-info">
-              <span class="stat-number" id="dB-carros">0</span>
+              <span class="stat-number" id="dB-carros-dentro">0</span>
               <span class="stat-label">Carros dentro</span>
             </div>
-            <div class="stat-badge red-b" id="dB-pct">0%</div>
+            <div class="stat-badge blue-b" id="dB-carros-hoy">0 hoy</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-icon"><i class="bi bi-scooter"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="dB-motos-dentro">0</span>
+              <span class="stat-label">Motos dentro</span>
+            </div>
+            <div class="stat-badge yellow-b" id="dB-motos-hoy">0 hoy</div>
           </div>
           <div class="stat-card green">
             <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
             <div class="stat-info">
-              <span class="stat-number" id="dB-bicis">0</span>
+              <span class="stat-number" id="dB-bicis-dentro">0</span>
               <span class="stat-label">Bicicletas dentro</span>
             </div>
-            <div class="stat-badge green-b">Lado B</div>
+            <div class="stat-badge green-b" id="dB-bicis-hoy">0 hoy</div>
           </div>
-          <div class="stat-card blue">
-            <div class="stat-icon"><i class="bi bi-arrow-down-circle-fill"></i></div>
+          <div class="stat-card red">
+            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
             <div class="stat-info">
-              <span class="stat-number" id="dB-entradas">0</span>
-              <span class="stat-label">Entradas hoy</span>
+              <span class="stat-number" id="dB-total-dentro">0</span>
+              <span class="stat-label">Total dentro</span>
             </div>
-            <div class="stat-badge blue-b">Hoy</div>
+            <div class="stat-badge red-b" id="dB-total-hoy">0 hoy</div>
           </div>
-          <div class="stat-card yellow">
-            <div class="stat-icon"><i class="bi bi-arrow-up-circle-fill"></i></div>
-            <div class="stat-info">
-              <span class="stat-number" id="dB-salidas">0</span>
-              <span class="stat-label">Salidas hoy</span>
-            </div>
-            <div class="stat-badge yellow-b">Hoy</div>
-          </div>
-        </div>
-        <div class="glass-panel">
-          <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Ocupación Lado B</div>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar-fill" id="occ-bar-B" style="width:0%"><span>0%</span></div>
-          </div>
-          <div class="progress-labels"><span>0</span><span>15</span><span>30</span></div>
         </div>
         <div class="charts-row">
           <div class="glass-panel chart-panel">
@@ -435,17 +426,83 @@
       <!-- Tabs Lado A / Lado B -->
       <div class="side-tabs">
         <button class="side-tab active" id="tab-a" onclick="switchSide('A')">
-          <i class="bi bi-sign-no-parking"></i> Lado A
-          <span class="side-tab-sub">Espacio abierto</span>
+          <i class="bi bi-buildings-fill"></i> Lado A
+          <span class="side-tab-sub">Espacios controlados</span>
         </button>
         <button class="side-tab" id="tab-b" onclick="switchSide('B')">
-          <i class="bi bi-map-fill"></i> Lado B
-          <span class="side-tab-sub">Espacios controlados</span>
+          <i class="bi bi-sign-no-parking"></i> Lado B
+          <span class="side-tab-sub">Espacio abierto</span>
         </button>
       </div>
 
-      <!-- ─── LADO A ─── -->
+      <!-- ─── LADO A (CONTROLADO) ─── -->
       <div id="panel-A" class="side-panel">
+
+        <div class="cupos-layout">
+
+          <!-- Control espacios -->
+          <div class="glass-panel cupos-control">
+            <div class="panel-title"><i class="bi bi-car-front-fill"></i> Espacios para carros — Lado A</div>
+
+            <div class="cupos-display">
+              <div class="cupo-circle ok" id="a-cupo-circle">
+                <span class="cupo-num" id="a-disp-num">21</span>
+                <span class="cupo-lbl">libres</span>
+              </div>
+              <div class="cupo-total-info">
+                <div>Total espacios: <strong id="a-total-num">21</strong></div>
+                <div>Ocupados: <strong id="a-occ-num">0</strong></div>
+                <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45)">Solo carros</div>
+              </div>
+            </div>
+
+            <div class="cupos-btns">
+              <button class="btn-cupo minus" onclick="adjustA(-1)">
+                <i class="bi bi-dash-lg"></i> Liberar 1
+              </button>
+              <button class="btn-cupo plus" onclick="adjustA(1)">
+                <i class="bi bi-plus-lg"></i> Ocupar 1
+              </button>
+            </div>
+
+            <div class="cupos-set-row">
+              <label>Ajustar total de espacios Lado A:</label>
+              <div class="set-row">
+                <input type="number" id="a-total-input" value="21" min="1" max="200"/>
+                <button class="btn-set" onclick="setATotal()">Aplicar</button>
+              </div>
+            </div>
+
+            <div class="cupos-info-note">
+              <i class="bi bi-info-circle-fill"></i>
+              Cada carro que ingresa al Lado A ocupa 1 espacio numerado. Al salir, el espacio queda libre automáticamente.
+            </div>
+          </div>
+
+          <!-- Mapa Lado A -->
+          <div class="glass-panel cupos-map-panel">
+            <div class="panel-title"><i class="bi bi-map-fill"></i> Mapa de espacios — Lado A</div>
+            <div class="cupos-legend">
+              <span><i class="bi bi-square-fill" style="color:#4caf50"></i> Libre</span>
+              <span><i class="bi bi-square-fill" style="color:#2FA440"></i> Ocupado</span>
+            </div>
+            <div class="b-map-wrap">
+              <div class="b-road-label top">↑ Entrada / Salida</div>
+              <div class="b-parking-area">
+                <div class="b-lane-label">Fila 1</div>
+                <div class="cupos-grid" id="a-grid-row1"></div>
+                <div class="b-road"></div>
+                <div class="b-lane-label">Fila 2</div>
+                <div class="cupos-grid" id="a-grid-row2"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ─── LADO B (ABIERTO) ─── -->
+      <div id="panel-B" class="side-panel" style="display:none">
 
         <div class="side-a-note glass-panel">
           <i class="bi bi-info-circle-fill"></i>
@@ -460,70 +517,70 @@
           <div class="stat-card blue">
             <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
             <div class="stat-info">
-              <span class="stat-number" id="a-carros-dentro">5</span>
+              <span class="stat-number" id="b-carros-dentro">0</span>
               <span class="stat-label">Carros dentro</span>
             </div>
-            <div class="stat-badge blue-b" id="a-carros-hoy-b">12 hoy</div>
+            <div class="stat-badge blue-b" id="b-carros-hoy-b">0 hoy</div>
           </div>
           <div class="stat-card yellow">
-            <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+            <div class="stat-icon"><i class="bi bi-scooter"></i></div>
             <div class="stat-info">
-              <span class="stat-number" id="a-motos-dentro">3</span>
+              <span class="stat-number" id="b-motos-dentro">0</span>
               <span class="stat-label">Motos dentro</span>
             </div>
-            <div class="stat-badge yellow-b" id="a-motos-hoy-b">8 hoy</div>
+            <div class="stat-badge yellow-b" id="b-motos-hoy-b">0 hoy</div>
           </div>
           <div class="stat-card green">
             <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
             <div class="stat-info">
-              <span class="stat-number" id="a-bicis-dentro">7</span>
+              <span class="stat-number" id="b-bicis-dentro">0</span>
               <span class="stat-label">Bicicletas dentro</span>
             </div>
-            <div class="stat-badge green-b" id="a-bicis-hoy-b">21 hoy</div>
+            <div class="stat-badge green-b" id="b-bicis-hoy-b">0 hoy</div>
           </div>
           <div class="stat-card red">
             <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
             <div class="stat-info">
-              <span class="stat-number" id="a-total-dentro">15</span>
+              <span class="stat-number" id="b-total-dentro">0</span>
               <span class="stat-label">Total dentro</span>
             </div>
-            <div class="stat-badge red-b" id="a-total-hoy-b">41 hoy</div>
+            <div class="stat-badge red-b" id="b-total-hoy-b">0 hoy</div>
           </div>
         </div>
 
-        <!-- Ajuste manual Lado A -->
+        <!-- Ajuste manual Lado B -->
         <div class="glass-panel">
-          <div class="panel-title"><i class="bi bi-sliders"></i> Ajuste manual de conteo — Lado A</div>
+          <div class="panel-title"><i class="bi bi-sliders"></i> Ajuste manual de conteo — Lado B</div>
           <div class="a-manual-grid">
 
             <div class="a-counter-card">
               <div class="a-counter-label"><i class="bi bi-car-front-fill"></i> Carros</div>
               <div class="a-counter-row">
-                <button class="btn-cupo minus" onclick="adjustA('carros',-1)"><i class="bi bi-dash-lg"></i></button>
-                <span class="a-counter-num" id="a-carros-num">5</span>
-                <button class="btn-cupo plus"  onclick="adjustA('carros', 1)"><i class="bi bi-plus-lg"></i></button>
+                <button class="btn-cupo minus" onclick="adjustB('carros',-1)"><i class="bi bi-dash-lg"></i></button>
+                <span class="a-counter-num" id="b-carros-num">0</span>
+                <button class="btn-cupo plus"  onclick="adjustB('carros', 1)"><i class="bi bi-plus-lg"></i></button>
               </div>
-              <div class="a-counter-sub">Entradas: <strong id="a-carros-ent">12</strong> · Salidas: <strong id="a-carros-sal">7</strong></div>
+              <div class="a-counter-sub">Entradas: <strong id="b-carros-ent">0</strong> · Salidas: <strong id="b-carros-sal">0</strong></div>
             </div>
 
             <div class="a-counter-card">
-              <div class="a-counter-label"><i class="bi bi-bicycle"></i> Motos</div>
+              <div class="a-counter-label"><i class="bi bi-scooter"></i> Motos</div>
               <div class="a-counter-row">
-                <button class="btn-cupo minus" onclick="adjustA('motos',-1)"><i class="bi bi-dash-lg"></i></button>
-                <span class="a-counter-num" id="a-motos-num">3</span>
-                <button class="btn-cupo plus"  onclick="adjustA('motos', 1)"><i class="bi bi-plus-lg"></i></button>
+                <button class="btn-cupo minus" onclick="adjustB('motos',-1)"><i class="bi bi-dash-lg"></i></button>
+                <span class="a-counter-num" id="b-motos-num">0</span>
+                <button class="btn-cupo plus"  onclick="adjustB('motos', 1)"><i class="bi bi-plus-lg"></i></button>
               </div>
-              <div class="a-counter-sub">Entradas: <strong id="a-motos-ent">8</strong> · Salidas: <strong id="a-motos-sal">5</strong></div>
+              <div class="a-counter-sub">Entradas: <strong id="b-motos-ent">0</strong> · Salidas: <strong id="b-motos-sal">0</strong></div>
             </div>
 
             <div class="a-counter-card">
               <div class="a-counter-label"><i class="bi bi-bicycle"></i> Bicicletas</div>
               <div class="a-counter-row">
-                <button class="btn-cupo minus" onclick="adjustA('bicis',-1)"><i class="bi bi-dash-lg"></i></button>
-                <span class="a-counter-num" id="a-bicis-num">7</span>
-                <button class="btn-cupo plus"  onclick="adjustA('bicis', 1)"><i class="bi bi-plus-lg"></i></button>
+                <button class="btn-cupo minus" onclick="adjustB('bicis',-1)"><i class="bi bi-dash-lg"></i></button>
+                <span class="a-counter-num" id="b-bicis-num">0</span>
+                <button class="btn-cupo plus"  onclick="adjustB('bicis', 1)"><i class="bi bi-plus-lg"></i></button>
               </div>
-              <div class="a-counter-sub">Entradas: <strong id="a-bicis-ent">21</strong> · Salidas: <strong id="a-bicis-sal">14</strong></div>
+              <div class="a-counter-sub">Entradas: <strong id="b-bicis-ent">0</strong> · Salidas: <strong id="b-bicis-sal">0</strong></div>
             </div>
 
           </div>
@@ -533,72 +590,6 @@
           </div>
         </div>
 
-      </div>
-
-      <!-- ─── LADO B ─── -->
-      <div id="panel-B" class="side-panel" style="display:none">
-
-        <div class="cupos-layout">
-
-          <!-- Control espacios -->
-          <div class="glass-panel cupos-control">
-            <div class="panel-title"><i class="bi bi-car-front-fill"></i> Espacios para carros — Lado B</div>
-
-            <div class="cupos-display">
-              <div class="cupo-circle ok" id="b-cupo-circle">
-                <span class="cupo-num" id="b-disp-num">22</span>
-                <span class="cupo-lbl">libres</span>
-              </div>
-              <div class="cupo-total-info">
-                <div>Total espacios: <strong id="b-total-num">30</strong></div>
-                <div>Ocupados: <strong id="b-occ-num">8</strong></div>
-                <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45)">Solo carros</div>
-              </div>
-            </div>
-
-            <div class="cupos-btns">
-              <button class="btn-cupo minus" onclick="adjustB(-1)">
-                <i class="bi bi-dash-lg"></i> Liberar 1
-              </button>
-              <button class="btn-cupo plus" onclick="adjustB(1)">
-                <i class="bi bi-plus-lg"></i> Ocupar 1
-              </button>
-            </div>
-
-            <div class="cupos-set-row">
-              <label>Ajustar total de espacios Lado B:</label>
-              <div class="set-row">
-                <input type="number" id="b-total-input" value="30" min="1" max="200"/>
-                <button class="btn-set" onclick="setBTotal()">Aplicar</button>
-              </div>
-            </div>
-
-            <div class="cupos-info-note">
-              <i class="bi bi-info-circle-fill"></i>
-              Cada carro que ingresa al Lado B ocupa 1 espacio numerado. Al salir, el espacio queda libre automáticamente.
-            </div>
-          </div>
-
-          <!-- Mapa Lado B -->
-          <div class="glass-panel cupos-map-panel">
-            <div class="panel-title"><i class="bi bi-map-fill"></i> Mapa de espacios — Lado B</div>
-            <div class="cupos-legend">
-              <span><i class="bi bi-square-fill" style="color:#4caf50"></i> Libre</span>
-              <span><i class="bi bi-square-fill" style="color:#2FA440"></i> Ocupado</span>
-            </div>
-            <div class="b-map-wrap">
-              <div class="b-road-label top">↑ Entrada / Salida</div>
-              <div class="b-parking-area">
-                <div class="b-lane-label">Fila 1</div>
-                <div class="cupos-grid" id="b-grid-row1"></div>
-                <div class="b-road"></div>
-                <div class="b-lane-label">Fila 2</div>
-                <div class="cupos-grid" id="b-grid-row2"></div>
-              </div>
-            </div>
-          </div>
-
-        </div>
       </div>
 
     </section>
@@ -803,8 +794,8 @@
           <div id="reg-entrada-lado-wrap" style="display:none;margin-top:12px;">
             <label style="font-size:12px;color:rgba(255,255,255,.5);display:block;margin-bottom:6px;"><i class="bi bi-sign-turn-right-fill"></i> Lado de ingreso</label>
             <select id="reg-entrada-lado" style="padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font-size:13px;width:100%;">
-              <option value="1">Lado A — Espacio abierto</option>
-              <option value="2">Lado B — Espacios controlados</option>
+              <option value="1">Lado A — Espacios controlados</option>
+              <option value="2">Lado B — Espacio abierto</option>
             </select>
           </div>
         </div>

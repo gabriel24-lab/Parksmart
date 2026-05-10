@@ -77,17 +77,17 @@
       if (!resOcup || !resRol) return;
       const [dataOcup, dataRol] = await Promise.all([resOcup.json(), resRol.json()]);
 
-      // 1. Capacidad y ocupados totales por lado (para la barra de progreso y lado B)
+      // 1. Capacidad y ocupados totales por lado (para la barra de progreso y lado A controlado)
       if (dataOcup.ok && dataOcup.data) {
         dataOcup.data.forEach(row => {
           const ladoNombre = (row.lado || row.Lado || '').toString().toUpperCase().trim();
           const ocup = parseInt(row.ocupados ?? row.Ocupados ?? 0);
-          const esB = ladoNombre.includes('B') && !ladoNombre.includes('A');
-          if (esB) {
-            ladoB.ocupados = ocup;
-            ladoB.total    = parseInt(row.capacidad ?? row.Capacidad ?? 25);
-            const elDisp = document.getElementById('dB-disponibles');
-            const elOcup = document.getElementById('dB-ocupados');
+          const esA = ladoNombre.includes('A') && !ladoNombre.includes('B');
+          if (esA) {
+            ladoA.ocupados = ocup;
+            ladoA.total    = parseInt(row.capacidad ?? row.Capacidad ?? 21);
+            const elDisp = document.getElementById('dA-disponibles');
+            const elOcup = document.getElementById('dA-ocupados');
             const disp   = parseInt(row.disponibles ?? row.Disponibles ?? 0);
             if (elDisp) elDisp.textContent = disp;
             if (elOcup) elOcup.textContent = ocup;
@@ -95,24 +95,25 @@
         });
       }
 
-      // 2. Desglose REAL por tipo de vehículo en Lado A (Bicicleta, Moto, Auto)
+      // 2. Desglose REAL por tipo de vehículo
       if (dataRol.ok && dataRol.data) {
         const d = dataRol.data;
+        // Lado A (controlado): sincronizar ocupados y capacidad
         if (d.lado_a) {
-          ladoA.carros.dentro = Number(d.lado_a.carros     || 0);
-          ladoA.motos.dentro  = Number(d.lado_a.motos      || 0);
-          ladoA.bicis.dentro  = Number(d.lado_a.bicicletas || 0);
+          ladoA.ocupados = Number(d.lado_a.ocupados  || ladoA.ocupados);
+          ladoA.total    = Number(d.lado_a.capacidad || ladoA.total);
+          const elCarros = document.getElementById('dA-carros');
+          const elBicis  = document.getElementById('dA-bicis');
+          const elOcup   = document.getElementById('dA-ocupados');
+          if (elCarros) elCarros.textContent = d.lado_a.carros     || 0;
+          if (elBicis)  elBicis.textContent  = d.lado_a.bicicletas || 0;
+          if (elOcup)   elOcup.textContent   = d.lado_a.ocupados   || 0;
         }
-        // También sincronizar lado B si viene en ocupacion-rol
+        // Lado B (abierto): sincronizar conteo por tipo
         if (d.lado_b) {
-          ladoB.ocupados = Number(d.lado_b.ocupados  || ladoB.ocupados);
-          ladoB.total    = Number(d.lado_b.capacidad || ladoB.total);
-          const elCarros = document.getElementById('dB-carros');
-          const elBicis  = document.getElementById('dB-bicis');
-          const elOcup   = document.getElementById('dB-ocupados');
-          if (elCarros) elCarros.textContent = d.lado_b.carros     || 0;
-          if (elBicis)  elBicis.textContent  = d.lado_b.bicicletas || 0;
-          if (elOcup)   elOcup.textContent   = d.lado_b.ocupados   || 0;
+          ladoB.carros.dentro = Number(d.lado_b.carros     || 0);
+          ladoB.motos.dentro  = Number(d.lado_b.motos      || 0);
+          ladoB.bicis.dentro  = Number(d.lado_b.bicicletas || 0);
         }
       }
 
@@ -398,9 +399,8 @@
             </button>
           </div>`;
       } else {
-        // Ambos lados disponibles para todos los roles:
-        // las bicicletas pueden entrar al Lado B sin consumir cupos
-        const ladoOpts = '<option value="1">Lado A</option><option value="2">Lado B</option>';
+        // Ambos lados disponibles para todos los roles
+        const ladoOpts = '<option value="1">Lado A — Espacios controlados</option><option value="2">Lado B — Espacio abierto</option>';
 
         let vehiculoOpts = '';
         if (u.vehiculos && u.vehiculos.length > 1) {
@@ -488,7 +488,7 @@
     if (!u || u.estado === 'Dentro') return;
     const ladoSel = document.getElementById('lado-sel-' + id);
     const lado = ladoSel ? parseInt(ladoSel.value) : 1;
-    const ladoNombre = lado === 2 ? 'B' : 'A';
+    const ladoNombre = lado === 1 ? 'A' : 'B';
     
     let id_vehiculo = null;
     const vehSel = document.getElementById('veh-sel-' + id);

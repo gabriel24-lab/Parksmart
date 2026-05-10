@@ -279,8 +279,8 @@ function buildActionButtons(usuario, vehiculos, dentro) {
         </select>
         <select id="sel-lado-${usuario.id_usuario}"
           style="flex:1;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:inherit;font-size:13px;">
-          <option value="1">Lado A</option>
-          <option value="2">Lado B</option>
+          <option value="1">Lado A (controlado)</option>
+          <option value="2">Lado B (abierto)</option>
         </select>
       </div>
       <button class="btn-entry" onclick="adminEntrada(${usuario.id_usuario}, '${usuario.id_usuario}')">
