@@ -443,7 +443,7 @@ router.get('/usuarios-admin', requireRol('admin'), async (req, res) => {
     const [result, vResult] = await Promise.all([
       query(
         `SELECT u.id_usuario, u.nombre_completo, u.tipo_id, u.numero_id,
-                u.qr_code, u.rol, c.nombre AS centro_nombre,
+                u.qr_code, u.rol, u.foto_perfil, c.nombre AS centro_nombre,
                 EXISTS (
                   SELECT 1 FROM registros_uso r2
                   WHERE r2.id_usuario = u.id_usuario AND r2.estado = 'activo'
