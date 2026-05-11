@@ -727,6 +727,9 @@
           <button class="vtab" onclick="setRegVehicle('bicicleta', this)">
             <i class="bi bi-bicycle"></i> Bicicleta
           </button>
+          <button class="vtab" onclick="setRegVehicle('furgoneta', this)">
+            <i class="bi bi-truck-front-fill"></i> Furgoneta
+          </button>
         </div>
 
         <div id="reg-form-ninguno" class="vehicle-form"></div>
@@ -779,6 +782,23 @@
           <div class="form-group">
             <label><i class="bi bi-card-text"></i> Descripción</label>
             <textarea id="rv-desc-b" placeholder="Bicicleta montaña rin 29..." rows="2"></textarea>
+          </div>
+        </div>
+
+        <div id="reg-form-furgoneta" class="vehicle-form" style="display:none">
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="bi bi-123"></i> Placa</label>
+              <input type="text" id="rv-placa-f" placeholder="ABC-123"/>
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-palette"></i> Color</label>
+              <input type="text" id="rv-color-f" placeholder="Blanco, Gris..."/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-card-text"></i> Descripción</label>
+            <textarea id="rv-desc-f" placeholder="Furgoneta de carga, modelo 2019..." rows="2"></textarea>
           </div>
         </div>
 
