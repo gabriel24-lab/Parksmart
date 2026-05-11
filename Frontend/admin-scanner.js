@@ -429,7 +429,7 @@ async function adminSalida(id_usuario) {
     regVehicleType = type;
     document.querySelectorAll('.vehicle-tabs .vtab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
-    ['ninguno','carro','moto','bicicleta'].forEach(t => {
+    ['ninguno','carro','moto','bicicleta','furgoneta'].forEach(t => {
       const el = document.getElementById('reg-form-' + t);
       if (el) el.style.display = t === type ? 'block' : 'none';
     });
@@ -497,7 +497,7 @@ async function adminSalida(id_usuario) {
       let id_vehiculo = null;
       if (regVehicleType !== 'ninguno' && id_usuario) {
         if (btn) btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Registrando vehículo...';
-        const mapTipoId = { carro: 3, moto: 2, bicicleta: 1 };
+        const mapTipoId = { carro: 3, moto: 2, bicicleta: 1, furgoneta: 4 };
         let vehiculoBody = { id_tipo: mapTipoId[regVehicleType], id_usuario };
 
         if (regVehicleType === 'bicicleta') {
@@ -507,9 +507,10 @@ async function adminSalida(id_usuario) {
           if (!modelo || !color) { showToast('Para la bicicleta completa modelo y color.', 'error'); if (btn) { btn.innerHTML = '<i class="bi bi-person-check-fill"></i> Registrar usuario'; btn.disabled = false; } return; }
           vehiculoBody = { ...vehiculoBody, modelo, color, descripcion: desc || null };
         } else {
-          const placa = document.getElementById(`rv-placa-${regVehicleType[0]}`).value.trim();
-          const color = document.getElementById(`rv-color-${regVehicleType[0]}`).value.trim();
-          const desc  = document.getElementById(`rv-desc-${regVehicleType[0]}`).value.trim();
+          const suffix = regVehicleType === 'furgoneta' ? 'f' : regVehicleType[0];
+          const placa = document.getElementById(`rv-placa-${suffix}`).value.trim();
+          const color = document.getElementById(`rv-color-${suffix}`).value.trim();
+          const desc  = document.getElementById(`rv-desc-${suffix}`).value.trim();
           if (!placa || !color) { showToast(`Para el ${regVehicleType} completa placa y color.`, 'error'); if (btn) { btn.innerHTML = '<i class="bi bi-person-check-fill"></i> Registrar usuario'; btn.disabled = false; } return; }
           vehiculoBody = { ...vehiculoBody, placa, color, descripcion: desc || null };
         }
