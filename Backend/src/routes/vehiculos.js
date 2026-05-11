@@ -28,6 +28,7 @@ const { requireRol } = require('../middlewares/auth');
 // ── POST /api/vehiculos/admin ─────────────────────────────────────────
 // Solo admins. Registra un vehículo para otro usuario (sin foto).
 router.post('/admin',
+  authMiddleware,
   requireRol('admin'),
   [
     body('id_usuario').isInt({ min: 1 }).withMessage('id_usuario requerido.'),
