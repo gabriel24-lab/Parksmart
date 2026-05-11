@@ -135,6 +135,8 @@
           nombre: u.nombre_completo || 'Sin nombre',
           tipoId: u.tipo_id,
           numId: u.numero_id,
+          email: u.email || null,
+          rol: u.rol || 'aprendiz',
           centro: u.centro_nombre || 'No asignado',
           vehiculos: u.vehiculos || [],
           estado: u.dentro ? 'Dentro' : 'Fuera',
@@ -437,7 +439,7 @@
 
       return `
       <tr>
-        <td><div class="user-cell"><div class="mini-av">${u.foto ? `<img src="${u.foto}" alt="${u.nombre}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : u.nombre.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>${u.nombre}</div></td>
+        <td><div class="user-cell"><div class="mini-av">${u.foto ? `<img src="${u.foto}" alt="${u.nombre}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : u.nombre.split(' ').map(w=>w[0]).slice(0,2).join('')}</div><button class="user-name-link" onclick="showUserCard('${u.id}')" title="Ver carnet de ${u.nombre}">${u.nombre}</button></div></td>
         <td><code class="id-code">${u.id}</code></td>
         <td>${u.tipoId} · ${u.numId}</td>
         <td class="centro-td">${u.centro}</td>
@@ -667,6 +669,109 @@
       tension:0.4, fill:true, pointBackgroundColor:'rgba(159,122,234,1)', pointRadius:4
     }]}, options: chartDefaults() });
   }
+
+  // ══ CARNET FLOTANTE DE USUARIO ══
+  function showUserCard(qrId) {
+    const u = usuarios.find(x => x.id === qrId);
+    if (!u) return;
+
+    // ── Foto o iniciales ──
+    const photoWrap = document.getElementById('uc-photo-wrap');
+    const initials  = u.nombre.split(' ').filter(Boolean).map(w => w[0]).slice(0,2).join('').toUpperCase();
+    if (u.foto) {
+      photoWrap.innerHTML = `<img src="${u.foto}" alt="Foto de ${u.nombre}">`;
+    } else {
+      photoWrap.innerHTML = `<span class="uc-initials">${initials}</span>`;
+    }
+
+    // ── Nombre ──
+    document.getElementById('uc-user-name').textContent = u.nombre;
+
+    // ── Rol ──
+    const rolLabels = { aprendiz:'Aprendiz', funcionario:'Funcionario', instructor:'Instructor', admin:'Administrador' };
+    const rolIcons  = { aprendiz:'bi-mortarboard-fill', funcionario:'bi-briefcase-fill', instructor:'bi-book-fill', admin:'bi-shield-fill' };
+    const rol = u.rol || 'aprendiz';
+    document.getElementById('uc-role-badge').innerHTML = `<i class="bi ${rolIcons[rol] || 'bi-person-fill'}"></i> ${rolLabels[rol] || rol}`;
+
+    // ── Identificación (últimos 4 visibles) ──
+    const numStr = String(u.numId || '');
+    const maskedNum = numStr.length > 4
+      ? `<span class="uc-masked">${'• '.repeat(numStr.length - 4).trim()}</span> ${numStr.slice(-4)}`
+      : numStr;
+    document.getElementById('uc-tipo-id').textContent = u.tipoId || 'ID';
+    document.getElementById('uc-num-id').innerHTML = maskedNum;
+
+    // ── Email enmascarado ──
+    const emailEl = document.getElementById('uc-email');
+    if (u.email) {
+      const atIdx = u.email.indexOf('@');
+      const local  = atIdx > -1 ? u.email.slice(0, atIdx) : u.email;
+      const domain = atIdx > -1 ? u.email.slice(atIdx) : '';
+      const masked = local.length > 2
+        ? `${local[0]}<span class="uc-masked">${'•'.repeat(Math.min(local.length - 2, 5))}</span>${local.slice(-1)}${domain}`
+        : u.email;
+      emailEl.innerHTML = masked;
+    } else {
+      emailEl.textContent = 'Sin correo';
+    }
+
+    // ── Centro ──
+    const centroEl = document.getElementById('uc-centro');
+    const centro = u.centro || 'No asignado';
+    centroEl.textContent = centro.length > 28 ? centro.slice(0, 26) + '…' : centro;
+    centroEl.title = centro;
+
+    // ── Vehículos ──
+    const vehContent = document.getElementById('uc-vehicle-content');
+    if (u.vehiculos && u.vehiculos.length > 0) {
+      const v = u.vehiculos[0];
+      const t = (v.tipo || '').toLowerCase();
+      const vIcon = (t === 'auto' || t === 'carro' || t === 'furgoneta') ? 'bi-car-front-fill'
+                  : (t === 'motocicleta' || t === 'moto') ? 'bi-scooter'
+                  : 'bi-bicycle';
+      const detail = [v.color, v.descripcion].filter(Boolean).join(' · ');
+      const placa  = v.placa ? v.placa.toUpperCase() : (v.modelo || '');
+      vehContent.innerHTML = `
+        <div class="uc-vtag"><i class="bi ${vIcon}"></i> ${v.tipo}${placa ? ' · ' + placa : ''}</div>
+        ${detail ? `<span class="uc-placa">${detail}</span>` : ''}
+        ${u.vehiculos.length > 1 ? `<div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:5px;">+${u.vehiculos.length - 1} vehículo(s) más</div>` : ''}
+      `;
+    } else {
+      vehContent.innerHTML = '<span style="opacity:.45;font-size:12px;">Sin vehículo</span>';
+    }
+
+    // ── Estado ──
+    const dentro = u.estado === 'Dentro';
+    const statusBadge = document.getElementById('uc-status-badge');
+    const statusDot   = document.getElementById('uc-status-dot');
+    statusBadge.className = `uc-status-badge ${dentro ? 'st-in' : 'st-out'}`;
+    statusDot.className   = `uc-status-dot ${dentro ? 'dot-in' : 'dot-out'}`;
+    document.getElementById('uc-status-text').textContent = dentro ? 'Dentro' : 'Fuera';
+    document.getElementById('uc-last-seen').textContent   = dentro ? 'Actualmente en el parqueadero' : '';
+
+    // ── ID Code ──
+    const shortId = qrId.length > 20 ? qrId.slice(0,8) + '…' + qrId.slice(-4) : qrId;
+    document.getElementById('uc-id-code').textContent = shortId;
+
+    // ── Botón Ver QR conecta al modal existente ──
+    document.getElementById('uc-qr-btn').onclick = () => { closeUserCard(); showUserQR(qrId, u.nombre); };
+
+    // ── Mostrar overlay ──
+    document.getElementById('user-card-overlay').classList.add('visible');
+  }
+
+  function closeUserCard() {
+    document.getElementById('user-card-overlay').classList.remove('visible');
+  }
+
+  function handleUserCardOverlayClick(e) {
+    if (e.target === document.getElementById('user-card-overlay')) closeUserCard();
+  }
+
+  // Cerrar con Escape (sin interferir con otros listeners)
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeUserCard();
+  });
 
   // ══ ESCÁNER QR ══
   let html5QrcodeScanner = null;
