@@ -701,19 +701,6 @@
     document.getElementById('uc-tipo-id').textContent = u.tipoId || 'ID';
     document.getElementById('uc-num-id').innerHTML = maskedNum;
 
-    // ── Email enmascarado ──
-    const emailEl = document.getElementById('uc-email');
-    if (u.email) {
-      const atIdx = u.email.indexOf('@');
-      const local  = atIdx > -1 ? u.email.slice(0, atIdx) : u.email;
-      const domain = atIdx > -1 ? u.email.slice(atIdx) : '';
-      const masked = local.length > 2
-        ? `${local[0]}<span class="uc-masked">${'•'.repeat(Math.min(local.length - 2, 5))}</span>${local.slice(-1)}${domain}`
-        : u.email;
-      emailEl.innerHTML = masked;
-    } else {
-      emailEl.textContent = 'Sin correo';
-    }
 
     // ── Centro ──
     const centroEl = document.getElementById('uc-centro');
