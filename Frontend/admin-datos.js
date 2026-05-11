@@ -137,7 +137,8 @@
           numId: u.numero_id,
           centro: u.centro_nombre || 'No asignado',
           vehiculos: u.vehiculos || [],
-          estado: u.dentro ? 'Dentro' : 'Fuera'
+          estado: u.dentro ? 'Dentro' : 'Fuera',
+          foto: u.foto_perfil || null
         }));
         renderUsersTable(usuarios);
       }
@@ -436,7 +437,7 @@
 
       return `
       <tr>
-        <td><div class="user-cell"><div class="mini-av">${u.nombre.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>${u.nombre}</div></td>
+        <td><div class="user-cell"><div class="mini-av">${u.foto ? `<img src="${u.foto}" alt="${u.nombre}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : u.nombre.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>${u.nombre}</div></td>
         <td><code class="id-code">${u.id}</code></td>
         <td>${u.tipoId} · ${u.numId}</td>
         <td class="centro-td">${u.centro}</td>
