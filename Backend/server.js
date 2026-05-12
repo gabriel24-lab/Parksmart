@@ -4,29 +4,71 @@ const express    = require('express');
 const cors       = require('cors');
 const path       = require('path');
 const compression = require('compression');
+const helmet = require('helmet');
+const rateLimit   = require('express-rate-limit');
 const { getPool } = require('./src/config/db');
 
 const app  = express();
 const PORT = process.env.PORT || 10000;
 const FRONTEND_URL = process.env.FRONTEND_URL || '';
 
+// ── Rate limiting ─────────────────────────────────────────────────────
+// Login: máximo 10 intentos por IP cada 15 minutos
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, message: 'Demasiados intentos de inicio de sesión. Espera 15 minutos e intenta de nuevo.' },
+  skipSuccessfulRequests: true, // no cuenta los logins exitosos
+});
+
+// Recuperación de contraseña: máximo 5 solicitudes por IP cada hora
+const recuperarLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, message: 'Demasiadas solicitudes de recuperación. Espera una hora e intenta de nuevo.' },
+});
+
+// Registro público: máximo 10 registros por IP cada hora
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, message: 'Demasiadas solicitudes de registro. Espera una hora e intenta de nuevo.' },
+});
+
+// General API: máximo 200 requests por IP cada minuto (protege todos los demás endpoints)
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, message: 'Demasiadas solicitudes. Espera un momento e intenta de nuevo.' },
+});
+
 // ── Compresión gzip (reduce tamaño de respuestas hasta 70%) ───────────
 app.use(compression());
+app.use(helmet());
 
 // ── CORS ──────────────────────────────────────────────────────────────
+const ORIGENES_PERMITIDOS = [
+  'https://parksmart.vercel.app/', 
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  'http://localhost:3000',
+];
+
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-    const permitido =
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
-      /^https:\/\/[\w-]+\.vercel\.app$/.test(origin) ||
-      (FRONTEND_URL && origin === FRONTEND_URL);
-    if (permitido) cb(null, true);
-    else cb(new Error(`Origen no permitido por CORS: ${origin}`));
+    if (!origin || ORIGENES_PERMITIDOS.includes(origin)) return cb(null, true);
+    cb(new Error(`Origen no permitido: ${origin}`));
   },
   credentials: true,
 }));
-
 // ── Middlewares globales ──────────────────────────────────────────────
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
@@ -37,6 +79,13 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 }));
 
 // ── Rutas API ─────────────────────────────────────────────────────────
+// Limitadores específicos aplicados antes del router general
+app.use('/api/auth/login',              loginLimiter);
+app.use('/api/auth/recuperar',          recuperarLimiter);
+app.use('/api/auth/register',           registerLimiter);
+// Limitador general para toda la API
+app.use('/api',                         generalLimiter);
+
 app.use('/api/auth',        require('./src/routes/auth'));
 app.use('/api/usuarios',    require('./src/routes/usuarios'));
 app.use('/api/vehiculos',   require('./src/routes/vehiculos'));

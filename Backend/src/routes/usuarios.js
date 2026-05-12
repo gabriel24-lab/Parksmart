@@ -9,14 +9,25 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
+const { fileTypeFromBuffer } = require('file-type');
+
 const uploadMem = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
+  limits: { fileSize: 3 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp'];
     allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Solo JPG, PNG o WEBP.'));
   },
-}); // al nivel de módulo, no dentro del handler
+});
+
+// Validación adicional por magic bytes (se aplica dentro del handler, después de multer)
+async function validarMagicBytes(buffer) {
+  const type = await fileTypeFromBuffer(buffer);
+  if (!type || !['image/jpeg', 'image/png', 'image/webp'].includes(type.mime)) {
+    throw new Error('El archivo no es una imagen válida.');
+  }
+  return type.mime;
+}
 const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
 const { authMiddleware } = require('../middlewares/auth');
@@ -135,8 +146,12 @@ router.put('/cambiar-password',
 router.post('/foto-perfil', uploadMem.single('foto'), async (req, res) => {
   if (!req.file) return res.status(400).json({ ok: false, message: 'No se recibió ninguna foto.' });
 
+  await validarMagicBytes(req.file.buffer);
+
   try {
-    const ext      = req.file.mimetype.split('/')[1].replace('jpeg', 'jpg');
+    // Validar el tipo de archivo por magic bytes
+    const fileType = await validarMagicBytes(req.file.buffer);
+    const ext      = fileType.split('/')[1].replace('jpeg', 'jpg');
     const fileName = `perfil-${req.user.id_usuario}-${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage

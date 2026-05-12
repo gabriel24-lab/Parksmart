@@ -138,6 +138,7 @@ router.post('/',
     // ── Subir foto a Supabase Storage ─────────────────────────────────
     let foto_url = null;
     if (req.file) {
+      await validarMagicBytes(req.file.buffer);
       const ext      = req.file.mimetype.split('/')[1].replace('jpeg', 'jpg');
       const fileName = `${Date.now()}-${req.user.id_usuario}.${ext}`;
 

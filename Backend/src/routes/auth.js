@@ -248,10 +248,10 @@ router.post('/admin-register',
         if (detail.includes('qr_code')) {
           return res.status(409).json({ ok: false, message: 'Error al generar código QR único. Intenta de nuevo.' });
         }
-        return res.status(409).json({ ok: false, message: `Dato duplicado: ${err.detail || 'un campo único ya existe en el sistema.'}` });
+        return res.status(409).json({ ok: false, message: 'Un dato único ya existe en el sistema. Verifica los campos e intenta de nuevo.' });
       }
 
-      return res.status(500).json({ ok: false, message: `Error interno del servidor: ${err.message || 'contacta al administrador.'}` });
+      return res.status(500).json({ ok: false, message: 'Error interno del servidor. Contacta al administrador.' });
     }
   }
 );
