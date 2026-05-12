@@ -760,10 +760,17 @@
                   : 'bi-bicycle';
       const detail = [v.color, v.descripcion].filter(Boolean).join(' · ');
       const placa  = v.placa ? v.placa.toUpperCase() : (v.modelo || '');
+      const fotoVeh = v.foto_url
+        ? `<div class="uc-veh-img-wrap">
+             <img src="${v.foto_url}" alt="Foto del vehículo" class="uc-veh-img" loading="lazy"
+               onerror="this.parentElement.style.display='none'">
+           </div>`
+        : '';
       vehContent.innerHTML = `
         <div class="uc-vtag"><i class="bi ${vIcon}"></i> ${v.tipo}${placa ? ' · ' + placa : ''}</div>
         ${detail ? `<span class="uc-placa">${detail}</span>` : ''}
-        ${u.vehiculos.length > 1 ? `<div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:5px;">+${u.vehiculos.length - 1} vehículo(s) más</div>` : ''}
+        ${fotoVeh}
+        ${u.vehiculos.length > 1 ? `<div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:6px;">+${u.vehiculos.length - 1} vehículo(s) más</div>` : ''}
       `;
     } else {
       vehContent.innerHTML = '<span style="opacity:.45;font-size:12px;">Sin vehículo</span>';

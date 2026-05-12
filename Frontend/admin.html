@@ -48,18 +48,6 @@
   <!-- api.js y html5-qrcode sí pueden ser diferidos -->
   <script src="api.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
-  <!-- Guard de acceso: solo admins. Se ejecuta antes del body. -->
-  <script>
-    (function() {
-      const raw = localStorage.getItem('user');
-      const user = raw ? JSON.parse(raw) : null;
-      if (!user || !localStorage.getItem('access_token')) {
-        window.location.replace('login.html'); // no logueado → login
-      } else if (user.rol !== 'admin') {
-        window.location.replace('dashboard.html'); // logueado pero no es admin → dashboard
-      }
-    })();
-  </script>
 </head>
 <body>
 
@@ -1181,19 +1169,21 @@
 
         <!-- Vehículo + Estado -->
         <div class="uc-bottom">
-          <div class="uc-vehicle-section">
-            <div class="uc-sec-label">Vehículo registrado</div>
-            <div id="uc-vehicle-content">
-              <span style="opacity:.45;font-size:12px;">Sin vehículo</span>
+          <div class="uc-bottom-row">
+            <div class="uc-vehicle-section">
+              <div class="uc-sec-label">Vehículo registrado</div>
+              <div id="uc-vehicle-content">
+                <span style="opacity:.45;font-size:12px;">Sin vehículo</span>
+              </div>
             </div>
-          </div>
-          <div class="uc-status-section">
-            <div class="uc-sec-label">Estado</div>
-            <div class="uc-status-badge" id="uc-status-badge">
-              <span class="uc-status-dot" id="uc-status-dot"></span>
-              <span id="uc-status-text">—</span>
+            <div class="uc-status-section">
+              <div class="uc-sec-label">Estado</div>
+              <div class="uc-status-badge" id="uc-status-badge">
+                <span class="uc-status-dot" id="uc-status-dot"></span>
+                <span id="uc-status-text">—</span>
+              </div>
+              <div class="uc-last-seen" id="uc-last-seen"></div>
             </div>
-            <div class="uc-last-seen" id="uc-last-seen"></div>
           </div>
         </div>
       </div>
@@ -1234,14 +1224,19 @@
     }
     /* ── Card ── */
     .user-id-card {
-      width: 360px; max-width: 100%;
+      width: 400px; max-width: 100%;
+      max-height: 92vh;
       background: #111314;
       border: 1px solid rgba(47,164,64,0.38);
-      border-radius: 18px; overflow: hidden;
+      border-radius: 18px;
+      overflow-y: auto;
+      overflow-x: hidden;
       box-shadow: 0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(47,164,64,0.08);
       transform: scale(0.9) translateY(16px);
       transition: transform 0.28s cubic-bezier(.34,1.56,.64,1);
+      scrollbar-width: none; /* Firefox */
     }
+    .user-id-card::-webkit-scrollbar { display: none; } /* Chrome/Safari */
     .user-card-overlay.visible .user-id-card {
       transform: scale(1) translateY(0);
     }
@@ -1301,7 +1296,8 @@
     /* ── Divider ── */
     .uc-divider { height: 0.5px; background: rgba(255,255,255,0.07); margin: 14px 0; }
     /* ── Bottom ── */
-    .uc-bottom { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .uc-bottom { display: flex; flex-direction: column; gap: 14px; }
+    .uc-bottom-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .uc-vehicle-section { flex: 1; min-width: 0; }
     .uc-sec-label { font-size: 10px; color: rgba(255,255,255,0.28); text-transform: uppercase; letter-spacing: 0.9px; margin-bottom: 7px; }
     .uc-vtag {
@@ -1312,6 +1308,23 @@
     }
     .uc-vtag i { font-size: 12px; }
     .uc-placa { font-size: 11px; color: rgba(255,255,255,0.35); font-family: 'DM Mono', monospace; display: block; margin-top: 2px; }
+    /* ── Imagen del vehículo ── */
+    .uc-veh-img-wrap {
+      margin-top: 10px;
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      aspect-ratio: 16/9;
+    }
+    .uc-veh-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 10px;
+    }
     .uc-status-section { text-align: center; flex-shrink: 0; }
     .uc-status-badge {
       padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;

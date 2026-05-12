@@ -453,7 +453,7 @@ router.get('/usuarios-admin', requireRol('admin'), async (req, res) => {
          WHERE u.activo = true ORDER BY u.nombre_completo`
       ),
       query(
-        `SELECT v.id_usuario, v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo, v.color
+        `SELECT v.id_usuario, v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo, v.color, v.foto_url
          FROM vehiculos v
          JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
          WHERE v.activo = true`
