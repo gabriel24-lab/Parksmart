@@ -614,6 +614,56 @@ body {
   margin-bottom: 24px; 
 }
 
+.avatar-photo-wrap {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.avatar-photo-wrap .avatar-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 20px;
+  color: #fff;
+}
+
+.avatar-photo-wrap:hover .avatar-overlay {
+  opacity: 1;
+}
+
+/* Indicador de cámara permanente cuando no hay foto */
+.avatar-photo-wrap.no-foto .avatar-overlay {
+  opacity: 1;
+  background: rgba(0,0,0,0.25);
+  font-size: 14px;
+}
+
+/* Badge de cámara pequeño en esquina inferior */
+.avatar-photo-wrap::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  background: var(--brand-color, #2FA440);
+  border-radius: 50%;
+  border: 2px solid #0d1117;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M10.5 3l-1-1h-3l-1 1H4a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1h-1.5zM8 10.5A2.5 2.5 0 1 1 8 5.5a2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E");
+  background-size: 13px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
 .avatar-circle {
   width: 68px; 
   height: 68px; 
