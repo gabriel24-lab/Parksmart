@@ -882,6 +882,18 @@ async function adminSalida(id_usuario) {
     return hoy.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
   }
 
+  // ════════ HELPER: FORMATEO DE DURACIÓN ════════
+  function formatDuracion(minutos) {
+    if (minutos == null) return null;
+    const totalMin = Math.round(Number(minutos)); // redondear decimales del backend
+    if (totalMin <= 0) return '0 min';
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h === 0) return `${m} min`;
+    if (m === 0) return `${h} h`;
+    return `${h} h ${m} min`;
+  }
+
   // ════════ HISTORIAL ADMIN ════════
   let haRegistros = [];
   let haFiltrados = [];
@@ -993,7 +1005,7 @@ async function adminSalida(id_usuario) {
 
     document.getElementById('ha-total').textContent    = total;
     document.getElementById('ha-activos').textContent  = activos;
-    document.getElementById('ha-promedio').textContent = promH > 0 ? `${promH}h ${promM}m` : `${promM}m`;
+    document.getElementById('ha-promedio').textContent = promMin > 0 ? formatDuracion(promMin) : '—';
     document.getElementById('ha-tipo-top').textContent = topTipo ? topTipo[0] : '—';
   }
 
@@ -1060,9 +1072,9 @@ async function adminSalida(id_usuario) {
     tbody.innerHTML = pagina.map((r, i) => {
       const num     = inicio + i + 1;
       const entrada = fechaColombia(r.fecha_entrada).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' });
-      const salida  = r.fecha_salida ? fechaColombia(r.fecha_salida).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', timeZone:'America/Bogota' }) : '—';
+      const salida  = r.fecha_salida ? fechaColombia(r.fecha_salida).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short', timeZone:'America/Bogota' }) : '—';
       const dur = r.duracion_min != null
-        ? `${Math.floor(r.duracion_min/60)}h ${r.duracion_min%60}m`
+        ? formatDuracion(r.duracion_min)
         : r.estado === 'activo' ? '<span style="color:#a5d6a7;font-size:11px;">En curso</span>' : '—';
       const badge = r.estado !== 'activo'
         ? `<span class="badge-status done"><i class="bi bi-check-circle" style="margin-right:3px;"></i>Completado</span>`
@@ -1176,8 +1188,9 @@ async function adminSalida(id_usuario) {
         r.lado            || '—',
         fe.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }),
         fe.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }),
+        fs ? fs.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }) : '—',
         fs ? fs.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }) : '—',
-        r.duracion_min != null ? r.duracion_min + ' min' : '—',
+        r.duracion_min != null ? formatDuracion(r.duracion_min) : '—',
         est,
       ];
     });
@@ -1185,15 +1198,15 @@ async function adminSalida(id_usuario) {
     const VERDE  = '#1a7a2e';
     const VERDE2 = '#2FA440';
     const FILA_PAR = '#f0f7f2';
-    const cols = ['Usuario', 'Tipo de vehículo', 'Placa / Modelo', 'Lado', 'Fecha', 'Hora entrada', 'Hora salida', 'Duración', 'Estado'];
-    const anchos = ['220pt', '120pt', '100pt', '60pt', '90pt', '90pt', '90pt', '80pt', '90pt'];
+    const cols = ['Usuario', 'Tipo de vehículo', 'Placa / Modelo', 'Lado', 'Fecha entrada', 'Hora entrada', 'Fecha salida', 'Hora salida', 'Duración', 'Estado'];
+    const anchos = ['200pt', '110pt', '100pt', '55pt', '85pt', '85pt', '85pt', '85pt', '80pt', '85pt'];
 
     const filasHTML = rows.map((r, i) => {
       const bg = i % 2 === 0 ? '#ffffff' : FILA_PAR;
       const celdas = r.map((v, ci) => {
         // Columna Estado: color según valor
         let extra = '';
-        if (ci === 8) {
+        if (ci === 9) {
           extra = v === 'Completado'
             ? `color:#1a7a2e;font-weight:600;`
             : `color:#b45309;font-weight:600;`;
@@ -1222,7 +1235,7 @@ async function adminSalida(id_usuario) {
 <table>
   <!-- Fila título -->
   <tr>
-    <td colspan="9" style="background:${VERDE};color:#ffffff;font-size:16pt;font-weight:700;
+    <td colspan="10" style="background:${VERDE};color:#ffffff;font-size:16pt;font-weight:700;
         padding:12pt 16pt;letter-spacing:0.5pt;">
       🅿 Parksmart — Historial del Parqueadero SENA
     </td>
@@ -1233,13 +1246,13 @@ async function adminSalida(id_usuario) {
         border-bottom:1pt solid #c3dfc9;">
       📅 Fecha: <b>${fecha}</b>
     </td>
-    <td colspan="4" style="background:#e8f5ec;color:#1a4d27;font-size:10pt;padding:5pt 10pt;
+    <td colspan="5" style="background:#e8f5ec;color:#1a4d27;font-size:10pt;padding:5pt 10pt;
         border-bottom:1pt solid #c3dfc9;text-align:right;">
       Total registros: <b>${rows.length}</b>
     </td>
   </tr>
   <!-- Fila vacía separadora -->
-  <tr><td colspan="9" style="height:6pt;"></td></tr>
+  <tr><td colspan="10" style="height:6pt;"></td></tr>
   <!-- Encabezados -->
   <tr>
     ${cols.map((c, i) => `
@@ -1250,10 +1263,10 @@ async function adminSalida(id_usuario) {
   <!-- Datos -->
   ${filasHTML}
   <!-- Fila vacía final -->
-  <tr><td colspan="9" style="height:8pt;"></td></tr>
+  <tr><td colspan="10" style="height:8pt;"></td></tr>
   <!-- Pie -->
   <tr>
-    <td colspan="9" style="color:#888888;font-size:8pt;padding:4pt 10pt;
+    <td colspan="10" style="color:#888888;font-size:8pt;padding:4pt 10pt;
         border-top:0.5pt solid #d4e8da;font-style:italic;">
       Generado por Parksmart el ${new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })}
     </td>

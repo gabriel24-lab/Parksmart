@@ -1,6 +1,18 @@
 // dashboard-perfil.js — Perfil, vehículos, utilidades e inicialización
 'use strict';
 
+  // ════════ HELPER: FORMATEO DE DURACIÓN ════════
+  function formatDuracion(minutos) {
+    if (minutos == null) return null;
+    const totalMin = Math.round(Number(minutos));
+    if (totalMin <= 0) return '0 min';
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h === 0) return `${m} min`;
+    if (m === 0) return `${h} h`;
+    return `${h} h ${m} min`;
+  }
+
     async function loadHistorial(page = 1) {
       histPage = page;
       try {
@@ -31,7 +43,7 @@
           const salida  = r.fecha_salida
             ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' })
             : '—';
-          const dur = r.duracion_min != null ? `${Math.floor(r.duracion_min / 60)}h ${Math.round(r.duracion_min % 60)}m` : '—';
+          const dur = formatDuracion(r.duracion_min) ?? '—';
           const badge = r.estado === 'completado'
             ? `<span class="badge-status done">Completado</span>`
             : `<span class="badge-status active" style="animation:pulse 1.5s infinite;">En curso</span>`;
@@ -117,8 +129,8 @@
       tbody.innerHTML = pagina.map((r, i) => {
         const num = inicio + i + 1;
         const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' });
-        const salida = r.fecha_salida ? new Date(r.fecha_salida).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }) : '—';
-        const duracion = r.duracion_min != null ? `${Math.floor(Number(r.duracion_min) / 60)}h ${Math.round(Number(r.duracion_min) % 60)}m` : '—';
+        const salida = r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Bogota' }) : '—';
+        const duracion = formatDuracion(r.duracion_min) ?? '—';
 
         const tLow = (r.tipo_vehiculo || '').toLowerCase();
         const tipoIcon = (tLow === 'auto' || tLow === 'carro' || tLow === 'furgoneta') ? 'bi-car-front-fill'
@@ -183,7 +195,7 @@
 
       const entrada = new Date(r.fecha_entrada).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' });
       const salida = r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' }) : 'Aún en el parqueadero';
-      const duracion = r.duracion_min != null ? `${Math.floor(Number(r.duracion_min) / 60)}h ${Math.round(Number(r.duracion_min) % 60)}m` : 'En progreso';
+      const duracion = formatDuracion(r.duracion_min) ?? 'En progreso';
 
       const campo = (icon, label, val) => `
         <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 16px;">
@@ -209,21 +221,105 @@
 
     function exportarHistorial() {
       if (!histTodosLosRegistros.length) { showToast('No hay registros para exportar', 'error'); return; }
-      const cabecera = ['ID', 'Fecha entrada', 'Vehículo', 'Identificador', 'Color', 'Lado', 'Fecha salida', 'Duración (min)', 'Estado'];
-      const filas = histTodosLosRegistros.map(r => [
-        r.id_registro,
-        new Date(r.fecha_entrada).toLocaleString('es-CO', { timeZone: 'America/Bogota' }),
-        r.tipo_vehiculo, r.identificador, r.color || '', r.lado || '',
-        r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : '',
-        r.duracion_min ?? '', r.estado
-      ]);
-      const csv = [cabecera, ...filas].map(f => f.map(v => `"${v}"`).join(',')).join('\n');
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `historial_parqueadero_${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click(); URL.revokeObjectURL(url);
-      showToast('CSV exportado correctamente', 'success');
+
+      const VERDE  = '#1a7a2e';
+      const VERDE2 = '#2FA440';
+      const FILA_PAR = '#f0f7f2';
+
+      const tipoLabel = {
+        'auto': 'Carro / Auto', 'car': 'Carro / Auto', 'carro': 'Carro / Auto',
+        'motocicleta': 'Motocicleta', 'moto': 'Motocicleta',
+        'bicicleta': 'Bicicleta', 'bicycle': 'Bicicleta',
+        'furgoneta': 'Furgoneta',
+      };
+
+      const rows = histTodosLosRegistros.map(r => {
+        const fe  = new Date(r.fecha_entrada);
+        const fs  = r.fecha_salida ? new Date(r.fecha_salida) : null;
+        const tipo = tipoLabel[(r.tipo_vehiculo || '').toLowerCase()] || r.tipo_vehiculo || '—';
+        const est  = r.estado === 'completado' ? 'Completado' : 'En curso';
+        return [
+          fe.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }),
+          fe.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }),
+          tipo,
+          r.identificador || '—',
+          r.color         || '—',
+          r.lado          || '—',
+          fs ? fs.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }) : '—',
+          fs ? fs.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }) : '—',
+          r.duracion_min != null ? formatDuracion(r.duracion_min) : '—',
+          est,
+        ];
+      });
+
+      const cols   = ['Fecha entrada', 'Hora entrada', 'Tipo de vehículo', 'Placa / Modelo', 'Color', 'Lado', 'Fecha salida', 'Hora salida', 'Duración', 'Estado'];
+      const anchos = ['90pt', '85pt', '110pt', '100pt', '75pt', '55pt', '85pt', '85pt', '80pt', '85pt'];
+
+      const filasHTML = rows.map((r, i) => {
+        const bg = i % 2 === 0 ? '#ffffff' : FILA_PAR;
+        const celdas = r.map((v, ci) => {
+          let extra = '';
+          if (ci === 9) {
+            extra = v === 'Completado'
+              ? 'color:#1a7a2e;font-weight:600;'
+              : 'color:#b45309;font-weight:600;';
+          }
+          return `<td style="background:${bg};padding:7pt 10pt;font-size:10pt;color:#1a1a1a;border:0.5pt solid #d4e8da;${extra}">${v}</td>`;
+        }).join('');
+        return `<tr>${celdas}</tr>`;
+      }).join('');
+
+      const fecha = new Date().toLocaleDateString('es-CO', { timeZone: 'America/Bogota' });
+
+      const html = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:x="urn:schemas-microsoft-com:office:excel"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="UTF-8">
+  <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>
+    <x:ExcelWorksheet><x:Name>Mi Historial</x:Name>
+    <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+    </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+  <style>body { font-family: Calibri, Arial, sans-serif; } table { border-collapse: collapse; width: 100%; }</style>
+</head>
+<body>
+<table>
+  <tr>
+    <td colspan="10" style="background:${VERDE};color:#ffffff;font-size:16pt;font-weight:700;padding:12pt 16pt;letter-spacing:0.5pt;">
+      🅿 Parksmart — Mi Historial de Parqueadero
+    </td>
+  </tr>
+  <tr>
+    <td colspan="5" style="background:#e8f5ec;color:#1a4d27;font-size:10pt;padding:5pt 10pt;border-bottom:1pt solid #c3dfc9;">
+      📅 Exportado: <b>${fecha}</b>
+    </td>
+    <td colspan="5" style="background:#e8f5ec;color:#1a4d27;font-size:10pt;padding:5pt 10pt;border-bottom:1pt solid #c3dfc9;text-align:right;">
+      Total registros: <b>${rows.length}</b>
+    </td>
+  </tr>
+  <tr><td colspan="10" style="height:6pt;"></td></tr>
+  <tr>
+    ${cols.map((c, i) => `<td style="background:${VERDE2};color:#ffffff;font-size:10pt;font-weight:700;padding:8pt 10pt;width:${anchos[i]};border:0.5pt solid #1a7a2e;text-align:center;letter-spacing:0.3pt;">${c}</td>`).join('')}
+  </tr>
+  ${filasHTML}
+  <tr><td colspan="10" style="height:8pt;"></td></tr>
+  <tr>
+    <td colspan="10" style="color:#888888;font-size:8pt;padding:4pt 10pt;border-top:0.5pt solid #d4e8da;font-style:italic;">
+      Generado por Parksmart el ${new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })}
+    </td>
+  </tr>
+</table>
+</body></html>`;
+
+      const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `Parksmart_MiHistorial_${new Date().toISOString().slice(0, 10)}.xls`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Excel exportado ✓', 'success');
     }
 
     // ════════ PERFIL ════════
@@ -730,4 +826,3 @@
       clearTimeout(toast._timer);
       toast._timer = setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; }, 3200);
     }
-  

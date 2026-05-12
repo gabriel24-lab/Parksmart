@@ -565,7 +565,7 @@
 
   // ── Instancias de gráficas de lados A / B (para poder destruirlas y re-renderizar)
   let _chartHoraAInst = null, _chartTipoAInst = null;
-  let _chartHoraBInst = null, _chartSemanaBInst = null;
+  let _chartHoraBInst = null, _chartSemanaBInst = null, _chartTipoBInst = null;
 
   function switchDashLado(lado, btn) {
     document.querySelectorAll('.dash-lado-tab').forEach(b => b.classList.remove('active'));
@@ -593,6 +593,7 @@
       } else {
         renderChartHoraB(por_hora);
         renderChartSemanaB(por_semana);
+        renderChartTipoB(por_tipo);
       }
     } catch(e) { console.warn('Error stats-lado:', e); }
   }
@@ -631,9 +632,9 @@
 
   function renderChartTipoA(porTipo = []) {
     if (_chartTipoAInst) { _chartTipoAInst.destroy(); _chartTipoAInst = null; }
+    // Lado A solo permite Carros y Bicicletas — las motos ingresan únicamente por Lado B
     const tipoMap = [
       { label:'Carros',     match:['auto','carro','furgoneta','automóvil'] },
-      { label:'Motos',      match:['motocicleta','moto'] },
       { label:'Bicicletas', match:['bicicleta'] },
     ];
     const valores = tipoMap.map(({ match }) =>
@@ -647,7 +648,7 @@
     }
     const ctx = _rebuildCanvas('chartTipoA');
     if (!ctx) return;
-    const colors = ['rgba(99,179,237,0.85)','rgba(252,211,77,0.85)','rgba(72,187,120,0.85)'];
+    const colors = ['rgba(99,179,237,0.85)','rgba(72,187,120,0.85)'];
     _chartTipoAInst = new Chart(ctx, { type:'doughnut', data:{ labels:tipoMap.map(t=>t.label), datasets:[{
       data:valores, backgroundColor:colors, borderColor:'rgba(255,255,255,0.1)', borderWidth:2
     }]}, options:{
@@ -710,6 +711,37 @@
       borderColor:'rgba(159,122,234,0.9)', backgroundColor:'rgba(159,122,234,0.15)',
       tension:0.4, fill:true, pointBackgroundColor:'rgba(159,122,234,1)', pointRadius:4
     }]}, options: chartDefaults() });
+  }
+
+  function renderChartTipoB(porTipo = []) {
+    if (_chartTipoBInst) { _chartTipoBInst.destroy(); _chartTipoBInst = null; }
+    // Lado B permite Carros, Motos y Bicicletas
+    const tipoMap = [
+      { label:'Carros',     match:['auto','carro','furgoneta','automóvil'] },
+      { label:'Motos',      match:['motocicleta','moto'] },
+      { label:'Bicicletas', match:['bicicleta'] },
+    ];
+    const valores = tipoMap.map(({ match }) =>
+      porTipo.filter(r => r.tipo && match.includes(r.tipo.toLowerCase())).reduce((s,r) => s+Number(r.cantidad),0)
+    );
+    const total = valores.reduce((s,v) => s+v, 0);
+    const wrap = document.getElementById('chartTipoB')?.parentElement;
+    if (!total) {
+      if (wrap) wrap.innerHTML = '<div class="chart-no-data"><i class="bi bi-pie-chart"></i>Sin registros de tipos hoy</div>';
+      return;
+    }
+    const ctx = _rebuildCanvas('chartTipoB');
+    if (!ctx) return;
+    const colors = ['rgba(159,122,234,0.85)','rgba(252,211,77,0.85)','rgba(72,187,120,0.85)'];
+    _chartTipoBInst = new Chart(ctx, { type:'doughnut', data:{ labels:tipoMap.map(t=>t.label), datasets:[{
+      data:valores, backgroundColor:colors, borderColor:'rgba(255,255,255,0.1)', borderWidth:2
+    }]}, options:{
+      responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{
+        legend:{ labels:{ color:'rgba(255,255,255,0.7)', font:{size:12} } },
+        tooltip:{ callbacks:{ label: c => ` ${c.label}: ${c.raw} (${total>0?Math.round(c.raw*100/total):0}%)` } }
+      }
+    }});
   }
 
   // ══ CARNET FLOTANTE DE USUARIO ══
