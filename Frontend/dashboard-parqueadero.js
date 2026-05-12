@@ -148,6 +148,9 @@
 
         if (rol === 'aprendiz') {
           // Aprendiz: solo ve bicicletas en Lado A (controlado)
+          // El texto "máx. 21 cupos · controlado" no aplica para aprendices
+          const ladoALabel = document.getElementById('lado-a-cupos-label');
+          if (ladoALabel) ladoALabel.style.display = 'none';
           if (cardBicis)  { cardBicis.style.display  = ''; document.getElementById('num-bicis-a').textContent  = d.lado_a.bicicletas ?? 0; }
           if (cardCarros) cardCarros.style.display = 'none';
           if (cardMotos)  cardMotos.style.display  = 'none';
