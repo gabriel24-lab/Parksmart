@@ -262,6 +262,8 @@
           imgEl.style.display = 'block';
           if (initEl) initEl.style.display = 'none';
           if (btnQui) btnQui.style.display = 'inline-block';
+          const wrapYes = document.querySelector('.avatar-photo-wrap');
+          if (wrapYes) wrapYes.classList.remove('no-foto');
           // Topbar avatar
           const tbAv = document.getElementById('topbar-av');
           if (tbAv) { tbAv.style.backgroundImage = `url(${data.data.foto_perfil})`; tbAv.style.backgroundSize = 'cover'; tbAv.textContent = ''; }
@@ -269,6 +271,8 @@
           if (imgEl)  imgEl.style.display = 'none';
           if (initEl) initEl.style.display = '';
           if (btnQui) btnQui.style.display = 'none';
+          const wrapNF = document.querySelector('.avatar-photo-wrap');
+          if (wrapNF) wrapNF.classList.add('no-foto');
         }
         applyUserToUI(data.data);
         onRolChange();
@@ -584,6 +588,8 @@
         imgEl.style.display = 'block';
         if (initEl) initEl.style.display = 'none';
         if (btnQui) btnQui.style.display = 'inline-block';
+        const wrap = document.querySelector('.avatar-photo-wrap');
+        if (wrap) wrap.classList.remove('no-foto');
         const tbAv = document.getElementById('topbar-av');
         if (tbAv) { tbAv.style.backgroundImage = `url(${data.foto_url})`; tbAv.style.backgroundSize = 'cover'; tbAv.textContent = ''; }
         showToast('Foto de perfil actualizada ✓');
@@ -603,6 +609,8 @@
         if (imgEl)  { imgEl.src = ''; imgEl.style.display = 'none'; }
         if (initEl) initEl.style.display = '';
         if (btnQui) btnQui.style.display = 'none';
+        const wrapQ = document.querySelector('.avatar-photo-wrap');
+        if (wrapQ) wrapQ.classList.add('no-foto');
         const tbAv = document.getElementById('topbar-av');
         if (tbAv) { tbAv.style.backgroundImage = ''; tbAv.textContent = tbAv.textContent || 'U'; }
         showToast('Foto eliminada');
