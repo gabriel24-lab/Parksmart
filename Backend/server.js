@@ -61,7 +61,7 @@ app.use(helmet());
 
 // ── CORS ──────────────────────────────────────────────────────────────
 const ORIGENES_PERMITIDOS = [
-  'https://parksmart.vercel.app/', 
+  'https://parksmart.vercel.app', 
   'http://localhost:5500',
   'http://127.0.0.1:5500',
   'http://localhost:3000',
