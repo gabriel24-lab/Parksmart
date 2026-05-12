@@ -356,6 +356,9 @@
     }
 
     async function saveProfile() {
+      const saveBtn = document.querySelector('#section-perfil .btn-save');
+      if (saveBtn && saveBtn.disabled) return;
+      if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...'; }
       const nombre = document.getElementById('p-nombre').value.trim();
       const email = document.getElementById('p-email').value.trim();
       const tipo_id = document.getElementById('p-tipo-id').value;
@@ -363,11 +366,11 @@
       const centro = document.getElementById('p-centro').value;
       const rol = document.getElementById('p-rol').value;
 
-      if (!nombre) { showToast('Ingresa tu nombre completo.', 'error'); return; }
-      if (!tipo_id) { showToast('Selecciona tu tipo de identificación.', 'error'); return; }
-      if (!num_id) { showToast('Ingresa tu número de identificación.', 'error'); return; }
+      if (!nombre) { showToast('Ingresa tu nombre completo.', 'error'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Guardar cambios'; } return; }
+      if (!tipo_id) { showToast('Selecciona tu tipo de identificación.', 'error'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Guardar cambios'; } return; }
+      if (!num_id) { showToast('Ingresa tu número de identificación.', 'error'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Guardar cambios'; } return; }
       // El rol no se valida aquí — es de solo lectura, asignado por el sistema o el admin
-      if (!centro) { showToast('Debes seleccionar tu centro de formación.', 'error'); return; }
+      if (!centro) { showToast('Debes seleccionar tu centro de formación.', 'error'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Guardar cambios'; } return; }
 
       try {
         const data = await apiPut('/usuarios/perfil', {
@@ -395,9 +398,13 @@
         applyRolToVehicleSection();
         showToast('¡Perfil guardado!', 'success');
       } catch { showToast('Error de conexión.', 'error'); }
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Guardar cambios'; }
     }
 
     async function changePassword() {
+      const cpBtn = document.querySelector('#section-seguridad .btn-save') || document.querySelector('[onclick*="changePassword"]');
+      if (cpBtn && cpBtn.disabled) return;
+      if (cpBtn) cpBtn.disabled = true;
       const actual   = document.getElementById('sec-pass-act').value;
       const nuevo    = document.getElementById('sec-pass-new').value;
       const confirm  = document.getElementById('sec-pass-confirm').value;
@@ -419,6 +426,7 @@
         document.getElementById('sec-pass-confirm').value = '';
         showToast('Contraseña actualizada correctamente ✓', 'success');
       } catch { showToast('Error de conexión.', 'error'); }
+      if (cpBtn) cpBtn.disabled = false;
     }
 
     function toggleSecPass(inputId, iconId) {
@@ -503,9 +511,12 @@
       }
     }
 
-    async function saveVehicle(tipo) {
+    async function saveVehicle(tipo, svBtn) {
+      svBtn = svBtn || (event && event.currentTarget) || null;
+      if (svBtn && svBtn.disabled) return;
+      if (svBtn) { svBtn.disabled = true; svBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...'; }
       const rol = getCurrentRol();
-      if (!rol) { showToast('Configura tu rol en el perfil primero.', 'error'); return; }
+      if (!rol) { showToast('Configura tu rol en el perfil primero.', 'error'); if (svBtn) { svBtn.disabled = false; svBtn.innerHTML = '<i class="bi bi-floppy"></i> Guardar vehículo'; } return; }
 
       const formData = new FormData();
       const mapTipo = { bicicleta: '1', moto: '2', carro: '3'};
@@ -544,6 +555,7 @@
         await generateUserQR();
         showToast('¡Vehículo registrado!', 'success');
       } catch { showToast('Error de conexión.', 'error'); }
+      if (svBtn) { svBtn.disabled = false; svBtn.innerHTML = '<i class="bi bi-floppy"></i> Guardar vehículo'; }
     }
 
     function clearVehicleForm(tipo) {
@@ -648,15 +660,19 @@
 
     async function confirmDelete() {
       if (deleteIndex < 0) return;
+      const cdBtn = document.querySelector('#delete-modal .btn-save') || document.querySelector('[onclick*="confirmDelete"]');
+      if (cdBtn && cdBtn.disabled) return;
+      if (cdBtn) cdBtn.disabled = true;
       const v = vehiculos[deleteIndex];
       try {
         const data = await apiDelete(`/vehiculos/${v.id_vehiculo}`);
-        if (!data.ok) { showToast(data.message || 'Error al eliminar.', 'error'); closeDeleteModal(); return; }
+        if (!data.ok) { showToast(data.message || 'Error al eliminar.', 'error'); closeDeleteModal(); if (cdBtn) cdBtn.disabled = false; return; }
         vehiculos.splice(deleteIndex, 1);
         renderVehicleList();
         closeDeleteModal();
         showToast('Vehículo eliminado.', 'info');
       } catch { showToast('Error de conexión.', 'error'); closeDeleteModal(); }
+      if (cdBtn) cdBtn.disabled = false;
     }
 
     // ════════ LOGOUT ════════

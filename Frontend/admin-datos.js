@@ -57,12 +57,29 @@
         document.getElementById('a-nombre').value = u.nombre_completo || '';
         document.getElementById('a-tipo-id').value = u.tipo_id || '';
         document.getElementById('a-num-id').value = u.numero_id || '';
+        if (u.email) { const el = document.getElementById('a-email'); if (el) el.value = u.email; }
         if (u.id_region) {
           document.getElementById('a-region').value = u.id_region;
           filterCentrosAdmin();
           document.getElementById('a-centro').value = u.id_centro || '';
         }
         updateAdminAvatar(u.nombre_completo || 'Admin');
+        // Cargar foto de perfil si existe
+        const imgEl  = document.getElementById('admin-avatar-img');
+        const initEl = document.getElementById('admin-avatar-initials');
+        const btnQui = document.getElementById('btn-quitar-foto-admin');
+        if (u.foto_perfil && imgEl) {
+          imgEl.src = u.foto_perfil;
+          imgEl.style.display = 'block';
+          if (initEl) initEl.style.display = 'none';
+          if (btnQui) btnQui.style.display = 'inline-block';
+          const tbAv = document.querySelector('.topbar-avatar');
+          if (tbAv) { tbAv.style.backgroundImage = `url(${u.foto_perfil})`; tbAv.style.backgroundSize = 'cover'; tbAv.textContent = ''; }
+        } else {
+          if (imgEl)  imgEl.style.display = 'none';
+          if (initEl) initEl.style.display = '';
+          if (btnQui) btnQui.style.display = 'none';
+        }
       }
     } catch(e) { console.warn('Error perfil admin:', e); }
   }
@@ -471,14 +488,26 @@
   async function toggleUserStatus(id) {
     const u = usuarios.find(x => x.id === id);
     if (!u) return;
+    // Anti-doble click: deshabilitar el botón de salida de este usuario
+    const exitBtn = document.querySelector(`.exit-btn[onclick*="${id}"]`);
+    if (exitBtn && exitBtn.disabled) return;
+    if (exitBtn) { exitBtn.disabled = true; exitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>'; }
     try {
       const res = await apiFetch('/parqueadero/admin-salida', {
         method: 'POST',
         body: JSON.stringify({ id_usuario: u.id_usuario }),
       });
       const data = await res.json();
-      if (!data.ok) { showToast(data.message || 'Error al registrar salida', 'error'); return; }
-    } catch (e) { showToast('Error de conexión', 'error'); return; }
+      if (!data.ok) {
+        showToast(data.message || 'Error al registrar salida', 'error');
+        if (exitBtn) { exitBtn.disabled = false; exitBtn.innerHTML = '<i class="bi bi-arrow-up-circle-fill"></i> Salida'; }
+        return;
+      }
+    } catch (e) {
+      showToast('Error de conexión', 'error');
+      if (exitBtn) { exitBtn.disabled = false; exitBtn.innerHTML = '<i class="bi bi-arrow-up-circle-fill"></i> Salida'; }
+      return;
+    }
     
     await cargarCuposDesdeAPI();
     await cargarUsuariosDesdeAPI();
@@ -489,6 +518,10 @@
   async function toggleUserStatusWithLado(id) {
     const u = usuarios.find(x => x.id === id);
     if (!u || u.estado === 'Dentro') return;
+    // Anti-doble click
+    const entBtn = document.querySelector(`.entry-btn[onclick*="${id}"]`);
+    if (entBtn && entBtn.disabled) return;
+    if (entBtn) { entBtn.disabled = true; entBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>'; }
     const ladoSel = document.getElementById('lado-sel-' + id);
     const lado = ladoSel ? parseInt(ladoSel.value) : 1;
     const ladoNombre = lado === 1 ? 'A' : 'B';
@@ -503,6 +536,7 @@
     
     if (!id_vehiculo) {
       showToast('Este usuario no tiene vehículos registrados.', 'error');
+      if (entBtn) { entBtn.disabled = false; entBtn.innerHTML = '<i class="bi bi-arrow-down-circle-fill"></i> Entrada'; }
       return;
     }
 
@@ -512,8 +546,16 @@
         body: JSON.stringify({ id_usuario: u.id_usuario, id_vehiculo, id_lado: lado }),
       });
       const data = await res.json();
-      if (!data.ok) { showToast(data.message || 'Error al registrar entrada', 'error'); return; }
-    } catch (e) { showToast('Error de conexión', 'error'); return; }
+      if (!data.ok) {
+        showToast(data.message || 'Error al registrar entrada', 'error');
+        if (entBtn) { entBtn.disabled = false; entBtn.innerHTML = '<i class="bi bi-arrow-down-circle-fill"></i> Entrada'; }
+        return;
+      }
+    } catch (e) {
+      showToast('Error de conexión', 'error');
+      if (entBtn) { entBtn.disabled = false; entBtn.innerHTML = '<i class="bi bi-arrow-down-circle-fill"></i> Entrada'; }
+      return;
+    }
 
     await cargarCuposDesdeAPI();
     await cargarUsuariosDesdeAPI();

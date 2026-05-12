@@ -86,10 +86,18 @@
       });
   }
 
+  let _processingManual = false;
   function processManual() {
+    if (_processingManual) return;
     const id = document.getElementById('manual-id').value.trim();
     if (!id) return;
-    processQRResult(id);
+    _processingManual = true;
+    const btn = document.querySelector('.btn-manual');
+    if (btn) btn.disabled = true;
+    processQRResult(id).finally(() => {
+      _processingManual = false;
+      if (btn) btn.disabled = false;
+    });
   }
 
 async function processQRResult(rawText) {
@@ -593,10 +601,53 @@ async function adminSalida(id_usuario) {
     });
   }
 
+  // ════════ FOTO DE PERFIL ADMIN ════════
+  async function subirFotoAdmin(input) {
+    if (!input.files[0]) return;
+    const formData = new FormData();
+    formData.append('foto', input.files[0]);
+    try {
+      const res = await apiFetch('/usuarios/foto-perfil', { method: 'POST', body: formData });
+      if (!res) return;
+      const data = await res.json();
+      if (!data.ok) { showToast(data.message || 'Error al subir foto', 'error'); return; }
+      const imgEl  = document.getElementById('admin-avatar-img');
+      const initEl = document.getElementById('admin-avatar-initials');
+      const btnQui = document.getElementById('btn-quitar-foto-admin');
+      if (imgEl) { imgEl.src = data.foto_url + '?t=' + Date.now(); imgEl.style.display = 'block'; }
+      if (initEl) initEl.style.display = 'none';
+      if (btnQui) btnQui.style.display = 'inline-block';
+      const tbAv = document.querySelector('.topbar-avatar');
+      if (tbAv) { tbAv.style.backgroundImage = `url(${data.foto_url})`; tbAv.style.backgroundSize = 'cover'; tbAv.textContent = ''; }
+      showToast('Foto de perfil actualizada ✓', 'success');
+    } catch { showToast('No se pudo subir la foto', 'error'); }
+    input.value = '';
+  }
+
+  async function quitarFotoAdmin() {
+    try {
+      const res = await apiFetch('/usuarios/foto-perfil', { method: 'DELETE' });
+      if (!res) return;
+      const data = await res.json();
+      if (!data.ok) return;
+      const imgEl  = document.getElementById('admin-avatar-img');
+      const initEl = document.getElementById('admin-avatar-initials');
+      const btnQui = document.getElementById('btn-quitar-foto-admin');
+      if (imgEl)  { imgEl.src = ''; imgEl.style.display = 'none'; }
+      if (initEl) initEl.style.display = '';
+      if (btnQui) btnQui.style.display = 'none';
+      const tbAv = document.querySelector('.topbar-avatar');
+      if (tbAv) { tbAv.style.backgroundImage = ''; }
+      showToast('Foto eliminada', 'info');
+    } catch { showToast('Error al eliminar foto', 'error'); }
+  }
+
   async function saveAdminProfile() {
     const btn = document.querySelector('#section-perfil .btn-save');
+    if (btn.disabled) return;
     const oldText = btn.innerHTML;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
+    btn.disabled = true;
     
     const nombre_completo = document.getElementById('a-nombre').value.trim();
     const email = document.getElementById('a-email').value.trim();
@@ -606,7 +657,7 @@ async function adminSalida(id_usuario) {
 
     if (!nombre_completo || !tipo_id || !numero_id) {
       showToast('Nombre e Identificación son requeridos', 'error');
-      btn.innerHTML = oldText;
+      btn.innerHTML = oldText; btn.disabled = false;
       return;
     }
 
@@ -624,25 +675,28 @@ async function adminSalida(id_usuario) {
       const data = await res.json();
       if (!data.ok) {
         showToast(data.message || 'Error al guardar el perfil.', 'error');
-        btn.innerHTML = oldText;
+        btn.innerHTML = oldText; btn.disabled = false;
       } else {
         btn.innerHTML = '<i class="bi bi-check-lg"></i> ¡Guardado!';
         btn.style.background = '#1b5e20';
         updateAdminAvatar(nombre_completo);
         showToast('Perfil actualizado correctamente.', 'info');
+        setTimeout(() => { btn.innerHTML = '<i class="bi bi-check2-circle"></i> Guardar cambios'; btn.style.background = ''; btn.disabled = false; }, 2200);
       }
     } catch(e) {
       showToast('Error de conexión', 'error');
-      btn.innerHTML = oldText;
+      btn.innerHTML = oldText; btn.disabled = false;
     }
-    setTimeout(() => { btn.innerHTML = '<i class="bi bi-check2-circle"></i> Guardar cambios'; btn.style.background = ''; }, 2200);
   }
 
   async function changeAdminPassword() {
+    const btn = document.querySelector('#section-perfil .glass-panel:last-child .btn-save');
+    if (btn && btn.disabled) return;
+    if (btn) { btn.disabled = true; }
     const actual = document.getElementById('a-pass-act').value;
     const nuevo = document.getElementById('a-pass-new').value;
-    if (!actual || !nuevo) { showToast('Completa ambos campos de contraseña.', 'error'); return; }
-    if (nuevo.length < 8) { showToast('La nueva contraseña debe tener al menos 8 caracteres.', 'error'); return; }
+    if (!actual || !nuevo) { showToast('Completa ambos campos de contraseña.', 'error'); if (btn) btn.disabled = false; return; }
+    if (nuevo.length < 8) { showToast('La nueva contraseña debe tener al menos 8 caracteres.', 'error'); if (btn) btn.disabled = false; return; }
 
     try {
       const res = await apiFetch('/usuarios/cambiar-password', {
@@ -652,7 +706,8 @@ async function adminSalida(id_usuario) {
       const data = await res.json();
       
       if (!data.ok) { 
-         showToast(data.message || (data.errors && data.errors[0].msg) || 'Error al cambiar contraseña.', 'error'); 
+         showToast(data.message || (data.errors && data.errors[0].msg) || 'Error al cambiar contraseña.', 'error');
+         if (btn) btn.disabled = false;
          return; 
       }
       document.getElementById('a-pass-act').value = '';
@@ -661,6 +716,7 @@ async function adminSalida(id_usuario) {
     } catch {
       showToast('Error de conexión.', 'error');
     }
+    if (btn) btn.disabled = false;
   }
 
   // ════════ LOGOUT ════════
@@ -688,8 +744,10 @@ async function adminSalida(id_usuario) {
 
   async function saveAdminVehicle(tipo) {
     const btn = event.currentTarget;
+    if (btn.disabled) return;
     const oldText = btn.innerHTML;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
+    btn.disabled = true;
 
     const formData = new FormData();
     const isBici = tipo === 'bicicleta';
@@ -742,7 +800,7 @@ async function adminSalida(id_usuario) {
         if(fileInput) fileInput.value='';
       }
     } catch { showToast('Error de conexión', 'error'); }
-    setTimeout(() => { btn.innerHTML = oldText; btn.style.background = ''; }, 2500);
+    setTimeout(() => { btn.innerHTML = oldText; btn.style.background = ''; btn.disabled = false; }, 2500);
   }
 
   // ══ NAVEGACIÓN ══
