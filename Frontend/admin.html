@@ -48,6 +48,18 @@
   <!-- api.js y html5-qrcode sí pueden ser diferidos -->
   <script src="api.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+  <!-- Guard de acceso: solo admins. Se ejecuta antes del body. -->
+  <script>
+    (function() {
+      const raw = localStorage.getItem('user');
+      const user = raw ? JSON.parse(raw) : null;
+      if (!user || !localStorage.getItem('access_token')) {
+        window.location.replace('login.html'); // no logueado → login
+      } else if (user.rol !== 'admin') {
+        window.location.replace('dashboard.html'); // logueado pero no es admin → dashboard
+      }
+    })();
+  </script>
 </head>
 <body>
 
