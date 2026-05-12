@@ -808,11 +808,8 @@ async function adminSalida(id_usuario) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('section-' + name).classList.add('active');
-    if (btn) btn.classList.add('active');
-    else {
-      const navBtn = document.querySelector(`.nav-item[onclick*="'${name}'"]`);
-      if (navBtn) navBtn.classList.add('active');
-    }
+    // Activar TODOS los nav-items con esta sección (sidebar + bottom nav)
+    document.querySelectorAll(`.nav-item[onclick*="'${name}'"]`).forEach(el => el.classList.add('active'));
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('overlay').classList.remove('show');
     if (name !== 'scanner') stopScan();

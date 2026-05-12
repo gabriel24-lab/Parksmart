@@ -1349,6 +1349,26 @@
 
   <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
+  <!-- ═══ BOTTOM NAV (solo móvil) ═══ -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-item bottom-nav-item active" onclick="showSection('dashboard', this)">
+      <i class="bi bi-speedometer2"></i>
+      <span>Inicio</span>
+    </button>
+    <button class="nav-item bottom-nav-item" onclick="showSection('scanner', this)">
+      <i class="bi bi-qr-code-scan"></i>
+      <span>Escanear QR</span>
+    </button>
+    <button class="nav-item bottom-nav-item" onclick="showSection('usuarios', this)">
+      <i class="bi bi-people-fill"></i>
+      <span>Usuarios</span>
+    </button>
+    <button class="nav-item bottom-nav-item" onclick="showSection('registrar', this)">
+      <i class="bi bi-person-plus-fill"></i>
+      <span>Registrar</span>
+    </button>
+  </nav>
+
   <script src="/Frontend/admin-cupos.js"></script>
   <script src="/Frontend/admin-datos.js"></script>
   <script src="/Frontend/admin-scanner.js"></script>
