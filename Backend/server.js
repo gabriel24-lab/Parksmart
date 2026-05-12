@@ -50,13 +50,18 @@ const generalLimiter = rateLimit({
   message: { ok: false, message: 'Demasiadas solicitudes. Espera un momento e intenta de nuevo.' },
 });
 
+// ── Trust proxy (Render siempre está detrás de un proxy) ─────────────
+// 1 = confiar solo en el primer proxy (el de Render). Necesario para
+// que express-rate-limit lea correctamente la IP real del usuario.
+app.set('trust proxy', 1);
+
 // ── Compresión gzip (reduce tamaño de respuestas hasta 70%) ───────────
 app.use(compression());
 app.use(helmet());
 
 // ── CORS ──────────────────────────────────────────────────────────────
 const ORIGENES_PERMITIDOS = [
-  'https://parksmart.vercel.app', 
+  'https://parksmart.vercel.app/', 
   'http://localhost:5500',
   'http://127.0.0.1:5500',
   'http://localhost:3000',
