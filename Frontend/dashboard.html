@@ -667,6 +667,26 @@
 
   <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
+  <!-- ═══ BOTTOM NAV (solo móvil) ═══ -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-item bottom-nav-item active" onclick="showSection('dashboard', this)">
+      <i class="bi bi-grid-1x2-fill"></i>
+      <span>Inicio</span>
+    </button>
+    <button class="nav-item bottom-nav-item" onclick="showSection('vehiculo', this)">
+      <i class="bi bi-car-front-fill"></i>
+      <span>Mi Vehículo</span>
+    </button>
+    <button class="nav-item bottom-nav-item" onclick="showSection('perfil', this)">
+      <i class="bi bi-person-circle"></i>
+      <span>Perfil</span>
+    </button>
+    <button class="nav-item bottom-nav-item logout" onclick="handleLogout()">
+      <i class="bi bi-box-arrow-left"></i>
+      <span>Salir</span>
+    </button>
+  </nav>
+
   <!-- Modal QR pantalla completa -->
   <div id="qr-fullscreen-modal" class="qr-fs-modal" style="display:none" onclick="closeQRFullscreen()">
     <div class="qr-fs-inner" onclick="event.stopPropagation()">

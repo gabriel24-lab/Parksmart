@@ -1424,3 +1424,14 @@ body {
     padding-bottom: calc(74px + env(safe-area-inset-bottom)) !important;
   }
 }
+
+  /* Cerrar sesión en rojo suave (bottom nav admin) */
+  @media (max-width: 768px) {
+    .bottom-nav-item.logout {
+      color: rgba(255, 80, 80, 0.55);
+    }
+    .bottom-nav-item.logout:hover,
+    .bottom-nav-item.logout:active {
+      color: rgba(255, 80, 80, 0.9);
+    }
+  }
