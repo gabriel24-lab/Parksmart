@@ -99,7 +99,7 @@ app.use('/api/catalogos',   require('./src/routes/catalogos'));
 
 // ── Health check ──────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, message: 'API Parqueadero SENA funcionando ✅', timestamp: new Date() });
+  res.json({ ok: true, message: 'API Parksmart funcionando', timestamp: new Date() });
 });
 
 // ── 404 ───────────────────────────────────────────────────────────────
@@ -109,7 +109,7 @@ app.use((req, res) => {
 
 // ── Error handler ─────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error('❌ Error no controlado:', err);
+  console.error('Error no controlado:', err);
   res.status(500).json({ ok: false, message: err.message || 'No se pudo procesar la solicitud.' });
 });
 

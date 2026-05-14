@@ -135,6 +135,19 @@ router.post('/',
       return res.status(400).json({ ok: false, message: 'El modelo es obligatorio para bicicletas.' });
     }
 
+    // ── Validar límite de 3 vehículos por usuario ─────────────────────
+    const countResult = await query(
+      `SELECT COUNT(*) AS total FROM vehiculos WHERE id_usuario = @uid AND activo = true`,
+      { uid: req.user.id_usuario }
+    );
+    const totalActivos = parseInt(countResult.rows[0].total, 10);
+    if (totalActivos >= 3) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Has alcanzado el límite máximo de 3 vehículos registrados. Elimina uno para poder agregar otro.',
+      });
+    }
+
     // ── Subir foto a Supabase Storage ─────────────────────────────────
     let foto_url = null;
     if (req.file) {

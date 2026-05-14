@@ -572,6 +572,8 @@
 
     function getCurrentRol() { return document.getElementById('p-rol').value; }
 
+    const MAX_VEHICULOS = 3;
+
     function applyRolToVehicleSection() {
       const rol = getCurrentRol();
       const alert = document.getElementById('vehiculo-rol-alert');
@@ -586,11 +588,28 @@
         tabBici.style.display = 'inline-flex'; tabCarro.style.display = 'none'; tabMoto.style.display = 'none';
         sub.textContent = 'Aprendiz · Solo bicicletas';
         setVehicle('bicicleta', tabBici); tabBici.classList.add('active');
+      } else if (rol === 'instructor') {
+        // Instructores pueden registrar bicicleta, carro y moto
+        tabBici.style.display = 'inline-flex'; tabCarro.style.display = 'inline-flex'; tabMoto.style.display = 'inline-flex';
+        sub.textContent = 'Instructor · Bicicleta, carro y moto';
+        setVehicle('carro', tabCarro); tabCarro.classList.add('active');
       } else {
         tabBici.style.display = 'none'; tabCarro.style.display = 'inline-flex'; tabMoto.style.display = 'inline-flex';
         sub.textContent = (ROL_LABELS[rol] || rol) + ' · Carros y motos';
         setVehicle('carro', tabCarro); tabCarro.classList.add('active');
       }
+      // Mostrar u ocultar el formulario según el límite de vehículos
+      applyVehiculoLimite();
+    }
+
+    function applyVehiculoLimite() {
+      const limiteBanner = document.getElementById('vehiculo-limite-banner');
+      const formTabs = document.getElementById('vehiculo-tabs');
+      const formsArea = document.getElementById('vehiculo-forms-area');
+      const alcanzado = vehiculos.length >= MAX_VEHICULOS;
+      if (limiteBanner) limiteBanner.style.display = alcanzado ? 'flex' : 'none';
+      if (formTabs) formTabs.style.display = alcanzado ? 'none' : '';
+      if (formsArea) formsArea.style.display = alcanzado ? 'none' : '';
     }
 
     function setVehicle(type, btn) {
@@ -718,6 +737,8 @@
       // Mostrar u ocultar banner en el dashboard
       const banner = document.getElementById('banner-sin-vehiculo');
       if (banner) banner.style.display = vehiculos.length === 0 ? 'flex' : 'none';
+      // Aplicar límite de 3 vehículos
+      applyVehiculoLimite();
 
       const container = document.getElementById('perfil-vehicles-list');
       if (!vehiculos.length) {

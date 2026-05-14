@@ -361,10 +361,24 @@
       </div>
 
       <div id="vehiculo-form-area">
+
+        <!-- Banner límite 3 vehículos -->
+        <div id="vehiculo-limite-banner" style="display:none; align-items:center; gap:12px;
+          background:rgba(255,183,77,0.12); border:1.5px solid rgba(255,183,77,0.35);
+          border-radius:14px; padding:16px 20px; margin-bottom:18px;">
+          <i class="bi bi-exclamation-triangle-fill" style="color:#ffb74d; font-size:22px; flex-shrink:0;"></i>
+          <div>
+            <strong style="color:#ffb74d; font-size:14px;">Límite de vehículos alcanzado</strong>
+            <p style="margin:4px 0 0; font-size:13px; color:rgba(255,255,255,0.6);">
+              Has registrado el máximo de <strong>3 vehículos</strong>. Elimina uno si deseas agregar otro.
+            </p>
+          </div>
+        </div>
+
         <div class="glass-panel">
           <div class="panel-title"><i class="bi bi-plus-circle-fill"></i> Registrar nuevo vehículo</div>
 
-          <div class="vehicle-tabs" id="vtabs-container">
+          <div class="vehicle-tabs" id="vehiculo-tabs">
             <button class="vtab" id="vtab-bicicleta" onclick="setVehicle('bicicleta',this)">
               <i class="bi bi-bicycle"></i> Bicicleta
             </button>
@@ -375,6 +389,9 @@
               <i class="bi bi-scooter"></i> Moto
             </button>
           </div>
+
+          <!-- Formularios (se ocultan cuando se alcanza el límite) -->
+          <div id="vehiculo-forms-area">
 
           <!-- Bicicleta -->
           <div id="form-bicicleta" class="vehicle-form">
@@ -478,6 +495,8 @@
             <button class="btn-save" onclick="saveVehicle('moto', this)"><i class="bi bi-floppy"></i> Guardar
               vehículo</button>
           </div>
+
+          </div><!-- /vehiculo-forms-area -->
         </div>
       </div>
     </section>
