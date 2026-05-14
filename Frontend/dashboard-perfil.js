@@ -588,10 +588,10 @@
         tabBici.style.display = 'inline-flex'; tabCarro.style.display = 'none'; tabMoto.style.display = 'none';
         sub.textContent = 'Aprendiz · Solo bicicletas';
         setVehicle('bicicleta', tabBici); tabBici.classList.add('active');
-      } else if (rol === 'instructor') {
-        // Instructores pueden registrar bicicleta, carro y moto
+      } else if (rol === 'instructor' || rol === 'funcionario') {
+        // Instructores y funcionarios pueden registrar bicicleta, carro y moto
         tabBici.style.display = 'inline-flex'; tabCarro.style.display = 'inline-flex'; tabMoto.style.display = 'inline-flex';
-        sub.textContent = 'Instructor · Bicicleta, carro y moto';
+        sub.textContent = (ROL_LABELS[rol] || rol) + ' · Bicicleta, carro y moto';
         setVehicle('carro', tabCarro); tabCarro.classList.add('active');
       } else {
         tabBici.style.display = 'none'; tabCarro.style.display = 'inline-flex'; tabMoto.style.display = 'inline-flex';
