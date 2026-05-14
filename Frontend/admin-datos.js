@@ -458,7 +458,7 @@
       <tr>
         <td><div class="user-cell"><div class="mini-av">${u.foto ? `<img src="${u.foto}" alt="${u.nombre}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : u.nombre.split(' ').map(w=>w[0]).slice(0,2).join('')}</div><button class="user-name-link" onclick="showUserCard('${u.id}')" title="Ver carnet de ${u.nombre}">${u.nombre}</button></div></td>
         <td><code class="id-code">${u.id}</code></td>
-        <td>${u.tipoId} · ${u.numId}</td>
+        <td>${u.tipoId} · ${'*'.repeat(Math.max(0,(u.numId||'').length-4))}${(u.numId||'').slice(-4)}</td>
         <td class="centro-td">${u.centro}</td>
         <td>${vehiculosHtml}</td>
         <td><span class="event-badge ${dentro?'in':'out'}">${u.estado}</span></td>
