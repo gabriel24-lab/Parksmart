@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <link rel="preload" href="/Frontend/fonts/space-grotesk-v22-latin-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/Frontend/fonts/dm-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Superadmin - Parksmart</title>
+  <link rel="icon" href="/Frontend/img/logo-icon-cropped.webp" type="image/x-icon">
+  <link rel="preconnect" href="https://parksmart-ggt8.onrender.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="/Frontend/admin.css"/>
+  <style>
+    .chart-canvas-wrap { position: relative; height: 200px; width: 100%; }
+    .chart-canvas-wrap canvas { max-height: none !important; }
+    .chart-no-data { display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:rgba(255,255,255,0.3);font-size:13px;gap:8px; }
+    .chart-no-data i { font-size: 28px; }
+
+    /* ── Superadmin badge ── */
+    .sidebar-role-badge.sa-badge {
+      background: linear-gradient(135deg, rgba(156,39,176,0.3), rgba(103,58,183,0.3));
+      border-color: rgba(156,39,176,0.5);
+      color: #ce93d8;
+    }
+
+    /* ── Guardias section ── */
+    .guardia-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: border-color 0.2s;
+    }
+    .guardia-card:hover { border-color: rgba(255,255,255,0.2); }
+    .guardia-card.inactivo { opacity: 0.5; }
+    .guardia-av {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: linear-gradient(135deg, #1a3d1f, #2FA440);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 600; color: #fff;
+      flex-shrink: 0;
+    }
+    .guardia-info { flex: 1; min-width: 0; }
+    .guardia-nombre { font-size: 14px; font-weight: 600; color: #fff; margin: 0 0 3px; }
+    .guardia-meta { font-size: 12px; color: rgba(255,255,255,0.45); display: flex; flex-wrap: wrap; gap: 10px; }
+    .guardia-meta span { display: flex; align-items: center; gap: 4px; }
+    .guardia-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .g-btn {
+      padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500;
+      cursor: pointer; border: 1px solid; transition: all 0.15s;
+      display: flex; align-items: center; gap: 5px; white-space: nowrap;
+    }
+    .g-btn-toggle-on  { background: rgba(76,175,80,0.12); border-color: rgba(76,175,80,0.4); color: #81c784; }
+    .g-btn-toggle-on:hover { background: rgba(76,175,80,0.22); }
+    .g-btn-toggle-off { background: rgba(255,183,77,0.12); border-color: rgba(255,183,77,0.4); color: #ffb74d; }
+    .g-btn-toggle-off:hover { background: rgba(255,183,77,0.22); }
+    .g-btn-del  { background: rgba(244,67,54,0.1); border-color: rgba(244,67,54,0.35); color: #ef9a9a; }
+    .g-btn-del:hover { background: rgba(244,67,54,0.2); }
+
+    /* ── Usuarios SA ── */
+    .sa-rol-select {
+      padding: 5px 10px; border-radius: 7px; font-size: 12px;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18);
+      color: #fff; cursor: pointer; font-family: inherit;
+    }
+    .sa-toggle-btn {
+      padding: 5px 12px; border-radius: 7px; font-size: 12px;
+      cursor: pointer; border: 1px solid; transition: all 0.15s; font-family: inherit;
+    }
+    .sa-toggle-btn.on  { background: rgba(76,175,80,0.12); border-color: rgba(76,175,80,0.4); color: #81c784; }
+    .sa-toggle-btn.off { background: rgba(255,183,77,0.12); border-color: rgba(255,183,77,0.4); color: #ffb74d; }
+    .sa-toggle-btn:hover { opacity: 0.8; }
+
+    /* ── Confirm modal ── */
+    .sa-modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 9000; padding: 20px;
+    }
+    .sa-modal-overlay.visible { display: flex; }
+    .sa-modal-card {
+      background: #111314; border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px; padding: 28px 28px 24px;
+      max-width: 400px; width: 100%;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.8);
+    }
+    .sa-modal-icon { font-size: 38px; margin-bottom: 14px; }
+    .sa-modal-title { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+    .sa-modal-desc  { font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: 22px; line-height: 1.6; }
+    .sa-modal-btns  { display: flex; gap: 10px; justify-content: flex-end; }
+    .sa-modal-cancel { padding: 9px 18px; border-radius: 9px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 13px; cursor: pointer; }
+    .sa-modal-confirm { padding: 9px 20px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+    .sa-modal-confirm.danger { background: #c62828; color: #fff; }
+    .sa-modal-confirm.warn   { background: #e65100; color: #fff; }
+    .sa-modal-confirm.ok     { background: #2FA440; color: #fff; }
+
+    /* ── Stat card purple (superadmin) ── */
+    .stat-card.purple { border-color: rgba(156,39,176,0.35); }
+    .stat-card.purple .stat-icon { background: rgba(156,39,176,0.18); color: #ce93d8; }
+
+    /* ── Registrar guardia form ── */
+    .reg-guardia-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .reg-guardia-grid { grid-template-columns: 1fr; } }
+    .reg-guardia-grid .full-width { grid-column: 1 / -1; }
+  </style>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="api.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+</head>
+<body>
+
+  <div class="background"></div>
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="/Frontend/img/logo-icon-cropped.webp" alt="Logo" class="nav-logo-img">
+      <span>Parksmart</span>
+    </div>
+    <div class="sidebar-role-badge sa-badge">
+      <i class="bi bi-shield-fill-check" style="margin-right:5px;"></i>Super Administrador
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showSection('dashboard', this)">
+        <i class="bi bi-speedometer2"></i><span>Inicio</span>
+      </button>
+      <button class="nav-item" onclick="showSection('scanner', this)">
+        <i class="bi bi-qr-code-scan"></i><span>Escanear QR</span>
+      </button>
+      <button class="nav-item" onclick="showSection('cupos', this)">
+        <i class="bi bi-grid-3x3-gap-fill"></i><span>Gestión de Cupos</span>
+      </button>
+      <button class="nav-item" onclick="showSection('usuarios', this)">
+        <i class="bi bi-people-fill"></i><span>Usuarios</span>
+      </button>
+      <button class="nav-item" onclick="showSection('guardias', this)">
+        <i class="bi bi-shield-fill"></i><span>Guardias</span>
+      </button>
+      <button class="nav-item" onclick="showSection('historia', this)">
+        <i class="bi bi-clock-history"></i><span>Historial</span>
+      </button>
+      <button class="nav-item" onclick="showSection('registrar', this)">
+        <i class="bi bi-person-plus-fill"></i><span>Registrar Usuario</span>
+      </button>
+      <div class="nav-divider"></div>
+      <button class="nav-item" onclick="showSection('perfil', this)">
+        <i class="bi bi-person-circle"></i><span>Mi Perfil</span>
+      </button>
+      <button class="nav-item logout" onclick="handleLogout()">
+        <i class="bi bi-box-arrow-left"></i><span>Cerrar sesión</span>
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Topbar móvil -->
+  <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <div class="topbar-logo-wrap">
+      <img src="/Frontend/img/logo-icon-cropped.webp" alt="Logo" class="nav-logo-img">
+      <span class="topbar-title">Parksmart - SA</span>
+    </div>
+    <div class="topbar-avatar admin-av" id="topbar-av" style="background:linear-gradient(135deg,#6a1b9a,#4a148c);">SA</div>
+  </div>
+
+  <!-- ═══ MAIN ═══ -->
+  <main class="main">
+
+    <!-- ══ DASHBOARD ══ -->
+    <section id="section-dashboard" class="section active">
+      <div class="section-header">
+        <div>
+          <h1>Panel <span class="hl">General</span></h1>
+          <p class="section-sub" id="sa-clock">Cargando...</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div style="padding:8px 16px;border-radius:10px;background:rgba(156,39,176,0.12);border:1px solid rgba(156,39,176,0.3);font-size:12px;color:#ce93d8;display:flex;align-items:center;gap:6px;">
+            <i class="bi bi-shield-fill-check"></i> Super Administrador
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats principales -->
+      <div class="stats-grid" style="margin-bottom:24px;">
+        <div class="stat-card green">
+          <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="stat-disponibles">—</span>
+            <span class="stat-label">Espacios disponibles</span>
+          </div>
+          <div class="stat-badge">Lado A</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon"><i class="bi bi-p-circle-fill"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="stat-ocupados">—</span>
+            <span class="stat-label">Espacios ocupados</span>
+          </div>
+          <div class="stat-badge" style="background:rgba(244,67,54,0.2);color:#ef9a9a;">Lado A</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon"><i class="bi bi-box-arrow-in-right"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="stat-entradas">—</span>
+            <span class="stat-label">Entradas hoy</span>
+          </div>
+          <div class="stat-badge blue-b">Hoy</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-icon"><i class="bi bi-percent"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="stat-pct">—</span>
+            <span class="stat-label">Ocupación</span>
+          </div>
+          <div class="stat-badge" style="background:rgba(255,193,7,0.2);color:#ffe082;">%</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-icon"><i class="bi bi-shield-fill"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="stat-guardias">—</span>
+            <span class="stat-label">Guardias activos</span>
+          </div>
+          <div class="stat-badge" style="background:rgba(156,39,176,0.2);color:#ce93d8;">Sistema</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="stat-usuarios-total">—</span>
+            <span class="stat-label">Usuarios registrados</span>
+          </div>
+          <div class="stat-badge blue-b">Total</div>
+        </div>
+      </div>
+
+      <!-- Barra de ocupación -->
+      <div class="glass-panel" style="margin-bottom:20px;">
+        <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Ocupación Lado A en tiempo real</div>
+        <div class="occ-bar-wrap">
+          <div class="occ-bar" id="occ-bar" style="width:0%"><span>0%</span></div>
+        </div>
+      </div>
+
+      <!-- Gráficas -->
+      <div class="charts-row">
+        <div class="chart-panel">
+          <div class="panel-title"><i class="bi bi-graph-up"></i> Entradas por hora — hoy</div>
+          <div class="chart-canvas-wrap"><canvas id="chartHora"></canvas></div>
+        </div>
+        <div class="chart-panel">
+          <div class="panel-title"><i class="bi bi-calendar3-week"></i> Ingresos — últimos 7 días</div>
+          <div class="chart-canvas-wrap"><canvas id="chartSemana"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Actividad reciente + guardias activos -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;" class="two-col-grid">
+
+        <!-- Actividad reciente -->
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-activity"></i> Actividad reciente</div>
+          <div class="table-wrap">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Vehículo</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="recent-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Guardias en turno -->
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-shield-fill"></i> Guardias activos</div>
+          <div id="dash-guardias-list" style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+            <div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:13px;">
+              <i class="bi bi-hourglass-split"></i> Cargando...
+            </div>
+          </div>
+          <button class="btn-save" style="margin-top:14px;width:100%;font-size:13px;" onclick="showSection('guardias',null)">
+            <i class="bi bi-arrow-right-circle"></i> Gestionar guardias
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══ SCANNER ══ -->
+    <section id="section-scanner" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Escanear <span class="hl">QR</span></h1>
+          <p class="section-sub">Registra entradas y salidas manualmente</p>
+        </div>
+      </div>
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-qr-code-scan"></i> Escáner de código QR</div>
+        <div class="scanner-wrap">
+          <div id="reader"></div>
+          <div class="scanner-controls">
+            <button class="btn-save" id="btn-start-scan" onclick="startScan()">
+              <i class="bi bi-camera-fill"></i> Activar cámara
+            </button>
+            <button class="btn-save" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);" id="btn-stop-scan" onclick="stopScan()" style="display:none">
+              <i class="bi bi-stop-circle"></i> Detener
+            </button>
+          </div>
+          <div class="manual-input">
+            <div class="panel-title" style="font-size:13px;margin-bottom:10px;">O ingresa el código manualmente</div>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="manual-qr-input" placeholder="Código QR del usuario..." style="flex:1;padding:10px 14px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#fff;font-family:inherit;font-size:13px;outline:none;">
+              <button class="btn-manual" onclick="processManual()"><i class="bi bi-search"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ CUPOS ══ -->
+    <section id="section-cupos" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Gestión de <span class="hl">Cupos</span></h1>
+          <p class="section-sub">Control de espacios en tiempo real</p>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:20px;">
+        <button class="btn-save active" id="tab-a" onclick="switchSide('A')" style="padding:9px 20px;font-size:13px;">
+          <i class="bi bi-grid-3x3-gap-fill"></i> Lado A — Controlado
+        </button>
+        <button class="btn-save" id="tab-b" onclick="switchSide('B')" style="padding:9px 20px;font-size:13px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.18);">
+          <i class="bi bi-wind"></i> Lado B — Abierto
+        </button>
+      </div>
+
+      <div id="panel-A">
+        <div class="glass-panel" style="margin-bottom:20px;">
+          <div class="panel-title"><i class="bi bi-grid-3x3-gap-fill"></i> Estado Lado A</div>
+          <div class="cupos-header">
+            <div class="cupo-circle ok" id="a-cupo-circle">
+              <span id="a-disp-num">—</span>
+              <small>disponibles</small>
+            </div>
+            <div class="cupos-nums">
+              <div><span id="a-occ-num">—</span><small>ocupados</small></div>
+              <div><span id="a-total-num">—</span><small>total</small></div>
+            </div>
+          </div>
+          <div class="cupos-controls" style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <label style="font-size:13px;color:rgba(255,255,255,0.5);">Ajustar total de espacios:</label>
+            <input type="number" id="a-total-input" placeholder="Ej: 21" min="1" max="200"
+              style="width:90px;padding:9px 12px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.07);color:#fff;font-size:13px;outline:none;">
+            <button class="btn-save" style="padding:9px 16px;font-size:13px;" onclick="setATotal()">
+              <i class="bi bi-check2"></i> Aplicar
+            </button>
+          </div>
+        </div>
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-grid-fill"></i> Mapa de espacios</div>
+          <div id="a-grid" class="cupos-grid"></div>
+        </div>
+      </div>
+
+      <div id="panel-B" style="display:none;">
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-wind"></i> Lado B — Espacio abierto</div>
+          <div class="stats-grid" style="margin-top:12px;">
+            <div class="stat-card blue">
+              <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
+              <div class="stat-info"><span class="stat-number" id="b-carros-dentro">0</span><span class="stat-label">Carros dentro</span></div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-icon"><i class="bi bi-scooter"></i></div>
+              <div class="stat-info"><span class="stat-number" id="b-motos-dentro">0</span><span class="stat-label">Motos dentro</span></div>
+            </div>
+            <div class="stat-card yellow">
+              <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+              <div class="stat-info"><span class="stat-number" id="b-bicis-dentro">0</span><span class="stat-label">Bicis dentro</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ USUARIOS ══ -->
+    <section id="section-usuarios" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Gestión de <span class="hl">Usuarios</span></h1>
+          <p class="section-sub">Control total — activa, desactiva y cambia roles</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="panel-toolbar">
+          <div class="search-wrap">
+            <i class="bi bi-search"></i>
+            <input type="text" id="user-search" placeholder="Buscar por nombre o ID..." oninput="filterUsers()"/>
+          </div>
+          <div class="filter-wrap">
+            <select id="filter-rol" onchange="filterUsers()" style="padding:9px 14px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);color:#fff;font-family:inherit;font-size:13px;outline:none;">
+              <option value="">Todos los roles</option>
+              <option value="aprendiz">Aprendiz</option>
+              <option value="funcionario">Funcionario</option>
+              <option value="instructor">Instructor</option>
+              <option value="admin">Guardia</option>
+              <option value="superadmin">Superadmin</option>
+            </select>
+            <select id="filter-estado" onchange="filterUsers()" style="padding:9px 14px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);color:#fff;font-family:inherit;font-size:13px;outline:none;">
+              <option value="">Todos</option>
+              <option value="activo">Activos</option>
+              <option value="inactivo">Inactivos</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="history-table" id="users-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Identificación</th>
+                <th>Rol</th>
+                <th>Centro SENA</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ GUARDIAS ══ -->
+    <section id="section-guardias" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Gestión de <span class="hl">Guardias</span></h1>
+          <p class="section-sub">Administra los guardias/celadores del parqueadero</p>
+        </div>
+        <button class="btn-save" onclick="showSection('registrar',null)" style="padding:10px 18px;font-size:13px;">
+          <i class="bi bi-person-plus-fill"></i> Nuevo guardia
+        </button>
+      </div>
+
+      <!-- Stats de guardias -->
+      <div class="stats-grid" style="margin-bottom:20px;">
+        <div class="stat-card green">
+          <div class="stat-icon"><i class="bi bi-shield-check"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="g-activos">—</span>
+            <span class="stat-label">Guardias activos</span>
+          </div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon"><i class="bi bi-shield-x"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="g-inactivos">—</span>
+            <span class="stat-label">Guardias inactivos</span>
+          </div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon"><i class="bi bi-clipboard-check"></i></div>
+          <div class="stat-info">
+            <span class="stat-number" id="g-registros-hoy">—</span>
+            <span class="stat-label">Registros hoy (total)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de guardias -->
+      <div class="glass-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div class="panel-title" style="margin-bottom:0;"><i class="bi bi-list-ul"></i> Lista de guardias</div>
+          <button class="btn-save" onclick="cargarGuardias()" style="padding:7px 14px;font-size:12px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.18);">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar
+          </button>
+        </div>
+        <div id="guardias-list" style="display:flex;flex-direction:column;gap:12px;">
+          <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);">
+            <i class="bi bi-hourglass-split" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+            Cargando guardias...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ HISTORIAL ══ -->
+    <section id="section-historia" class="section">
+      <div class="section-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:24px;">
+        <div>
+          <h1><i class="bi bi-calendar2-week" style="color:var(--brand-color);margin-right:8px;"></i>Historial del Parqueadero</h1>
+          <p class="section-sub">Registros diarios de uso</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn-save" style="padding:9px 18px;font-size:13px;" id="hist-btn-hoy" onclick="cargarDia('hoy')">
+            <i class="bi bi-calendar-check"></i> Hoy
+          </button>
+          <button class="btn-save" style="padding:9px 18px;font-size:13px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);" id="hist-btn-ayer" onclick="cargarDia('ayer')">
+            <i class="bi bi-calendar-minus"></i> Ayer
+          </button>
+          <button class="btn-save" style="padding:9px 18px;font-size:13px;" onclick="exportarAdminExcel()">
+            <i class="bi bi-file-earmark-excel-fill"></i> Descargar Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="glass-panel" style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:16px;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <label style="font-size:13px;color:rgba(255,255,255,0.6);display:flex;align-items:center;gap:6px;">
+              <i class="bi bi-calendar3" style="color:var(--brand-color);"></i> Seleccionar fecha:
+            </label>
+            <input type="date" id="hist-admin-fecha" style="padding:9px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.92);font-family:'Inter',sans-serif;font-size:13px;color:#333;outline:none;cursor:pointer;" onchange="cargarDia('custom')">
+            <button class="btn-save" style="padding:9px 16px;font-size:13px;" onclick="cargarDia('custom')">
+              <i class="bi bi-search"></i> Ver día
+            </button>
+          </div>
+          <div id="hist-admin-dia-label" style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.5);"></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:20px;">
+        <div class="stat-card green">
+          <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+          <div class="stat-info"><span class="stat-number" id="ha-total">—</span><span class="stat-label">Visitas del día</span></div>
+          <div class="stat-badge" style="background:rgba(76,175,80,0.22);color:#a5d6a7;">Total</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon"><i class="bi bi-activity"></i></div>
+          <div class="stat-info"><span class="stat-number" id="ha-activos">—</span><span class="stat-label">Aún en parqueadero</span></div>
+          <div class="stat-badge blue-b">En curso</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon"><i class="bi bi-stopwatch"></i></div>
+          <div class="stat-info"><span class="stat-number" id="ha-promedio">—</span><span class="stat-label">Promedio de estadía</span></div>
+          <div class="stat-badge" style="background:rgba(244,67,54,0.2);color:#ef9a9a;">Horas</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
+          <div class="stat-info"><span class="stat-number" id="ha-tipo-top">—</span><span class="stat-label">Vehículo más frecuente</span></div>
+          <div class="stat-badge" style="background:rgba(255,193,7,0.2);color:#ffe082;">Tipo</div>
+        </div>
+      </div>
+
+      <div class="glass-panel" id="ha-tipos-panel" style="margin-bottom:20px;display:none;">
+        <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Distribución por tipo de vehículo</div>
+        <div id="ha-tipos-bars" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+
+      <div class="glass-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+          <div class="panel-title" style="margin-bottom:0;"><i class="bi bi-table"></i> Registros del día</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <div style="position:relative;">
+              <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.35);font-size:13px;"></i>
+              <input type="text" id="ha-buscar" placeholder="Buscar usuario o placa..." style="padding:8px 12px 8px 32px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);color:#fff;font-family:'Inter',sans-serif;font-size:13px;outline:none;width:220px;" oninput="filtrarTablaAdmin()">
+            </div>
+            <select id="ha-filtro-tipo" style="padding:8px 14px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);color:#fff;font-family:'Inter',sans-serif;font-size:13px;outline:none;" onchange="filtrarTablaAdmin()">
+              <option value="">Todos los vehículos</option>
+              <option value="Carro">Carro</option>
+              <option value="Moto">Moto</option>
+              <option value="Bicicleta">Bicicleta</option>
+            </select>
+            <span id="ha-count" style="font-size:12px;color:rgba(255,255,255,0.4);"></span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th><i class="bi bi-person" style="margin-right:4px;color:var(--brand-color);"></i>Usuario</th>
+                <th><i class="bi bi-car-front" style="margin-right:4px;color:var(--brand-color);"></i>Vehículo</th>
+                <th><i class="bi bi-geo-alt" style="margin-right:4px;color:var(--brand-color);"></i>Lado</th>
+                <th><i class="bi bi-box-arrow-in-right" style="margin-right:4px;color:var(--brand-color);"></i>Entrada</th>
+                <th><i class="bi bi-box-arrow-right" style="margin-right:4px;color:var(--brand-color);"></i>Salida</th>
+                <th><i class="bi bi-stopwatch" style="margin-right:4px;color:var(--brand-color);"></i>Duración</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="ha-tbody">
+              <tr><td colspan="8" style="text-align:center;padding:40px;opacity:.4;">
+                <i class="bi bi-calendar-x" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+                Selecciona un día para ver los registros
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;flex-wrap:wrap;gap:10px;">
+          <span id="ha-page-info" style="font-size:12px;color:rgba(255,255,255,0.4);"></span>
+          <div id="ha-page-btns" style="display:flex;gap:7px;flex-wrap:wrap;"></div>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-calendar-week"></i> Días recientes — acceso rápido</div>
+        <div id="ha-dias-recientes" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+      </div>
+    </section>
+
+    <!-- ══ REGISTRAR USUARIO ══ -->
+    <section id="section-registrar" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Registrar <span class="hl">Usuario</span></h1>
+          <p class="section-sub">Crea cuentas manualmente para cualquier rol</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-person-plus-fill"></i> Datos del nuevo usuario</div>
+
+        <div class="reg-form-grid">
+          <div class="form-group">
+            <label><i class="bi bi-person-fill"></i> Nombre completo</label>
+            <input type="text" id="reg-nombre" placeholder="Ej: Ana María Rodríguez"/>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-card-heading"></i> Tipo de identificación</label>
+            <select id="reg-tipo-id">
+              <option value="">Selecciona una opción</option>
+              <option value="TI">Tarjeta de identidad (TI)</option>
+              <option value="CC">Cédula de ciudadanía (CC)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-123"></i> Número de identificación</label>
+            <input type="text" id="reg-num-id" placeholder="Ej: 1005234567"/>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-geo-alt-fill"></i> Región</label>
+            <select id="reg-region" onchange="filterCentrosReg()">
+              <option value="">Selecciona una región</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label><i class="bi bi-building"></i> Centro de formación SENA</label>
+            <select id="reg-centro">
+              <option value="">Selecciona primero una región</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-envelope-fill"></i> Correo electrónico</label>
+            <input type="email" id="reg-email" placeholder="usuario@sena.edu.co"/>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-person-badge-fill"></i> Rol del usuario</label>
+            <select id="reg-rol">
+              <option value="aprendiz">Aprendiz</option>
+              <option value="funcionario">Funcionario</option>
+              <option value="instructor">Instructor</option>
+              <option value="guardia">Guardia / Celador</option>
+              <option value="superadmin">Super Administrador</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(255,213,79,.07);border:1px solid rgba(255,213,79,.25);border-radius:10px;">
+              <i class="bi bi-info-circle-fill" style="color:#ffd54f;font-size:18px;flex-shrink:0;"></i>
+              <span style="font-size:13px;color:rgba(255,255,255,.75);">
+                La <strong style="color:#ffd54f;">contraseña temporal</strong> del usuario será su
+                <strong style="color:#ffd54f;">número de identificación</strong>. Debe cambiarla al iniciar sesión.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-save" onclick="registrarUsuario()" style="margin-top:20px;">
+          <i class="bi bi-person-check-fill"></i> Registrar usuario
+        </button>
+      </div>
+    </section>
+
+    <!-- ══ PERFIL ══ -->
+    <section id="section-perfil" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Mi <span class="hl">Perfil</span></h1>
+          <p class="section-sub">Datos del Super Administrador</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <!-- Avatar -->
+        <div class="avatar-photo-wrap no-foto" style="margin-bottom:24px;">
+          <div class="avatar-inner">
+            <img id="profile-avatar-img" src="" alt="Foto" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;">
+            <div class="avatar-initials" id="profile-avatar-initials">SA</div>
+          </div>
+          <label class="avatar-edit-btn" for="foto-perfil-input" title="Cambiar foto">
+            <i class="bi bi-camera-fill"></i>
+          </label>
+          <input type="file" id="foto-perfil-input" accept="image/*" hidden onchange="subirFotoPerfilSA(this)">
+        </div>
+
+        <div class="profile-form-grid">
+          <div class="form-group full-width">
+            <label><i class="bi bi-person-fill"></i> Nombre completo</label>
+            <input type="text" id="sa-nombre" placeholder="Tu nombre completo" oninput="liveUpdateSAHeader()"/>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-envelope-fill"></i> Correo electrónico</label>
+            <input type="email" id="sa-email" placeholder="tu@correo.com"/>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-shield-fill-check"></i> Rol</label>
+            <div style="padding:10px 14px;border-radius:10px;background:rgba(156,39,176,0.12);border:1px solid rgba(156,39,176,0.3);font-size:13px;color:#ce93d8;display:flex;align-items:center;gap:6px;">
+              <i class="bi bi-shield-fill-check"></i> Super Administrador
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-save" onclick="savePerfilSA()" style="margin-top:20px;">
+          <i class="bi bi-check2-circle"></i> Guardar cambios
+        </button>
+      </div>
+
+      <!-- Cambiar contraseña -->
+      <div class="glass-panel" style="margin-top:20px;">
+        <div class="panel-title"><i class="bi bi-key-fill"></i> Cambiar contraseña</div>
+        <div class="profile-form-grid">
+          <div class="form-group full-width">
+            <label><i class="bi bi-lock"></i> Contraseña actual</label>
+            <div class="password-wrapper" style="position:relative;">
+              <input type="password" id="sec-pass-act" placeholder="Contraseña actual"/>
+              <span class="eye-icon" onclick="toggleSecPass('sec-pass-act','eye-sec-act')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;font-size:18px;">
+                <i id="eye-sec-act" class="bi bi-eye"></i>
+              </span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-lock-fill"></i> Nueva contraseña</label>
+            <div class="password-wrapper" style="position:relative;">
+              <input type="password" id="sec-pass-new" placeholder="Mínimo 8 caracteres"/>
+              <span class="eye-icon" onclick="toggleSecPass('sec-pass-new','eye-sec-new')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;font-size:18px;">
+                <i id="eye-sec-new" class="bi bi-eye"></i>
+              </span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-lock-fill"></i> Confirmar nueva contraseña</label>
+            <div class="password-wrapper" style="position:relative;">
+              <input type="password" id="sec-pass-confirm" placeholder="Repite la nueva contraseña"/>
+              <span class="eye-icon" onclick="toggleSecPass('sec-pass-confirm','eye-sec-conf')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;font-size:18px;">
+                <i id="eye-sec-conf" class="bi bi-eye"></i>
+              </span>
+            </div>
+          </div>
+          <div class="form-group full-width">
+            <div id="sec-pass-match-hint" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;"></div>
+          </div>
+        </div>
+        <button class="btn-save" onclick="changePasswordSA()" style="margin-top:16px;">
+          <i class="bi bi-shield-lock-fill"></i> Actualizar contraseña
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══ MODAL QR SCANNER ══ -->
+  <div id="qr-file-temp" style="display:none"></div>
+  <div class="modal-overlay" id="qr-modal" style="display:none">
+    <div class="modal-card">
+      <div class="modal-icon" id="modal-icon"><i class="bi bi-person-check-fill"></i></div>
+      <div class="modal-user-info" id="modal-user-info"></div>
+      <div class="modal-actions" id="modal-actions"></div>
+      <button class="modal-close" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </div>
+
+  <!-- ══ MODAL CONFIRMACIÓN SUPERADMIN ══ -->
+  <div class="sa-modal-overlay" id="sa-confirm-modal">
+    <div class="sa-modal-card">
+      <div class="sa-modal-icon" id="sa-modal-icon">⚠️</div>
+      <div class="sa-modal-title" id="sa-modal-title">¿Confirmar acción?</div>
+      <div class="sa-modal-desc" id="sa-modal-desc">Esta acción no se puede deshacer.</div>
+      <div class="sa-modal-btns">
+        <button class="sa-modal-cancel" onclick="closeSAModal()">Cancelar</button>
+        <button class="sa-modal-confirm" id="sa-modal-confirm-btn" onclick="">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-msg" id="toast"></div>
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- ═══ BOTTOM NAV (móvil) ═══ -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-item bottom-nav-item active" onclick="showSection('dashboard', this)">
+      <i class="bi bi-speedometer2"></i><span>Inicio</span>
+    </button>
+    <button class="nav-item bottom-nav-item" onclick="showSection('scanner', this)">
+      <i class="bi bi-qr-code-scan"></i><span>Escanear QR</span>
+    </button>
+    <button class="nav-item bottom-nav-item" onclick="showSection('guardias', this)">
+      <i class="bi bi-shield-fill"></i><span>Guardias</span>
+    </button>
+    <button class="nav-item bottom-nav-item" onclick="showSection('usuarios', this)">
+      <i class="bi bi-people-fill"></i><span>Usuarios</span>
+    </button>
+    <button class="nav-item bottom-nav-item logout" onclick="handleLogout()">
+      <i class="bi bi-box-arrow-left"></i><span>Salir</span>
+    </button>
+  </nav>
+
+  <script src="/Frontend/admin-cupos.js"></script>
+  <script src="/Frontend/superadmin-datos.js"></script>
+  <script src="/Frontend/admin-scanner.js"></script>
+  <script src="/Frontend/bg-animation.js"></script>
+</body>
+</html>

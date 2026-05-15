@@ -71,7 +71,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       if (typeof Auth !== 'undefined' && Auth.isLogged()) {
         const u = Auth.getUser();
-        window.location.href = (u && u.rol === 'admin') ? 'admin.html' : 'dashboard.html';
+        window.location.href = (u && u.rol === 'superadmin') ? 'superadmin.html' : (u && (u.rol === 'admin' || u.rol === 'guardia')) ? 'admin.html' : 'dashboard.html';
       }
     });
 
@@ -114,7 +114,7 @@
         }
 
         Auth.save(data);
-        window.location.href = data.user.rol === 'admin' ? 'admin.html' : 'dashboard.html';
+        window.location.href = data.user.rol === 'superadmin' ? 'superadmin.html' : (data.user.rol === 'admin' || data.user.rol === 'guardia') ? 'admin.html' : 'dashboard.html';
 
       } catch {
         errEl.textContent   = 'No se pudo conectar al servidor.';
