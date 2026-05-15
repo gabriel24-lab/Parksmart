@@ -150,7 +150,9 @@ router.post('/admin-register',
   [
     body('nombre_completo').trim().notEmpty().withMessage('Nombre requerido.'),
     body('numero_id').trim().notEmpty().withMessage('Número de identificación requerido.'),
-    body('password').isLength({ min: 8 }).withMessage('La contraseña debe tener al menos 8 caracteres.'),
+    // password es opcional: si no se envía, se usa el numero_id como contraseña temporal
+    body('password').optional({ nullable: true, checkFalsy: true })
+      .isLength({ min: 8 }).withMessage('La contraseña debe tener al menos 8 caracteres.'),
     body('rol').isIn(['aprendiz', 'funcionario', 'instructor', 'admin', 'guardia', 'superadmin']).withMessage('Rol inválido.'),
   ],
   async (req, res) => {
@@ -161,7 +163,9 @@ router.post('/admin-register',
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
 
-    const { nombre_completo, numero_id, password, rol, tipo_id, email, id_centro } = req.body;
+    const { nombre_completo, numero_id, rol, tipo_id, email, id_centro } = req.body;
+    // Si no se envía password, la contraseña temporal es el número de identificación
+    const password = (req.body.password && req.body.password.trim()) || numero_id;
 
     try {
       // ── 1. Verificar numero_id duplicado en usuarios ──────────────────

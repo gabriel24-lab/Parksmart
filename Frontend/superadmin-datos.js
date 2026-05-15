@@ -38,11 +38,18 @@ const SA_ROL_COLORS = {
 // ══ INICIALIZACIÓN SUPERADMIN ══
 document.addEventListener('DOMContentLoaded', async () => {
   cargarPerfilSA();
+  // Cargar estadísticas del dashboard (gráficas de hora y semana)
+  // cargarStatsAvanzados viene de admin-datos.js y llena los charts del dashboard
+  if (typeof cargarStatsAvanzados === 'function') cargarStatsAvanzados();
   await Promise.all([
     cargarStatsGuardias(),
     cargarUsuariosSA(),
     cargarGuardias(),
   ]);
+  // Auto-refresh de gráficas y guardias
+  setInterval(() => {
+    if (typeof cargarStatsAvanzados === 'function') cargarStatsAvanzados();
+  }, 60000);
   setInterval(cargarGuardias, 120000);
 });
 
@@ -166,12 +173,13 @@ async function registrarUsuario() {
   try {
     const res  = await apiFetch('/auth/admin-register', {
       method:'POST', headers:{'Content-Type':'application/json'},
+      // La contraseña temporal es el número de identificación del usuario
       body: JSON.stringify({ nombre_completo: nombre, tipo_id: tipoId, numero_id: numId, email: email||undefined, rol, id_centro: centro||undefined }),
     });
     if (!res) return;
     const data = await res.json();
     if (!data.ok) { showToast(data.message || (data.errors && data.errors[0]?.msg) || 'Error al registrar.', 'error'); return; }
-    showToast('Usuario '+nombre+' registrado con rol '+(SA_ROL_LABELS[rol]||rol), 'success');
+    showToast(`✅ ${nombre} registrado como ${SA_ROL_LABELS[rol]||rol}. Contraseña temporal: ${numId}`, 'success');
     ['reg-nombre','reg-num-id','reg-email'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
     const tipoEl = document.getElementById('reg-tipo-id'); if(tipoEl) tipoEl.value = '';
     const rolEl  = document.getElementById('reg-rol');     if(rolEl)  rolEl.value  = 'aprendiz';
@@ -392,13 +400,16 @@ function updateAdminAvatar(nombre) {
 }
 
 // cargarUsuariosDesdeAPI → en superadmin usamos cargarUsuariosSA (tabla con roles)
+// Esta función es llamada por admin-cupos.js en su DOMContentLoaded.
+// La sobreescribimos para que SIEMPRE use el endpoint de superadmin.
 async function cargarUsuariosDesdeAPI() {
   await cargarUsuariosSA();
 }
 
 // renderUsersTable → usada por cargarUsuariosDesdeAPI del admin; en SA usa la versión SA
+// La capturamos para evitar que pinte columnas incorrectas en la tabla SA
 function renderUsersTable(list) {
-  renderSAUsersTable(list);
+  try { renderSAUsersTable(list); } catch(e) { /* tabla SA ya inicializada por cargarUsuariosSA */ }
 }
 
 // filterCentrosAdmin → en superadmin no hay #a-region ni #a-centro (son #reg-region, #reg-centro)
@@ -419,6 +430,12 @@ function showSection(name, btn) {
   if (name === 'historia') { if (typeof initHistorialAdmin === 'function') initHistorialAdmin(); }
   if (name === 'guardias') cargarGuardias();
   if (name === 'usuarios') cargarUsuariosSA();
+  // Al entrar al dashboard, refrescar gráficas y stats de cupos
+  if (name === 'dashboard') {
+    if (typeof cargarStatsAvanzados === 'function') cargarStatsAvanzados();
+    if (typeof cargarCuposDesdeAPI  === 'function') cargarCuposDesdeAPI();
+    cargarGuardias();
+  }
 }
 
 // startClock → en admin usa #live-time; en superadmin usa #sa-clock
