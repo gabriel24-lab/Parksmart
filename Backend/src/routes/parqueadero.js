@@ -313,7 +313,7 @@ router.get('/estado-actual', async (req, res) => {
 });
 
 // ── GET /api/parqueadero/stats-hoy ────────────────────────────────────
-router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
+router.get('/stats-hoy', requireRol('admin', 'guardia', 'superadmin'), async (req, res) => {
   try {
     // FIX: "hoy" se calcula en PostgreSQL en zona Colombia para evitar
     // desface con el UTC del servidor de Render
@@ -363,7 +363,7 @@ router.get('/stats-hoy', requireRol('admin'), async (req, res) => {
 });
 
 // ── GET /api/parqueadero/stats-lado ───────────────────────────────────
-router.get('/stats-lado', requireRol('admin'), async (req, res) => {
+router.get('/stats-lado', requireRol('admin', 'guardia', 'superadmin'), async (req, res) => {
   try {
     const id_lado = parseInt(req.query.id_lado);
     if (!id_lado) return res.status(400).json({ ok: false, message: 'id_lado requerido.' });
@@ -411,7 +411,7 @@ router.get('/stats-lado', requireRol('admin'), async (req, res) => {
 });
 
 // ── GET /api/parqueadero/reciente ─────────────────────────────────────
-router.get('/reciente', requireRol('admin'), async (req, res) => {
+router.get('/reciente', requireRol('admin', 'guardia', 'superadmin'), async (req, res) => {
   try {
     // FIX: solo muestra registros de HOY en zona Colombia
     // Los activos se ordenan por fecha_entrada, los completados por fecha_salida
@@ -438,7 +438,7 @@ router.get('/reciente', requireRol('admin'), async (req, res) => {
 });
 
 // ── GET /api/parqueadero/usuarios-admin ───────────────────────────────
-router.get('/usuarios-admin', requireRol('admin'), async (req, res) => {
+router.get('/usuarios-admin', requireRol('admin', 'guardia', 'superadmin'), async (req, res) => {
   try {
     const [result, vResult] = await Promise.all([
       query(
@@ -473,7 +473,7 @@ router.get('/usuarios-admin', requireRol('admin'), async (req, res) => {
 });
 
 // ── GET /api/parqueadero/historial-admin ──────────────────────────────
-router.get('/historial-admin', requireRol('admin'), async (req, res) => {
+router.get('/historial-admin', requireRol('admin', 'guardia', 'superadmin'), async (req, res) => {
   const fecha = req.query.fecha;
   if (!fecha) return res.status(400).json({ ok: false, message: 'Parámetro fecha requerido.' });
   try {
@@ -502,7 +502,7 @@ router.get('/historial-admin', requireRol('admin'), async (req, res) => {
 });
 
 // ── POST /api/parqueadero/escanear ────────────────────────────────────
-router.post('/escanear', requireRol('admin'), async (req, res) => {
+router.post('/escanear', requireRol('admin', 'guardia', 'superadmin'), async (req, res) => {
   const { qr_code } = req.body;
   if (!qr_code) return res.status(400).json({ ok: false, message: 'qr_code requerido.' });
   try {
@@ -553,7 +553,7 @@ router.post('/escanear', requireRol('admin'), async (req, res) => {
 });
 
 // ── POST /api/parqueadero/admin-entrada ───────────────────────────────
-router.post('/admin-entrada', requireRol('admin'), async (req, res) => {
+router.post('/admin-entrada', requireRol('admin', 'guardia', 'superadmin'), async (req, res) => {
   const { id_usuario, id_vehiculo, id_lado } = req.body;
   if (!id_usuario || !id_vehiculo || !id_lado)
     return res.status(400).json({ ok: false, message: 'Faltan parámetros.' });
@@ -578,7 +578,7 @@ router.post('/admin-entrada', requireRol('admin'), async (req, res) => {
 });
 
 // ── POST /api/parqueadero/admin-salida ────────────────────────────────
-router.post('/admin-salida', requireRol('admin'), async (req, res) => {
+router.post('/admin-salida', requireRol('admin', 'guardia', 'superadmin'), async (req, res) => {
   const { id_usuario } = req.body;
   if (!id_usuario) return res.status(400).json({ ok: false, message: 'id_usuario requerido.' });
 
@@ -600,3 +600,177 @@ router.post('/admin-salida', requireRol('admin'), async (req, res) => {
 });
 
 module.exports = router;
+
+// ══════════════════════════════════════════════════════════════════════
+// ── ENDPOINTS EXCLUSIVOS SUPERADMIN ──────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+
+// ── GET /api/parqueadero/guardias ─────────────────────────────────────
+// Lista todos los guardias/celadores del sistema con su actividad
+router.get('/guardias', requireRol('superadmin'), async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT u.id_usuario, u.nombre_completo, u.numero_id, u.tipo_id,
+              u.email, u.activo, u.fecha_registro,
+              c.nombre AS centro_nombre,
+              -- Conteo de registros de hoy hechos por este guardia
+              (SELECT COUNT(*) FROM registros_uso r
+               WHERE r.registrado_por = u.id_usuario
+                 AND (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
+                   = (NOW() AT TIME ZONE 'America/Bogota')::DATE
+              ) AS registros_hoy,
+              -- Último registro que hizo
+              (SELECT MAX(r2.fecha_entrada) FROM registros_uso r2
+               WHERE r2.registrado_por = u.id_usuario
+              ) AS ultimo_registro
+       FROM usuarios u
+       LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
+       WHERE u.rol IN ('admin', 'guardia')
+       ORDER BY u.activo DESC, u.nombre_completo`
+    );
+    return res.json({ ok: true, data: result.rows });
+  } catch (err) {
+    console.error('guardias GET:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+// ── PUT /api/parqueadero/guardias/:id/toggle ──────────────────────────
+// Activar o desactivar cuenta de un guardia
+router.put('/guardias/:id/toggle', requireRol('superadmin'), async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (!id) return res.status(400).json({ ok: false, message: 'ID inválido.' });
+  try {
+    const check = await query(
+      `SELECT id_usuario, activo, rol FROM usuarios WHERE id_usuario = @id AND rol IN ('admin', 'guardia')`,
+      { id }
+    );
+    if (!check.rows.length)
+      return res.status(404).json({ ok: false, message: 'Guardia no encontrado.' });
+
+    const nuevoEstado = !check.rows[0].activo;
+    await query(
+      `UPDATE usuarios SET activo = @estado WHERE id_usuario = @id`,
+      { estado: nuevoEstado, id }
+    );
+    return res.json({
+      ok: true,
+      activo: nuevoEstado,
+      message: nuevoEstado ? 'Guardia activado.' : 'Guardia desactivado.',
+    });
+  } catch (err) {
+    console.error('guardias toggle:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+// ── DELETE /api/parqueadero/guardias/:id ──────────────────────────────
+// Eliminar permanentemente la cuenta de un guardia (soft delete)
+router.delete('/guardias/:id', requireRol('superadmin'), async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (!id) return res.status(400).json({ ok: false, message: 'ID inválido.' });
+  try {
+    const check = await query(
+      `SELECT id_usuario FROM usuarios WHERE id_usuario = @id AND rol IN ('admin', 'guardia')`,
+      { id }
+    );
+    if (!check.rows.length)
+      return res.status(404).json({ ok: false, message: 'Guardia no encontrado.' });
+
+    await query(`UPDATE usuarios SET activo = false WHERE id_usuario = @id`, { id });
+    return res.json({ ok: true, message: 'Cuenta de guardia desactivada.' });
+  } catch (err) {
+    console.error('guardias DELETE:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+// ── GET /api/parqueadero/usuarios-superadmin ──────────────────────────
+// Lista TODOS los usuarios incluyendo inactivos, con opción de activar/desactivar
+router.get('/usuarios-superadmin', requireRol('superadmin'), async (req, res) => {
+  try {
+    const [result, vResult] = await Promise.all([
+      query(
+        `SELECT u.id_usuario, u.nombre_completo, u.tipo_id, u.numero_id,
+                u.qr_code, u.rol, u.foto_perfil, u.activo, u.email,
+                c.nombre AS centro_nombre,
+                EXISTS (
+                  SELECT 1 FROM registros_uso r2
+                  WHERE r2.id_usuario = u.id_usuario AND r2.estado = 'activo'
+                ) AS dentro
+         FROM usuarios u
+         LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
+         ORDER BY u.activo DESC, u.nombre_completo`
+      ),
+      query(
+        `SELECT v.id_usuario, v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo, v.color
+         FROM vehiculos v
+         JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
+         WHERE v.activo = true`
+      ),
+    ]);
+
+    const data = result.rows.map(u => ({
+      ...u,
+      vehiculos: vResult.rows.filter(v => v.id_usuario === u.id_usuario),
+    }));
+
+    return res.json({ ok: true, data });
+  } catch (err) {
+    console.error('usuarios-superadmin GET:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+// ── PUT /api/parqueadero/usuarios/:id/toggle ──────────────────────────
+// Activar o desactivar cualquier usuario (excepto superadmins)
+router.put('/usuarios/:id/toggle', requireRol('superadmin'), async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (!id) return res.status(400).json({ ok: false, message: 'ID inválido.' });
+  try {
+    const check = await query(
+      `SELECT id_usuario, activo, rol FROM usuarios WHERE id_usuario = @id`,
+      { id }
+    );
+    if (!check.rows.length)
+      return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+    if (check.rows[0].rol === 'superadmin')
+      return res.status(403).json({ ok: false, message: 'No puedes modificar a otro superadmin.' });
+
+    const nuevoEstado = !check.rows[0].activo;
+    await query(
+      `UPDATE usuarios SET activo = @estado WHERE id_usuario = @id`,
+      { estado: nuevoEstado, id }
+    );
+    return res.json({ ok: true, activo: nuevoEstado, message: nuevoEstado ? 'Usuario activado.' : 'Usuario desactivado.' });
+  } catch (err) {
+    console.error('usuarios toggle:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+// ── PUT /api/parqueadero/usuarios/:id/rol ─────────────────────────────
+// Cambiar el rol de cualquier usuario
+router.put('/usuarios/:id/rol', requireRol('superadmin'), async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { rol } = req.body;
+  const rolesValidos = ['aprendiz', 'funcionario', 'instructor', 'admin', 'guardia'];
+  if (!rolesValidos.includes(rol))
+    return res.status(400).json({ ok: false, message: 'Rol inválido.' });
+  try {
+    const check = await query(
+      `SELECT id_usuario, rol FROM usuarios WHERE id_usuario = @id`,
+      { id }
+    );
+    if (!check.rows.length)
+      return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+    if (check.rows[0].rol === 'superadmin')
+      return res.status(403).json({ ok: false, message: 'No puedes modificar a otro superadmin.' });
+
+    await query(`UPDATE usuarios SET rol = @rol WHERE id_usuario = @id`, { rol, id });
+    return res.json({ ok: true, message: `Rol actualizado a ${rol}.` });
+  } catch (err) {
+    console.error('usuarios rol:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});

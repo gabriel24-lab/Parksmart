@@ -29,7 +29,7 @@ const { requireRol } = require('../middlewares/auth');
 // Solo admins. Registra un vehículo para otro usuario (sin foto).
 router.post('/admin',
   authMiddleware,
-  requireRol('admin'),
+  requireRol('admin', 'guardia', 'superadmin'),
   [
     body('id_usuario').isInt({ min: 1 }).withMessage('id_usuario requerido.'),
     body('id_tipo').isInt({ min: 1, max: 4 }).withMessage('Tipo de vehículo inválido.'),
@@ -78,6 +78,7 @@ const TIPOS_POR_ROL = {
   funcionario: [1, 2, 3, 4],
   instructor:  [1, 2, 3, 4],
   admin:       [1, 2, 3, 4],
+  superadmin:  [1, 2, 3, 4],
 };
 const TIPO_NOMBRES = { 1: 'Bicicleta', 2: 'Motocicleta', 3: 'Auto', 4: 'Furgoneta' };
 

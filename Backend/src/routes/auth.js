@@ -151,10 +151,10 @@ router.post('/admin-register',
     body('nombre_completo').trim().notEmpty().withMessage('Nombre requerido.'),
     body('numero_id').trim().notEmpty().withMessage('Número de identificación requerido.'),
     body('password').isLength({ min: 8 }).withMessage('La contraseña debe tener al menos 8 caracteres.'),
-    body('rol').isIn(['aprendiz', 'funcionario', 'instructor', 'admin']).withMessage('Rol inválido.'),
+    body('rol').isIn(['aprendiz', 'funcionario', 'instructor', 'admin', 'guardia', 'superadmin']).withMessage('Rol inválido.'),
   ],
   async (req, res) => {
-    if (req.user.rol !== 'admin') {
+    if (req.user.rol !== 'admin' && req.user.rol !== 'guardia' && req.user.rol !== 'superadmin') {
       return res.status(403).json({ ok: false, message: 'Solo los administradores pueden usar este endpoint.' });
     }
 
