@@ -303,29 +303,70 @@
       <div class="section-header">
         <div>
           <h1>Escanear <span class="hl">QR</span></h1>
-          <p class="section-sub">Registra entradas y salidas manualmente</p>
+          <p class="section-sub">Registra entrada o salida de un usuario</p>
         </div>
       </div>
-      <div class="glass-panel">
-        <div class="panel-title"><i class="bi bi-qr-code-scan"></i> Escáner de código QR</div>
-        <div class="scanner-wrap">
-          <div id="reader"></div>
+
+      <div class="scanner-layout">
+
+        <!-- Cámara -->
+        <div class="glass-panel scanner-card">
+          <div class="panel-title"><i class="bi bi-camera-video-fill"></i> Escáner de Cámara</div>
+
+          <div class="qr-viewport-wrap">
+            <div id="qr-reader" class="qr-viewport"></div>
+            <div class="qr-scan-overlay" id="qr-overlay" style="display:none">
+              <div class="qr-scan-frame">
+                <span class="corner tl"></span><span class="corner tr"></span>
+                <span class="corner bl"></span><span class="corner br"></span>
+                <div class="scan-line"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="scan-status" id="scan-status">
+            <i class="bi bi-camera-video-off"></i> Cámara inactiva
+          </div>
+
           <div class="scanner-controls">
-            <button class="btn-save" id="btn-start-scan" onclick="startScan()">
-              <i class="bi bi-camera-fill"></i> Activar cámara
+            <button class="btn-scan-start" id="btn-start-scan" onclick="startScan()">
+              <i class="bi bi-play-fill"></i> Iniciar cámara
             </button>
-            <button class="btn-save" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);" id="btn-stop-scan" onclick="stopScan()" style="display:none">
-              <i class="bi bi-stop-circle"></i> Detener
+            <button class="btn-scan-stop" id="btn-stop-scan" onclick="stopScan()" style="display:none">
+              <i class="bi bi-stop-fill"></i> Detener
+            </button>
+            <button class="btn-flip-cam" id="btn-flip-cam" onclick="flipCamera()" style="display:none" title="Cambiar cámara">
+              <i class="bi bi-arrow-repeat"></i>
             </button>
           </div>
+
+          <div class="scan-divider"><span>o</span></div>
+          <div class="scan-upload-area" onclick="document.getElementById('qr-file-input').click()">
+            <i class="bi bi-image"></i>
+            <span>Sube una imagen del QR</span>
+            <input type="file" id="qr-file-input" accept="image/*" style="display:none" onchange="scanFromFile(this)"/>
+          </div>
+
           <div class="manual-input">
-            <div class="panel-title" style="font-size:13px;margin-bottom:10px;">O ingresa el código manualmente</div>
-            <div style="display:flex;gap:8px;">
-              <input type="text" id="manual-qr-input" placeholder="Código QR del usuario..." style="flex:1;padding:10px 14px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#fff;font-family:inherit;font-size:13px;outline:none;">
+            <div class="manual-label"><i class="bi bi-keyboard"></i> O ingresa el código manualmente</div>
+            <div class="manual-row">
+              <input type="text" id="manual-id" placeholder="Código QR del usuario..." onkeydown="if(event.key==='Enter')processManual()"/>
               <button class="btn-manual" onclick="processManual()"><i class="bi bi-search"></i></button>
             </div>
           </div>
         </div>
+
+        <!-- Resultado -->
+        <div class="glass-panel result-card" id="scan-result-card">
+          <div class="panel-title"><i class="bi bi-person-check-fill"></i> Resultado del Escaneo</div>
+          <div id="scan-result-content" class="result-empty">
+            <div class="result-idle-icon">
+              <i class="bi bi-qr-code-scan"></i>
+            </div>
+            <p>Apunta la cámara al código QR del usuario<br>o súbelo como imagen</p>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -819,6 +860,9 @@
     </button>
   </nav>
 
+  <script src="/Frontend/admin-cupos.js"></script>
+  <script src="/Frontend/admin-datos.js"></script>
+  <script src="/Frontend/admin-scanner.js"></script>
   <script src="/Frontend/superadmin-datos.js"></script>
   <script src="/Frontend/bg-animation.js"></script>
 </body>
