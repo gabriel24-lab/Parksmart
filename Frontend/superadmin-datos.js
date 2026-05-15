@@ -33,6 +33,75 @@
     superadmin: '#7b1fa2',
   };
 
+
+  // ══ ESTADO CUPOS ══
+  const ladoA = { total:21, ocupados:0 };
+  const ladoB = {
+    carros: { dentro:0, entradas:0, salidas:0 },
+    motos:  { dentro:0, entradas:0, salidas:0 },
+    bicis:  { dentro:0, entradas:0, salidas:0 },
+  };
+
+  function switchSide(side) {
+    const pA = document.getElementById('panel-A');
+    const pB = document.getElementById('panel-B');
+    const tA = document.getElementById('tab-a');
+    const tB = document.getElementById('tab-b');
+    if (pA) pA.style.display = side==='A' ? 'block' : 'none';
+    if (pB) pB.style.display = side==='B' ? 'block' : 'none';
+    if (tA) tA.classList.toggle('active', side==='A');
+    if (tB) tB.classList.toggle('active', side==='B');
+    if (side==='A') renderAGrid();
+  }
+
+  function refreshLadoA() {
+    const disp = ladoA.total - ladoA.ocupados;
+    const pct  = Math.round((ladoA.ocupados / ladoA.total) * 100);
+    const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setEl('a-disp-num',  disp);
+    setEl('a-occ-num',   ladoA.ocupados);
+    setEl('a-total-num', ladoA.total);
+    setEl('stat-disponibles', disp);
+    setEl('stat-ocupados',    ladoA.ocupados);
+    setEl('stat-pct',         pct + '%');
+    const circle = document.getElementById('a-cupo-circle');
+    if (circle) circle.className = 'cupo-circle ' + (pct>=80?'danger':pct>=50?'warn':'ok');
+    const bar = document.getElementById('occ-bar');
+    if (bar) { bar.style.width = pct+'%'; const sp = bar.querySelector('span'); if(sp) sp.textContent = pct+'%'; }
+    renderAGrid();
+  }
+
+  function refreshLadoB() {
+    const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setEl('b-carros-dentro', ladoB.carros.dentro);
+    setEl('b-motos-dentro',  ladoB.motos.dentro);
+    setEl('b-bicis-dentro',  ladoB.bicis.dentro);
+    setEl('b-total-dentro',  ladoB.carros.dentro + ladoB.motos.dentro + ladoB.bicis.dentro);
+  }
+
+  function renderAGrid() {
+    const grid = document.getElementById('a-grid');
+    if (!grid) return;
+    let html = '';
+    for (let i = 1; i <= ladoA.total; i++) {
+      const occ = i <= ladoA.ocupados;
+      html += `<div class="cupo-slot ${occ?'occ':'free'}" title="Espacio ${i}">${i}</div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  function setATotal() {
+    const input = document.getElementById('a-total-input');
+    const val = parseInt(input?.value);
+    if (!val || val < 1) return;
+    ladoA.total = val;
+    if (ladoA.ocupados > ladoA.total) ladoA.ocupados = ladoA.total;
+    refreshLadoA();
+    showToast(`Total Lado A actualizado a ${val} espacios`);
+  }
+
+  function updateCuposUI() { refreshLadoA(); refreshLadoB(); }
+
   // ══ INICIALIZACIÓN ══
   document.addEventListener('DOMContentLoaded', async () => {
     startClock();
@@ -181,7 +250,7 @@
       if (d1.ok && d1.data) {
         ladoA.total   = d1.data.total_lado_a   ?? ladoA.total;
         ladoA.ocupados= d1.data.ocupados_lado_a ?? ladoA.ocupados;
-        document.getElementById('a-total-input').value = ladoA.total;
+        const inp = document.getElementById('a-total-input'); if(inp) inp.value = ladoA.total;
         refreshLadoA();
       }
       if (d2.ok && d2.data) {
