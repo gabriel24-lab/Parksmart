@@ -11,9 +11,16 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="stylesheet" href="/Frontend/admin.css"/>
   <style>
-    .chart-canvas-wrap { position: relative; height: 200px; width: 100%; }
+    .chart-canvas-wrap {
+      position: relative; height: 220px; width: 100%;
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
     .chart-canvas-wrap canvas { max-height: none !important; }
-    .chart-no-data { display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:rgba(255,255,255,0.3);font-size:13px;gap:8px; }
+    .chart-no-data { display:flex;flex-direction:column;align-items:center;justify-content:center;height:220px;color:rgba(255,255,255,0.35);font-size:13px;gap:8px; }
     .chart-no-data i { font-size: 28px; }
 
     /* ── Superadmin badge ── */

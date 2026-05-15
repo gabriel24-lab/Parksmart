@@ -308,13 +308,46 @@
     return {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { labels: { color:'rgba(255,255,255,0.7)', font:{ family:'Inter', size:11 } } } },
+      animation: { duration: 400 },
+      plugins: {
+        legend: { labels: { color:'rgba(255,255,255,0.9)', font:{ family:'Inter', size:12 }, boxWidth:12, padding:16 } },
+        tooltip: {
+          backgroundColor:'rgba(15,20,25,0.92)',
+          titleColor:'#fff',
+          bodyColor:'rgba(255,255,255,0.8)',
+          borderColor:'rgba(255,255,255,0.15)',
+          borderWidth:1,
+          padding:10,
+          cornerRadius:8,
+        },
+      },
       scales: {
-        x: { ticks:{ color:'rgba(255,255,255,0.55)', font:{family:'Inter',size:10} }, grid:{ color:'rgba(255,255,255,0.07)' } },
-        y: { beginAtZero:true, ticks:{ color:'rgba(255,255,255,0.55)', font:{family:'Inter',size:10}, precision:0 }, grid:{ color:'rgba(255,255,255,0.07)' } }
-      }
+        x: {
+          ticks:{ color:'rgba(255,255,255,0.80)', font:{family:'Inter',size:11} },
+          grid:{ color:'rgba(255,255,255,0.10)' },
+        },
+        y: {
+          beginAtZero:true,
+          ticks:{ color:'rgba(255,255,255,0.80)', font:{family:'Inter',size:11}, precision:0 },
+          grid:{ color:'rgba(255,255,255,0.10)' },
+        },
+      },
     };
   }
+
+  // Plugin: fondo semitransparente detrás del área de datos
+  const solidBgPlugin = {
+    id: 'solidBackground',
+    beforeDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.roundRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top, 6);
+      ctx.fill();
+      ctx.restore();
+    },
+  };
 
   // Muestra un mensaje "sin datos" dentro del wrapper cuando no hay registros
   function noDataMsg(wrapperId, msg) {
@@ -347,10 +380,11 @@
     chartHoraInst = new Chart(ctx, {
       type: 'bar',
       data: { labels, datasets: [
-        { label:'Entradas', data:entradas, backgroundColor:'rgba(66,165,245,0.75)', borderRadius:3 },
-        { label:'Salidas',  data:salidas,  backgroundColor:'rgba(239,83,80,0.65)',  borderRadius:3 }
+        { label:'Entradas', data:entradas, backgroundColor:'rgba(66,165,245,0.90)', borderColor:'rgba(66,165,245,1)', borderWidth:1, borderRadius:4 },
+        { label:'Salidas',  data:salidas,  backgroundColor:'rgba(239,83,80,0.85)',  borderColor:'rgba(239,83,80,1)',  borderWidth:1, borderRadius:4 }
       ]},
-      options: chartDefaults()
+      options: chartDefaults(),
+      plugins: [solidBgPlugin],
     });
   }
 
@@ -387,10 +421,17 @@
     chartSemanaInst = new Chart(ctx, {
       type: 'line',
       data: { labels, datasets: [{ label:'Ingresos', data:ingresos,
-        borderColor:'#42a5f5', backgroundColor:'rgba(66,165,245,0.12)',
-        fill:true, tension:0.4, pointBackgroundColor:'#42a5f5', pointRadius:4
+        borderColor:'rgba(66,165,245,1)',
+        backgroundColor:'rgba(66,165,245,0.35)',
+        fill:true, tension:0.4,
+        pointBackgroundColor:'#fff',
+        pointBorderColor:'rgba(66,165,245,1)',
+        pointBorderWidth:2,
+        pointRadius:5,
+        pointHoverRadius:7,
       }]},
-      options: chartDefaults()
+      options: chartDefaults(),
+      plugins: [solidBgPlugin],
     });
   }
 
@@ -625,9 +666,9 @@
       salidas.push(Number(obj.salidas||0));
     }
     _chartHoraAInst = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
-      { label:'Entradas A', data:entradas, backgroundColor:'rgba(99,179,237,0.75)', borderRadius:4 },
-      { label:'Salidas A',  data:salidas,  backgroundColor:'rgba(252,129,74,0.7)',  borderRadius:4 }
-    ]}, options: chartDefaults() });
+      { label:'Entradas A', data:entradas, backgroundColor:'rgba(99,179,237,0.92)', borderColor:'rgba(99,179,237,1)', borderWidth:1, borderRadius:4 },
+      { label:'Salidas A',  data:salidas,  backgroundColor:'rgba(252,129,74,0.88)',  borderColor:'rgba(252,129,74,1)',  borderWidth:1, borderRadius:4 }
+    ]}, options: chartDefaults(), plugins:[solidBgPlugin] });
   }
 
   function renderChartTipoA(porTipo = []) {
@@ -678,9 +719,9 @@
       salidas.push(Number(obj.salidas||0));
     }
     _chartHoraBInst = new Chart(ctx, { type:'bar', data:{ labels, datasets:[
-      { label:'Entradas B', data:entradas, backgroundColor:'rgba(159,122,234,0.75)', borderRadius:4 },
-      { label:'Salidas B',  data:salidas,  backgroundColor:'rgba(237,137,54,0.7)',   borderRadius:4 }
-    ]}, options: chartDefaults() });
+      { label:'Entradas B', data:entradas, backgroundColor:'rgba(159,122,234,0.92)', borderColor:'rgba(159,122,234,1)', borderWidth:1, borderRadius:4 },
+      { label:'Salidas B',  data:salidas,  backgroundColor:'rgba(237,137,54,0.88)',   borderColor:'rgba(237,137,54,1)',  borderWidth:1, borderRadius:4 }
+    ]}, options: chartDefaults(), plugins:[solidBgPlugin] });
   }
 
   function renderChartSemanaB(porSemana = []) {
@@ -708,9 +749,10 @@
       ingresos.push(o ? Number(o.ingresos) : 0);
     }
     _chartSemanaBInst = new Chart(ctx, { type:'line', data:{ labels, datasets:[{ label:'Ingresos Lado B', data:ingresos,
-      borderColor:'rgba(159,122,234,0.9)', backgroundColor:'rgba(159,122,234,0.15)',
-      tension:0.4, fill:true, pointBackgroundColor:'rgba(159,122,234,1)', pointRadius:4
-    }]}, options: chartDefaults() });
+      borderColor:'rgba(159,122,234,1)', backgroundColor:'rgba(159,122,234,0.35)',
+      tension:0.4, fill:true,
+      pointBackgroundColor:'#fff', pointBorderColor:'rgba(159,122,234,1)', pointBorderWidth:2, pointRadius:5, pointHoverRadius:7,
+    }]}, options: chartDefaults(), plugins:[solidBgPlugin] });
   }
 
   function renderChartTipoB(porTipo = []) {
