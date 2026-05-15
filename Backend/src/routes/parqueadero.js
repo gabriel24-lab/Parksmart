@@ -613,16 +613,8 @@ router.get('/guardias', requireRol('superadmin'), async (req, res) => {
       `SELECT u.id_usuario, u.nombre_completo, u.numero_id, u.tipo_id,
               u.email, u.activo, u.fecha_registro,
               c.nombre AS centro_nombre,
-              -- Conteo de registros de hoy hechos por este guardia
-              (SELECT COUNT(*) FROM registros_uso r
-               WHERE r.registrado_por = u.id_usuario
-                 AND (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
-                   = (NOW() AT TIME ZONE 'America/Bogota')::DATE
-              ) AS registros_hoy,
-              -- Último registro que hizo
-              (SELECT MAX(r2.fecha_entrada) FROM registros_uso r2
-               WHERE r2.registrado_por = u.id_usuario
-              ) AS ultimo_registro
+              0 AS registros_hoy,
+              NULL AS ultimo_registro
        FROM usuarios u
        LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
        WHERE u.rol IN ('admin', 'guardia')
