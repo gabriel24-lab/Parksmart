@@ -593,24 +593,28 @@ async function cargarMetricas() {
     });
     _mkBarChart('chartAnalHora', horasLabels, horasData, horaColors, false);
 
-    // ── Chart 2: Ingresos últimos N días (simulado con distribución desde 30d) ──
-    // Construimos datos de los últimos 7 días a partir de registros disponibles
-    const hoy = new Date();
-    const diasLabels = [];
-    const diasData   = [];
-    const diaNames   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-    // Distribuimos los registros de los últimos 7d proporcionalmente (placeholder realista)
-    const total7d = Number(registros.ultimos_7_dias) || 0;
-    // Usamos los pesos por día de semana para estimar (picos_hora da idea de días activos)
-    const weights = [0.08, 0.16, 0.17, 0.18, 0.17, 0.16, 0.08]; // dom-sab
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(hoy); d.setDate(hoy.getDate() - i);
-      const label = (i === 0 ? 'Hoy' : i === 1 ? 'Ayer' : diaNames[d.getDay()]);
-      diasLabels.push(label);
-      const val = i === 0
-        ? Number(registros.hoy) || 0
-        : Math.round(total7d * weights[d.getDay()]);
-      diasData.push(val);
+    // ── Chart 2: Ingresos diarios — usando datos reales del backend ──────
+    const { ingresos_diarios = [], por_dia_semana = [] } = data.data;
+    const diaNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    let diasLabels, diasData;
+    if (ingresos_diarios.length) {
+      // Datos reales: mostrar últimos 30 días
+      diasLabels = ingresos_diarios.map(d => {
+        const fecha = new Date(d.dia);
+        return `${fecha.getDate()}/${fecha.getMonth()+1}`;
+      });
+      diasData = ingresos_diarios.map(d => Number(d.total) || 0);
+    } else {
+      // Fallback con datos disponibles
+      const hoy = new Date();
+      diasLabels = []; diasData = [];
+      const total7d = Number(registros.ultimos_7_dias) || 0;
+      const weights = [0.08, 0.16, 0.17, 0.18, 0.17, 0.16, 0.08];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(hoy); d.setDate(hoy.getDate() - i);
+        diasLabels.push(i === 0 ? 'Hoy' : i === 1 ? 'Ayer' : diaNames[d.getDay()]);
+        diasData.push(i === 0 ? (Number(registros.hoy)||0) : Math.round(total7d * weights[d.getDay()]));
+      }
     }
     _mkLineChart('chartAnalDias', diasLabels, diasData, 'Ingresos', 'rgb(47,164,64)');
 
@@ -647,13 +651,19 @@ async function cargarMetricas() {
       true
     );
 
-    // ── Chart 5: Día de la semana ─────────────────────────────────────
-    const semDays  = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-    // Usamos distribución estimada proporcional al total de 30 días
-    const total30  = Number(registros.ultimos_30_dias) || 0;
-    const semWeights = [0.19, 0.19, 0.19, 0.19, 0.15, 0.05, 0.04];
-    const semData = semWeights.map(w => Math.round(total30 * w / 4)); // promedio semanal
-    _mkBarChart('chartAnalSemana', semDays, semData,
+    // ── Chart 5: Día de la semana — datos reales (dow 0=Dom … 6=Sáb) ────
+    const semDays = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    // dow: 0=Dom,1=Lun,...,6=Sáb  →  reordenar a Lun-Dom
+    const dowMap = new Array(7).fill(0);
+    por_dia_semana.forEach(r => { dowMap[Number(r.dow)] = Number(r.total)||0; });
+    // Reordenar: Lun(1),Mar(2),Mié(3),Jue(4),Vie(5),Sáb(6),Dom(0)
+    const semData = [1,2,3,4,5,6,0].map(i => dowMap[i]);
+    const semHasData = semData.some(v => v > 0);
+    const semDataFinal = semHasData ? semData : (() => {
+      const total30 = Number(registros.ultimos_30_dias)||0;
+      return [0.19,0.19,0.19,0.19,0.15,0.05,0.04].map(w => Math.round(total30*w/4));
+    })();
+    _mkBarChart('chartAnalSemana', semDays, semDataFinal,
       semDays.map((_,i)=> i < 5 ? 'rgba(47,164,64,0.7)' : 'rgba(255,152,0,0.6)'),
       false);
 

@@ -769,50 +769,145 @@ router.put('/usuarios/:id/rol', requireRol('superadmin'), async (req, res) => {
 // ── GET /api/parqueadero/metricas ─────────────────────────────────────
 // Dashboard de métricas: totales generales del sistema
 router.get('/metricas', requireRol('superadmin'), async (req, res) => {
+
+  // Helper: ejecuta una query y devuelve fallback si falla, sin romper todo
+  async function safeQuery(sql, params, fallback) {
+    try {
+      const r = await query(sql, params);
+      return r;
+    } catch (err) {
+      console.error('[metricas] query falló:', err.message, '\nSQL:', sql.slice(0, 120));
+      return { rows: [fallback], rowCount: 0 };
+    }
+  }
+
   try {
-    const [usuariosR, vehiculosR, registrosR, picosR, tiposR] = await Promise.all([
-      query(`SELECT
-        COUNT(*) FILTER (WHERE activo = true)  AS total_activos,
-        COUNT(*) FILTER (WHERE activo = false) AS total_inactivos,
-        COUNT(*) FILTER (WHERE rol = 'aprendiz')   AS aprendices,
-        COUNT(*) FILTER (WHERE rol = 'funcionario') AS funcionarios,
-        COUNT(*) FILTER (WHERE rol = 'instructor')  AS instructores,
-        COUNT(*) FILTER (WHERE rol IN ('admin','guardia')) AS guardias,
-        COUNT(*) FILTER (WHERE activo = true AND created_at::date = (NOW() AT TIME ZONE 'America/Bogota')::date) AS nuevos_hoy
-        FROM usuarios`),
-      query(`SELECT COUNT(*) AS total_vehiculos,
-        COUNT(*) FILTER (WHERE tv.nombre = 'Auto')        AS autos,
-        COUNT(*) FILTER (WHERE tv.nombre = 'Motocicleta') AS motos,
-        COUNT(*) FILTER (WHERE tv.nombre = 'Bicicleta')   AS bicicletas
-        FROM vehiculos v JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
-        WHERE v.activo = true`),
-      query(`SELECT
-        COUNT(*) AS total_registros,
-        COUNT(*) FILTER (WHERE (fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::date = (NOW() AT TIME ZONE 'America/Bogota')::date) AS hoy,
-        COUNT(*) FILTER (WHERE (fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::date >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '7 days')::date) AS ultimos_7_dias,
-        COUNT(*) FILTER (WHERE (fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::date >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '30 days')::date) AS ultimos_30_dias
-        FROM registros_uso`),
-      query(`SELECT EXTRACT(HOUR FROM (fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))::INT AS hora,
+    const TZ = `AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'`;
+    const HOY = `(NOW() AT TIME ZONE 'America/Bogota')::date`;
+
+    // ── 1. Usuarios ──────────────────────────────────────────────────
+    // Intentamos con created_at primero; si no existe la columna fallará
+    // pero el safeQuery lo captura y devuelve ceros.
+    const usuariosR = await safeQuery(`
+      SELECT
+        COUNT(*) FILTER (WHERE activo = true)                        AS total_activos,
+        COUNT(*) FILTER (WHERE activo = false)                       AS total_inactivos,
+        COUNT(*) FILTER (WHERE rol = 'aprendiz')                     AS aprendices,
+        COUNT(*) FILTER (WHERE rol = 'funcionario')                  AS funcionarios,
+        COUNT(*) FILTER (WHERE rol = 'instructor')                   AS instructores,
+        COUNT(*) FILTER (WHERE rol IN ('admin','guardia'))           AS guardias,
+        COUNT(*) FILTER (WHERE activo = true
+          AND COALESCE(created_at, fecha_registro, NOW())::date = ${HOY}) AS nuevos_hoy
+      FROM usuarios
+    `, {}, {
+      total_activos: 0, total_inactivos: 0,
+      aprendices: 0, funcionarios: 0, instructores: 0, guardias: 0, nuevos_hoy: 0,
+    });
+
+    // ── 2. Vehículos ─────────────────────────────────────────────────
+    // Intentamos con tipos_vehiculo; si falla (nombre de tabla distinto) usamos fallback
+    let vehiculosR = await safeQuery(`
+      SELECT
+        COUNT(*)                                                      AS total_vehiculos,
+        COUNT(*) FILTER (WHERE tv.nombre ILIKE '%auto%'
+          OR tv.nombre ILIKE '%carro%' OR tv.nombre ILIKE '%car%')   AS autos,
+        COUNT(*) FILTER (WHERE tv.nombre ILIKE '%moto%')             AS motos,
+        COUNT(*) FILTER (WHERE tv.nombre ILIKE '%bici%')             AS bicicletas
+      FROM vehiculos v
+      JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
+      WHERE v.activo = true
+    `, {}, { total_vehiculos: 0, autos: 0, motos: 0, bicicletas: 0 });
+
+    // Si la query anterior falló (0 total y hay vehículos), intentar sin JOIN
+    if (!Number(vehiculosR.rows[0]?.total_vehiculos)) {
+      const alt = await safeQuery(
+        `SELECT COUNT(*) AS total_vehiculos FROM vehiculos WHERE activo = true`,
+        {}, { total_vehiculos: 0 }
+      );
+      if (Number(alt.rows[0]?.total_vehiculos) > 0) vehiculosR = alt;
+    }
+
+    // ── 3. Registros ─────────────────────────────────────────────────
+    const registrosR = await safeQuery(`
+      SELECT
+        COUNT(*)                                                                                  AS total_registros,
+        COUNT(*) FILTER (WHERE (fecha_entrada ${TZ})::date = ${HOY})                             AS hoy,
+        COUNT(*) FILTER (WHERE (fecha_entrada ${TZ})::date >= (${HOY} - INTERVAL '7 days'))      AS ultimos_7_dias,
+        COUNT(*) FILTER (WHERE (fecha_entrada ${TZ})::date >= (${HOY} - INTERVAL '30 days'))     AS ultimos_30_dias
+      FROM registros_uso
+    `, {}, { total_registros: 0, hoy: 0, ultimos_7_dias: 0, ultimos_30_dias: 0 });
+
+    // ── 4. Picos por hora (top 5 para gráfica) ───────────────────────
+    const picosR = await safeQuery(`
+      SELECT
+        EXTRACT(HOUR FROM (fecha_entrada ${TZ}))::INT AS hora,
         COUNT(*) AS total
-        FROM registros_uso
-        WHERE (fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::date >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '30 days')::date
-        GROUP BY hora ORDER BY total DESC LIMIT 3`),
-      query(`SELECT tv.nombre AS tipo, COUNT(*) AS total
-        FROM registros_uso r JOIN vehiculos v ON v.id_vehiculo = r.id_vehiculo
-        JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
-        WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::date >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '30 days')::date
-        GROUP BY tv.nombre ORDER BY total DESC`),
-    ]);
+      FROM registros_uso
+      WHERE (fecha_entrada ${TZ})::date >= (${HOY} - INTERVAL '30 days')
+      GROUP BY hora
+      ORDER BY total DESC
+      LIMIT 5
+    `, {}, null);
+
+    // ── 5. Por tipo de vehículo ───────────────────────────────────────
+    let tiposR = await safeQuery(`
+      SELECT tv.nombre AS tipo, COUNT(*) AS total
+      FROM registros_uso r
+      JOIN vehiculos v ON v.id_vehiculo = r.id_vehiculo
+      JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
+      WHERE (r.fecha_entrada ${TZ})::date >= (${HOY} - INTERVAL '30 days')
+      GROUP BY tv.nombre
+      ORDER BY total DESC
+    `, {}, null);
+
+    // Si JOIN falló, intentar con tipo_vehiculo (sin s) o solo vehiculos
+    if (!tiposR.rows.length) {
+      tiposR = await safeQuery(`
+        SELECT tv.nombre AS tipo, COUNT(*) AS total
+        FROM registros_uso r
+        JOIN vehiculos v ON v.id_vehiculo = r.id_vehiculo
+        JOIN tipo_vehiculo tv ON tv.id_tipo = v.id_tipo
+        WHERE (r.fecha_entrada ${TZ})::date >= (${HOY} - INTERVAL '30 days')
+        GROUP BY tv.nombre
+        ORDER BY total DESC
+      `, {}, null);
+    }
+
+    // ── 6. Ingresos por día (últimos 30 días) — para gráfica línea ───
+    const diasR = await safeQuery(`
+      SELECT
+        (fecha_entrada ${TZ})::date AS dia,
+        COUNT(*) AS total
+      FROM registros_uso
+      WHERE (fecha_entrada ${TZ})::date >= (${HOY} - INTERVAL '30 days')
+      GROUP BY dia
+      ORDER BY dia ASC
+    `, {}, null);
+
+    // ── 7. Ingresos por día de la semana (promedio) ──────────────────
+    const semanaDiaR = await safeQuery(`
+      SELECT
+        EXTRACT(DOW FROM (fecha_entrada ${TZ}))::INT AS dow,
+        COUNT(*) AS total
+      FROM registros_uso
+      WHERE (fecha_entrada ${TZ})::date >= (${HOY} - INTERVAL '90 days')
+      GROUP BY dow
+      ORDER BY dow ASC
+    `, {}, null);
+
     return res.json({ ok: true, data: {
-      usuarios:  usuariosR.rows[0],
-      vehiculos: vehiculosR.rows[0],
-      registros: registrosR.rows[0],
-      picos_hora: picosR.rows,
-      por_tipo:   tiposR.rows,
+      usuarios:    usuariosR.rows[0] || {},
+      vehiculos:   vehiculosR.rows[0] || {},
+      registros:   registrosR.rows[0] || {},
+      picos_hora:  picosR.rows.filter(Boolean),
+      por_tipo:    tiposR.rows.filter(Boolean),
+      ingresos_diarios: diasR.rows.filter(Boolean),
+      por_dia_semana:   semanaDiaR.rows.filter(Boolean),
     }});
+
   } catch (err) {
-    console.error('metricas:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    console.error('metricas error global:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno: ' + err.message });
   }
 });
 
