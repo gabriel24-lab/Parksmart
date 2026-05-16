@@ -198,6 +198,99 @@
       .compact-stats-grid { grid-template-columns: 1fr; }
     }
 
+    /* ── Gestión de Parqueadero ── */
+    .pk-lado-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 18px;
+      transition: border-color 0.2s;
+    }
+    .pk-lado-card:hover { border-color: rgba(255,255,255,0.18); }
+    .pk-lado-card.disabled { opacity: 0.5; }
+    .pk-lado-header {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .pk-lado-avatar {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, #1a3d1f, #2FA440);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .pk-lado-avatar.disabled { background: linear-gradient(135deg,#2a2a2a,#444); }
+    .pk-lado-nombre { font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 3px; }
+    .pk-lado-meta   { font-size: 12px; color: rgba(255,255,255,0.45); display:flex; gap:10px; flex-wrap:wrap; }
+    .pk-lado-meta span { display:flex; align-items:center; gap:4px; }
+    .pk-lado-actions { margin-left: auto; display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+    .pk-btn {
+      padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500;
+      cursor: pointer; border: 1px solid; transition: all 0.15s;
+      display: flex; align-items: center; gap: 5px; white-space: nowrap;
+      background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); color: #fff;
+    }
+    .pk-btn:hover { background: rgba(255,255,255,0.12); }
+    .pk-btn.green { background: rgba(76,175,80,0.12); border-color:rgba(76,175,80,0.4); color:#81c784; }
+    .pk-btn.green:hover { background: rgba(76,175,80,0.22); }
+    .pk-btn.amber { background: rgba(255,183,77,0.12); border-color:rgba(255,183,77,0.4); color:#ffb74d; }
+    .pk-btn.amber:hover { background: rgba(255,183,77,0.22); }
+    .pk-btn.red   { background: rgba(244,67,54,0.10); border-color:rgba(244,67,54,0.35); color:#ef9a9a; }
+    .pk-btn.red:hover { background: rgba(244,67,54,0.20); }
+    .pk-stat-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;
+      margin-top: 12px;
+    }
+    .pk-stat-chip {
+      padding: 10px 14px; border-radius: 10px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .pk-stat-chip .pk-chip-icon { font-size: 18px; flex-shrink: 0; }
+    .pk-stat-chip .pk-chip-num  { font-size: 20px; font-weight: 700; color: #fff; line-height: 1; }
+    .pk-stat-chip .pk-chip-lbl  { font-size: 11px; color: rgba(255,255,255,0.45); margin-top:2px; }
+    .pk-tipos-pills {
+      display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px;
+    }
+    .pk-tipo-pill {
+      padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(47,164,64,0.15); border: 0.5px solid rgba(47,164,64,0.4); color: #81c784;
+    }
+    .pk-tipo-pill.off {
+      background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.4);
+    }
+    .pk-cupo-bar-wrap {
+      height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px;
+      overflow: hidden; margin-top: 8px;
+    }
+    .pk-cupo-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+    .pk-mode-badge {
+      display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px;
+      border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .pk-mode-badge.controlado { background:rgba(33,150,243,0.15); border:0.5px solid rgba(33,150,243,0.4); color:#90caf9; }
+    .pk-mode-badge.libre      { background:rgba(76,175,80,0.15);  border:0.5px solid rgba(76,175,80,0.4);  color:#a5d6a7; }
+    .pk-mode-badge.off        { background:rgba(244,67,54,0.12);  border:0.5px solid rgba(244,67,54,0.35); color:#ef9a9a; }
+    /* Modal parqueadero inputs */
+    .pk-form-group { display:flex; flex-direction:column; gap:6px; }
+    .pk-form-group label { font-size:12px; color:rgba(255,255,255,0.55); }
+    .pk-form-group input, .pk-form-group select {
+      padding: 10px 14px; border-radius: 10px;
+      border: 1.5px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.07); color: #fff;
+      font-family: inherit; font-size: 13px; outline: none;
+    }
+    .pk-form-group input::placeholder { color: rgba(255,255,255,0.3); }
+    .pk-check-group { display:flex; flex-wrap:wrap; gap:10px; }
+    .pk-check-item {
+      display:flex; align-items:center; gap:8px; padding:8px 14px;
+      border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12);
+      cursor:pointer; transition:all 0.15s; font-size:13px; color:rgba(255,255,255,0.7);
+    }
+    .pk-check-item input[type=checkbox] { accent-color: #2FA440; width:15px; height:15px; }
+    .pk-check-item:hover { background:rgba(255,255,255,0.10); }
+
     /* ── Análisis charts ── */
     .anal-pico-row {
       display:flex; align-items:center; gap:10px; padding:8px 12px;
@@ -242,8 +335,8 @@
       <button class="nav-item" onclick="showSection('scanner', this)">
         <i class="bi bi-qr-code-scan"></i><span>Escanear QR</span>
       </button>
-      <button class="nav-item" onclick="showSection('cupos', this)">
-        <i class="bi bi-grid-3x3-gap-fill"></i><span>Gestión de Cupos</span>
+      <button class="nav-item" onclick="showSection('parqueadero', this)">
+        <i class="bi bi-p-circle-fill"></i><span>Parqueadero</span>
       </button>
       <button class="nav-item" onclick="showSection('usuarios', this)">
         <i class="bi bi-people-fill"></i><span>Usuarios</span>
@@ -490,72 +583,55 @@
       </div>
     </section>
 
-    <!-- ══ CUPOS ══ -->
-    <section id="section-cupos" class="section">
+    <!-- ══ PARQUEADERO ══ -->
+    <section id="section-parqueadero" class="section">
       <div class="section-header">
         <div>
-          <h1>Gestión de <span class="hl">Cupos</span></h1>
-          <p class="section-sub">Control de espacios en tiempo real</p>
+          <h1>Gestión de <span class="hl">Parqueadero</span></h1>
+          <p class="section-sub">Configura centros, lados, cupos y tipos de vehículo</p>
         </div>
-      </div>
-
-      <div style="display:flex;gap:10px;margin-bottom:20px;">
-        <button class="btn-save active" id="tab-a" onclick="switchSide('A')" style="padding:9px 20px;font-size:13px;">
-          <i class="bi bi-grid-3x3-gap-fill"></i> Lado A — Controlado
-        </button>
-        <button class="btn-save" id="tab-b" onclick="switchSide('B')" style="padding:9px 20px;font-size:13px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.18);">
-          <i class="bi bi-wind"></i> Lado B — Abierto
+        <button class="btn-save" onclick="pkAgregarLado()" style="padding:10px 18px;font-size:13px;">
+          <i class="bi bi-plus-circle-fill"></i> Agregar lado
         </button>
       </div>
 
-      <div id="panel-A">
-        <div class="glass-panel" style="margin-bottom:20px;">
-          <div class="panel-title"><i class="bi bi-grid-3x3-gap-fill"></i> Estado Lado A</div>
-          <div class="cupos-header">
-            <div class="cupo-circle ok" id="a-cupo-circle">
-              <span id="a-disp-num">—</span>
-              <small>disponibles</small>
-            </div>
-            <div class="cupos-nums">
-              <div><span id="a-occ-num">—</span><small>ocupados</small></div>
-              <div><span id="a-total-num">—</span><small>total</small></div>
-            </div>
+      <!-- Selector de centro -->
+      <div class="glass-panel" style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <i class="bi bi-building" style="font-size:20px;color:var(--brand-color);"></i>
+          <div style="flex:1;min-width:200px;">
+            <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:4px;">Centro de formación</div>
+            <select id="pk-centro-select" onchange="pkCargarCentro()" style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);color:#fff;font-family:inherit;font-size:14px;outline:none;">
+              <option value="">Cargando centros...</option>
+            </select>
           </div>
-          <div class="cupos-controls" style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            <label style="font-size:13px;color:rgba(255,255,255,0.5);">Ajustar total de espacios:</label>
-            <input type="number" id="a-total-input" placeholder="Ej: 21" min="1" max="200"
-              style="width:90px;padding:9px 12px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.07);color:#fff;font-size:13px;outline:none;">
-            <button class="btn-save" style="padding:9px 16px;font-size:13px;" onclick="setATotal()">
-              <i class="bi bi-check2"></i> Aplicar
-            </button>
-          </div>
-        </div>
-        <div class="glass-panel">
-          <div class="panel-title"><i class="bi bi-grid-fill"></i> Mapa de espacios</div>
-          <div id="a-grid" class="cupos-grid"></div>
+          <button class="btn-save" onclick="pkCargarCentro()" style="padding:10px 16px;font-size:13px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.18);">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar
+          </button>
         </div>
       </div>
 
-      <div id="panel-B" style="display:none;">
-        <div class="glass-panel">
-          <div class="panel-title"><i class="bi bi-wind"></i> Lado B — Espacio abierto</div>
-          <div class="stats-grid" style="margin-top:12px;">
-            <div class="stat-card blue">
-              <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
-              <div class="stat-info"><span class="stat-number" id="b-carros-dentro">0</span><span class="stat-label">Carros dentro</span></div>
-            </div>
-            <div class="stat-card green">
-              <div class="stat-icon"><i class="bi bi-scooter"></i></div>
-              <div class="stat-info"><span class="stat-number" id="b-motos-dentro">0</span><span class="stat-label">Motos dentro</span></div>
-            </div>
-            <div class="stat-card yellow">
-              <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
-              <div class="stat-info"><span class="stat-number" id="b-bicis-dentro">0</span><span class="stat-label">Bicis dentro</span></div>
-            </div>
-          </div>
+      <!-- Contenedor de lados -->
+      <div id="pk-lados-container">
+        <div style="text-align:center;padding:60px;color:rgba(255,255,255,0.3);">
+          <i class="bi bi-building" style="font-size:36px;display:block;margin-bottom:12px;"></i>
+          Selecciona un centro de formación para gestionar su parqueadero
         </div>
       </div>
     </section>
+
+    <!-- Modal parqueadero — editar lado / agregar lado -->
+    <div class="sa-modal-overlay" id="pk-modal">
+      <div class="sa-modal-card" style="max-width:480px;">
+        <div class="sa-modal-icon" id="pk-modal-icon">🅿️</div>
+        <div class="sa-modal-title" id="pk-modal-title">Configurar lado</div>
+        <div id="pk-modal-body" style="margin-bottom:20px;display:flex;flex-direction:column;gap:14px;"></div>
+        <div class="sa-modal-btns">
+          <button class="sa-modal-cancel" onclick="pkCloseModal()">Cancelar</button>
+          <button class="sa-modal-confirm ok" id="pk-modal-save" onclick="pkModalSave()">Guardar</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ══ USUARIOS ══ -->
     <section id="section-usuarios" class="section">

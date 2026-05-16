@@ -1030,3 +1030,410 @@ function exportarAuditoriaCSV() {
   URL.revokeObjectURL(a.href);
   showToast('CSV de auditoría descargado', 'success');
 }
+// ════════════════════════════════════════════════════════════
+// ══ GESTIÓN DE PARQUEADERO (superadmin) ══
+// ════════════════════════════════════════════════════════════
+// Estado local en memoria — espejo de lo que devuelve el backend.
+// Mientras el backend real no tenga endpoints de gestión de lados,
+// se usa localStorage como persistencia provisional (mismo dominio).
+// Cuando el backend esté listo, reemplazar pkLoad/pkSave con apiFetch.
+
+const PK_STORE_KEY = 'parksmart_pk_config';
+
+// ─── Estructura de dato por defecto (migrada del CIGEC actual) ────────
+function pkDefaultCentroConfig(id_centro) {
+  // El CIGEC (id=1) ya tiene Lado A y Lado B activos.
+  // Cualquier otro centro arranca sin lados.
+  if (String(id_centro) === '1') {
+    return {
+      id_centro,
+      lados: [
+        {
+          id: 'lado-1',
+          nombre: 'Lado A',
+          habilitado: true,
+          modo: 'controlado',        // 'controlado' | 'libre'
+          capacidad: 21,
+          tipos: ['Bicicleta', 'Moto', 'Carro'],
+        },
+        {
+          id: 'lado-2',
+          nombre: 'Lado B',
+          habilitado: true,
+          modo: 'libre',
+          capacidad: null,
+          tipos: ['Bicicleta', 'Moto', 'Carro'],
+        },
+      ],
+    };
+  }
+  return { id_centro, lados: [] };
+}
+
+function pkLoad(id_centro) {
+  try {
+    const raw = localStorage.getItem(PK_STORE_KEY);
+    const all = raw ? JSON.parse(raw) : {};
+    return all[String(id_centro)] || pkDefaultCentroConfig(id_centro);
+  } catch { return pkDefaultCentroConfig(id_centro); }
+}
+
+function pkSave(config) {
+  try {
+    const raw = localStorage.getItem(PK_STORE_KEY);
+    const all = raw ? JSON.parse(raw) : {};
+    all[String(config.id_centro)] = config;
+    localStorage.setItem(PK_STORE_KEY, JSON.stringify(all));
+  } catch { showToast('No se pudo guardar la configuración.', 'error'); }
+}
+
+// ─── Estado activo ────────────────────────────────────────────────────
+let pkConfig     = null;  // config del centro seleccionado
+let pkOcupacion  = {};    // { [id_lado]: { carros, motos, bicicletas } }
+let pkModalCtx   = null;  // { mode:'edit'|'add', ladoId? }
+
+const TIPOS_DISPONIBLES = ['Bicicleta', 'Moto', 'Carro'];
+const TIPO_ICONS = { Bicicleta: 'bi-bicycle', Moto: 'bi-scooter', Carro: 'bi-car-front-fill' };
+
+// ─── Inicialización ───────────────────────────────────────────────────
+async function pkInit() {
+  await pkCargarSelectCentros();
+  // Seleccionar el primer centro disponible
+  const sel = document.getElementById('pk-centro-select');
+  if (sel && sel.options.length > 1) {
+    sel.selectedIndex = 1;
+    await pkCargarCentro();
+  }
+}
+
+async function pkCargarSelectCentros() {
+  try {
+    const res  = await apiFetch('/catalogos/centros');
+    if (!res) return;
+    const data = await res.json();
+    const sel  = document.getElementById('pk-centro-select');
+    if (!sel || !data.ok) return;
+    sel.innerHTML = '<option value="">— Selecciona un centro —</option>' +
+      (data.data || []).map(c =>
+        `<option value="${c.id_centro}">${c.nombre}</option>`
+      ).join('');
+  } catch (e) { console.warn('pkCargarSelectCentros:', e); }
+}
+
+async function pkCargarCentro() {
+  const sel = document.getElementById('pk-centro-select');
+  const id  = sel?.value;
+  if (!id) {
+    document.getElementById('pk-lados-container').innerHTML =
+      `<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.3);">
+        <i class="bi bi-building" style="font-size:36px;display:block;margin-bottom:12px;"></i>
+        Selecciona un centro de formación
+      </div>`;
+    return;
+  }
+
+  pkConfig = pkLoad(id);
+
+  // Traer ocupación real desde el backend (registros activos)
+  try {
+    const res  = await apiFetch('/parqueadero/ocupacion-rol');
+    if (res) {
+      const data = await res.json();
+      if (data.ok && data.data) {
+        const { lado_a, lado_b } = data.data;
+        pkOcupacion = {
+          'lado-1': {
+            carros:      lado_a?.carros      || 0,
+            motos:       lado_a?.motos       || 0,
+            bicicletas:  lado_a?.bicicletas  || 0,
+            ocupados:    lado_a?.ocupados    || 0,
+          },
+          'lado-2': {
+            carros:      lado_b?.carros      || 0,
+            motos:       lado_b?.motos       || 0,
+            bicicletas:  lado_b?.bicicletas  || 0,
+            ocupados:    (lado_b?.carros||0) + (lado_b?.motos||0),
+          },
+        };
+      }
+    }
+  } catch {}
+
+  pkRenderLados();
+}
+
+// ─── Render principal ─────────────────────────────────────────────────
+function pkRenderLados() {
+  const cont = document.getElementById('pk-lados-container');
+  if (!cont) return;
+
+  if (!pkConfig || !pkConfig.lados.length) {
+    cont.innerHTML = `
+      <div class="glass-panel" style="text-align:center;padding:40px;">
+        <i class="bi bi-p-circle" style="font-size:40px;color:rgba(255,255,255,0.25);display:block;margin-bottom:14px;"></i>
+        <div style="font-size:15px;color:rgba(255,255,255,0.5);margin-bottom:8px;">Este centro no tiene lados configurados</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.3);margin-bottom:20px;">Agrega un lado para empezar a gestionar el parqueadero</div>
+        <button class="btn-save" onclick="pkAgregarLado()" style="padding:10px 22px;font-size:13px;">
+          <i class="bi bi-plus-circle-fill"></i> Agregar primer lado
+        </button>
+      </div>`;
+    return;
+  }
+
+  cont.innerHTML = pkConfig.lados.map(l => pkRenderLadoCard(l)).join('');
+}
+
+function pkRenderLadoCard(lado) {
+  const occ     = pkOcupacion[lado.id] || {};
+  const dentro  = (occ.carros||0) + (occ.motos||0) + (occ.bicicletas||0);
+  const ocupados = occ.ocupados !== undefined ? occ.ocupados : ((occ.carros||0) + (occ.motos||0));
+
+  // Badge de modo
+  const modeBadge = !lado.habilitado
+    ? `<span class="pk-mode-badge off"><i class="bi bi-slash-circle"></i> Deshabilitado</span>`
+    : lado.modo === 'controlado'
+      ? `<span class="pk-mode-badge controlado"><i class="bi bi-ui-checks-grid"></i> Controlado</span>`
+      : `<span class="pk-mode-badge libre"><i class="bi bi-wind"></i> Espacio libre</span>`;
+
+  // Tipos permitidos
+  const tiposPills = TIPOS_DISPONIBLES.map(t => {
+    const activo = lado.tipos?.includes(t);
+    return `<span class="pk-tipo-pill ${activo ? '' : 'off'}">
+      <i class="bi ${TIPO_ICONS[t]}"></i> ${t}
+    </span>`;
+  }).join('');
+
+  // Barra de ocupación (solo si es controlado y habilitado)
+  let barraHtml = '';
+  if (lado.habilitado && lado.modo === 'controlado' && lado.capacidad) {
+    const pct = Math.min(100, Math.round(ocupados / lado.capacidad * 100));
+    const barColor = pct >= 90 ? '#ef5350' : pct >= 70 ? '#ffa726' : '#2FA440';
+    barraHtml = `
+      <div style="margin-top:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px;">
+          <span>Ocupación</span>
+          <span style="font-weight:600;color:#fff;">${ocupados}/${lado.capacidad} (${pct}%)</span>
+        </div>
+        <div class="pk-cupo-bar-wrap">
+          <div class="pk-cupo-bar-fill" style="width:${pct}%;background:${barColor};"></div>
+        </div>
+      </div>`;
+  }
+
+  // Stats chips
+  const chipsBici  = `<div class="pk-stat-chip"><i class="bi bi-bicycle pk-chip-icon" style="color:#ffd54f;"></i><div><div class="pk-chip-num">${occ.bicicletas||0}</div><div class="pk-chip-lbl">Bicis dentro</div></div></div>`;
+  const chipsMoto  = `<div class="pk-stat-chip"><i class="bi bi-scooter pk-chip-icon" style="color:#81c784;"></i><div><div class="pk-chip-num">${occ.motos||0}</div><div class="pk-chip-lbl">Motos dentro</div></div></div>`;
+  const chipsCarros = `<div class="pk-stat-chip"><i class="bi bi-car-front-fill pk-chip-icon" style="color:#90caf9;"></i><div><div class="pk-chip-num">${occ.carros||0}</div><div class="pk-chip-lbl">Carros dentro</div></div></div>`;
+
+  let capacidadChip = '';
+  if (lado.modo === 'controlado' && lado.capacidad) {
+    const disp = Math.max(0, lado.capacidad - ocupados);
+    capacidadChip = `<div class="pk-stat-chip"><i class="bi bi-p-circle-fill pk-chip-icon" style="color:#ce93d8;"></i><div><div class="pk-chip-num">${disp}</div><div class="pk-chip-lbl">Disponibles</div></div></div>`;
+  }
+
+  // Botón toggle habilitar/deshabilitar
+  const toggleBtn = lado.habilitado
+    ? `<button class="pk-btn amber" onclick="pkToggleLado('${lado.id}')"><i class="bi bi-toggle2-off"></i> Deshabilitar</button>`
+    : `<button class="pk-btn green" onclick="pkToggleLado('${lado.id}')"><i class="bi bi-toggle2-on"></i> Habilitar</button>`;
+
+  return `
+    <div class="pk-lado-card ${lado.habilitado ? '' : 'disabled'}" id="pk-card-${lado.id}">
+      <div class="pk-lado-header">
+        <div class="pk-lado-avatar ${lado.habilitado ? '' : 'disabled'}">
+          <i class="bi bi-p-circle-fill" style="font-size:20px;color:#fff;"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div class="pk-lado-nombre">${lado.nombre}</div>
+          <div class="pk-lado-meta">
+            ${modeBadge}
+            ${lado.modo === 'controlado' && lado.capacidad
+              ? `<span><i class="bi bi-grid-fill"></i> ${lado.capacidad} espacios</span>`
+              : '<span><i class="bi bi-infinity"></i> Sin límite de cupos</span>'}
+            <span><i class="bi bi-people-fill"></i> ${dentro} dentro ahora</span>
+          </div>
+        </div>
+        <div class="pk-lado-actions">
+          <button class="pk-btn" onclick="pkEditarLado('${lado.id}')"><i class="bi bi-pencil-fill"></i> Editar</button>
+          ${toggleBtn}
+          <button class="pk-btn red" onclick="pkEliminarLado('${lado.id}', '${lado.nombre.replace(/'/g,"\\'")}')"><i class="bi bi-trash3-fill"></i></button>
+        </div>
+      </div>
+
+      <div style="border-top:0.5px solid rgba(255,255,255,0.07);padding-top:14px;">
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:8px;">Tipos de vehículo permitidos</div>
+        <div class="pk-tipos-pills">${tiposPills}</div>
+      </div>
+
+      ${barraHtml}
+
+      <div class="pk-stat-row" style="margin-top:14px;">
+        ${capacidadChip}${chipsCarros}${chipsMoto}${chipsBici}
+      </div>
+    </div>`;
+}
+
+// ─── Toggle habilitar/deshabilitar ───────────────────────────────────
+function pkToggleLado(ladoId) {
+  const lado = pkConfig?.lados.find(l => l.id === ladoId);
+  if (!lado) return;
+  const accion = lado.habilitado ? 'deshabilitar' : 'habilitar';
+  openSAModal({
+    icon: lado.habilitado ? '⛔' : '✅',
+    title: `${accion.charAt(0).toUpperCase() + accion.slice(1)} "${lado.nombre}"`,
+    desc: `¿Confirmas que deseas <strong>${accion}</strong> el lado <strong>${lado.nombre}</strong>?
+           ${lado.habilitado ? '<br><small style="color:rgba(255,255,255,0.4);">Los usuarios no podrán registrar entradas en este lado mientras esté deshabilitado.</small>' : ''}`,
+    btnClass: lado.habilitado ? 'warn' : 'ok',
+    btnLabel: accion.charAt(0).toUpperCase() + accion.slice(1),
+    onConfirm: () => {
+      lado.habilitado = !lado.habilitado;
+      pkSave(pkConfig);
+      pkRenderLados();
+      showToast(`Lado "${lado.nombre}" ${lado.habilitado ? 'habilitado' : 'deshabilitado'}`, 'success');
+    },
+  });
+}
+
+// ─── Eliminar lado ────────────────────────────────────────────────────
+function pkEliminarLado(ladoId, nombre) {
+  openSAModal({
+    icon: '🗑️',
+    title: `Eliminar "${nombre}"`,
+    desc: `¿Estás seguro de eliminar el lado <strong>${nombre}</strong>? Esta acción no se puede deshacer.<br>
+           <small style="color:rgba(244,67,54,0.7);">Los registros de uso históricos no se verán afectados.</small>`,
+    btnClass: 'danger',
+    btnLabel: 'Eliminar',
+    onConfirm: () => {
+      pkConfig.lados = pkConfig.lados.filter(l => l.id !== ladoId);
+      pkSave(pkConfig);
+      pkRenderLados();
+      showToast(`Lado "${nombre}" eliminado`, 'info');
+    },
+  });
+}
+
+// ─── Modal editar/agregar lado ────────────────────────────────────────
+function pkAgregarLado() {
+  if (!pkConfig) { showToast('Selecciona un centro primero.', 'error'); return; }
+  pkModalCtx = { mode: 'add' };
+  pkOpenModal({
+    icon: '➕',
+    title: 'Agregar nuevo lado',
+    nombre: '',
+    modo: 'controlado',
+    capacidad: '',
+    habilitado: true,
+    tipos: ['Bicicleta', 'Moto', 'Carro'],
+  });
+}
+
+function pkEditarLado(ladoId) {
+  const lado = pkConfig?.lados.find(l => l.id === ladoId);
+  if (!lado) return;
+  pkModalCtx = { mode: 'edit', ladoId };
+  pkOpenModal({ ...lado, icon: '✏️', title: `Editar "${lado.nombre}"` });
+}
+
+function pkOpenModal({ icon, title, nombre, modo, capacidad, habilitado, tipos }) {
+  document.getElementById('pk-modal-icon').textContent  = icon;
+  document.getElementById('pk-modal-title').textContent = title;
+
+  const tiposChecks = TIPOS_DISPONIBLES.map(t => `
+    <label class="pk-check-item">
+      <input type="checkbox" value="${t}" ${tipos?.includes(t) ? 'checked' : ''}
+             onchange="pkUpdateTiposAll()">
+      <i class="bi ${TIPO_ICONS[t]}"></i> ${t}
+    </label>`).join('');
+
+  document.getElementById('pk-modal-body').innerHTML = `
+    <div class="pk-form-group">
+      <label><i class="bi bi-tag-fill"></i> Nombre del lado</label>
+      <input type="text" id="pk-f-nombre" placeholder="Ej: Lado A, Parqueadero 1..." value="${nombre || ''}">
+    </div>
+
+    <div class="pk-form-group">
+      <label><i class="bi bi-sliders"></i> Modo de control</label>
+      <select id="pk-f-modo" onchange="pkToggleCapacidadField()">
+        <option value="controlado" ${modo === 'controlado' ? 'selected' : ''}>Controlado — con límite de cupos</option>
+        <option value="libre"      ${modo === 'libre'      ? 'selected' : ''}>Espacio libre — sin límite de cupos</option>
+      </select>
+    </div>
+
+    <div class="pk-form-group" id="pk-f-cap-wrap" style="${modo === 'libre' ? 'display:none;' : ''}">
+      <label><i class="bi bi-grid-fill"></i> Capacidad total de espacios</label>
+      <input type="number" id="pk-f-capacidad" placeholder="Ej: 21" min="1" max="500" value="${capacidad || ''}">
+    </div>
+
+    <div class="pk-form-group">
+      <label><i class="bi bi-car-front-fill"></i> Tipos de vehículo permitidos</label>
+      <div class="pk-check-group" id="pk-tipos-check">${tiposChecks}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;">
+        <i class="bi bi-info-circle"></i> Las bicicletas nunca consumen cupo aunque estén en modo controlado
+      </div>
+    </div>
+
+    <div class="pk-form-group">
+      <label><i class="bi bi-toggle2-on"></i> Estado inicial</label>
+      <select id="pk-f-habilitado">
+        <option value="1" ${habilitado !== false ? 'selected' : ''}>Habilitado</option>
+        <option value="0" ${habilitado === false  ? 'selected' : ''}>Deshabilitado</option>
+      </select>
+    </div>`;
+
+  document.getElementById('pk-modal').classList.add('visible');
+}
+
+function pkToggleCapacidadField() {
+  const modo = document.getElementById('pk-f-modo')?.value;
+  const wrap = document.getElementById('pk-f-cap-wrap');
+  if (wrap) wrap.style.display = modo === 'libre' ? 'none' : '';
+}
+
+function pkUpdateTiposAll() { /* solo mantiene estado via checkboxes, no necesita acción */ }
+
+function pkCloseModal() {
+  document.getElementById('pk-modal').classList.remove('visible');
+  pkModalCtx = null;
+}
+
+function pkModalSave() {
+  const nombre    = document.getElementById('pk-f-nombre')?.value.trim();
+  const modo      = document.getElementById('pk-f-modo')?.value;
+  const capVal    = document.getElementById('pk-f-capacidad')?.value;
+  const habVal    = document.getElementById('pk-f-habilitado')?.value;
+  const capacidad = modo === 'controlado' ? (parseInt(capVal) || null) : null;
+  const habilitado = habVal !== '0';
+
+  if (!nombre) { showToast('El nombre del lado es obligatorio.', 'error'); return; }
+  if (modo === 'controlado' && (!capacidad || capacidad < 1)) {
+    showToast('Ingresa una capacidad válida para el modo controlado.', 'error'); return;
+  }
+
+  // Tipos seleccionados
+  const checks = document.querySelectorAll('#pk-tipos-check input[type=checkbox]:checked');
+  const tipos  = Array.from(checks).map(c => c.value);
+  if (!tipos.length) { showToast('Selecciona al menos un tipo de vehículo.', 'error'); return; }
+
+  if (pkModalCtx?.mode === 'add') {
+    const newId = 'lado-' + Date.now();
+    pkConfig.lados.push({ id: newId, nombre, habilitado, modo, capacidad, tipos });
+    showToast(`Lado "${nombre}" agregado`, 'success');
+  } else if (pkModalCtx?.mode === 'edit') {
+    const idx = pkConfig.lados.findIndex(l => l.id === pkModalCtx.ladoId);
+    if (idx >= 0) {
+      pkConfig.lados[idx] = { ...pkConfig.lados[idx], nombre, habilitado, modo, capacidad, tipos };
+      showToast(`Lado "${nombre}" actualizado`, 'success');
+    }
+  }
+
+  pkSave(pkConfig);
+  pkCloseModal();
+  pkRenderLados();
+}
+
+// ─── Override showSection para incluir parqueadero ────────────────────
+// El showSection original ya está overrideado más arriba; solo añadimos el caso.
+const _showSectionPrevRef = showSection;
+showSection = function(name, btn) {
+  _showSectionPrevRef(name, btn);
+  if (name === 'parqueadero') pkInit();
+};
