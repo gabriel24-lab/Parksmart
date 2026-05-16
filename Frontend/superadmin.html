@@ -114,6 +114,43 @@
     .reg-guardia-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 600px) { .reg-guardia-grid { grid-template-columns: 1fr; } }
     .reg-guardia-grid .full-width { grid-column: 1 / -1; }
+
+    /* ── Métricas ── */
+    .met-bar-wrap { display:flex; align-items:center; gap:10px; }
+    .met-bar-label { font-size:12px; color:rgba(255,255,255,0.65); min-width:90px; }
+    .met-bar-track { flex:1; height:8px; background:rgba(255,255,255,0.08); border-radius:4px; overflow:hidden; }
+    .met-bar-fill  { height:100%; border-radius:4px; transition:width 0.6s ease; }
+    .met-bar-count { font-size:12px; color:rgba(255,255,255,0.5); min-width:30px; text-align:right; }
+    .pico-chip { padding:10px 16px; border-radius:10px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); text-align:center; }
+    .pico-chip .hora { font-size:18px; font-weight:700; color:#fff; }
+    .pico-chip .total { font-size:11px; color:rgba(255,255,255,0.45); margin-top:2px; }
+
+    /* ── Búsqueda ── */
+    .busq-user-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10); border-radius:12px; padding:14px 18px; display:flex; align-items:center; gap:14px; transition:border-color 0.2s; cursor:default; }
+    .busq-user-card:hover { border-color:rgba(255,255,255,0.22); }
+    .busq-av { width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#1a3d1f,#2FA440);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0; }
+    .busq-info { flex:1;min-width:0; }
+    .busq-nombre { font-size:14px;font-weight:600;color:#fff;margin:0 0 3px; }
+    .busq-meta { font-size:12px;color:rgba(255,255,255,0.45);display:flex;gap:10px;flex-wrap:wrap; }
+    .busq-dentro { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(76,175,80,0.15);border:0.5px solid rgba(76,175,80,0.4);color:#81c784; }
+    .busq-fuera  { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45); }
+    .busq-veh-chip { padding:4px 10px;border-radius:6px;font-size:11px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6); }
+
+    /* ── Alertas ── */
+    .alerta-card { border-radius:12px; padding:14px 18px; display:flex; align-items:flex-start; gap:14px; margin-bottom:10px; border:1px solid; }
+    .alerta-card.critico { background:rgba(244,67,54,0.10); border-color:rgba(244,67,54,0.35); }
+    .alerta-card.advertencia { background:rgba(255,152,0,0.10); border-color:rgba(255,152,0,0.35); }
+    .alerta-card.info { background:rgba(33,150,243,0.08); border-color:rgba(33,150,243,0.30); }
+    .alerta-icon { font-size:22px; flex-shrink:0; margin-top:2px; }
+    .alerta-card.critico .alerta-icon { color:#ef5350; }
+    .alerta-card.advertencia .alerta-icon { color:#ffa726; }
+    .alerta-card.info .alerta-icon { color:#42a5f5; }
+    .alerta-titulo { font-size:14px; font-weight:600; color:#fff; margin-bottom:3px; }
+    .alerta-desc { font-size:12px; color:rgba(255,255,255,0.55); }
+    .alerta-empty { text-align:center;padding:50px;color:rgba(255,255,255,0.25); }
+
+    /* ── Exportar ── */
+    .stat-card.purple .stat-icon { background:rgba(156,39,176,0.18);color:#ce93d8; }
   </style>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
@@ -158,6 +195,22 @@
       </button>
       <button class="nav-item" onclick="showSection('registrar', this)">
         <i class="bi bi-person-plus-fill"></i><span>Registrar Usuario</span>
+      </button>
+      <button class="nav-item" onclick="showSection('metricas', this)">
+        <i class="bi bi-bar-chart-line-fill"></i><span>Métricas</span>
+      </button>
+      <button class="nav-item" onclick="showSection('busqueda', this)">
+        <i class="bi bi-search-heart-fill"></i><span>Búsqueda Global</span>
+      </button>
+      <button class="nav-item" onclick="showSection('alertas', this)">
+        <i class="bi bi-bell-fill"></i><span>Alertas</span>
+        <span id="nav-alert-badge" style="display:none;margin-left:auto;background:#ef5350;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0;">0</span>
+      </button>
+      <button class="nav-item" onclick="showSection('exportar', this)">
+        <i class="bi bi-download"></i><span>Exportar Reportes</span>
+      </button>
+      <button class="nav-item" onclick="showSection('auditoria', this)">
+        <i class="bi bi-journal-text"></i><span>Log de Auditoría</span>
       </button>
       <div class="nav-divider"></div>
       <button class="nav-item" onclick="showSection('perfil', this)">
@@ -729,6 +782,221 @@
         <button class="btn-save" onclick="registrarUsuario()" style="margin-top:20px;">
           <i class="bi bi-person-check-fill"></i> Registrar usuario
         </button>
+      </div>
+    </section>
+
+
+    <!-- ══ MÉTRICAS ══ -->
+    <section id="section-metricas" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Dashboard de <span class="hl">Métricas</span></h1>
+          <p class="section-sub">Estadísticas generales del sistema Parksmart</p>
+        </div>
+        <button class="btn-save" onclick="cargarMetricas()" style="padding:9px 16px;font-size:13px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.18);">
+          <i class="bi bi-arrow-clockwise"></i> Actualizar
+        </button>
+      </div>
+
+      <!-- Stats rápidos -->
+      <div class="stats-grid" style="margin-bottom:20px;" id="met-stats-grid">
+        <div class="stat-card blue"><div class="stat-icon"><i class="bi bi-people-fill"></i></div><div class="stat-info"><span class="stat-number" id="met-total-activos">—</span><span class="stat-label">Usuarios activos</span></div></div>
+        <div class="stat-card green"><div class="stat-icon"><i class="bi bi-car-front-fill"></i></div><div class="stat-info"><span class="stat-number" id="met-total-vehiculos">—</span><span class="stat-label">Vehículos registrados</span></div></div>
+        <div class="stat-card yellow"><div class="stat-icon"><i class="bi bi-box-arrow-in-right"></i></div><div class="stat-info"><span class="stat-number" id="met-reg-hoy">—</span><span class="stat-label">Ingresos hoy</span></div></div>
+        <div class="stat-card blue"><div class="stat-icon"><i class="bi bi-calendar-week"></i></div><div class="stat-info"><span class="stat-number" id="met-reg-7d">—</span><span class="stat-label">Últimos 7 días</span></div></div>
+        <div class="stat-card green"><div class="stat-icon"><i class="bi bi-calendar-month"></i></div><div class="stat-info"><span class="stat-number" id="met-reg-30d">—</span><span class="stat-label">Últimos 30 días</span></div></div>
+        <div class="stat-card purple"><div class="stat-icon"><i class="bi bi-person-plus"></i></div><div class="stat-info"><span class="stat-number" id="met-nuevos-hoy">—</span><span class="stat-label">Nuevos usuarios hoy</span></div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="two-col-grid">
+        <!-- Distribución por rol -->
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-pie-chart-fill"></i> Usuarios por rol</div>
+          <div id="met-roles" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;"></div>
+        </div>
+        <!-- Distribución por vehículo -->
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Vehículos por tipo</div>
+          <div id="met-vehiculos-tipo" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;"></div>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="panel-title"><i class="bi bi-clock-fill"></i> Horas pico (últimos 30 días)</div>
+        <div id="met-picos" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;"></div>
+      </div>
+    </section>
+
+    <!-- ══ BÚSQUEDA GLOBAL ══ -->
+    <section id="section-busqueda" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Búsqueda <span class="hl">Global</span></h1>
+          <p class="section-sub">Busca usuarios por nombre, documento, QR o placa de vehículo</p>
+        </div>
+      </div>
+
+      <div class="glass-panel" style="margin-bottom:20px;">
+        <div style="display:flex;gap:10px;">
+          <div class="search-wrap" style="flex:1;">
+            <i class="bi bi-search"></i>
+            <input type="text" id="global-search-input" placeholder="Nombre, documento, QR o placa..." oninput="buscarGlobal(this.value)" style="width:100%;"/>
+          </div>
+          <button class="btn-save" onclick="buscarGlobal(document.getElementById('global-search-input').value)" style="padding:9px 16px;font-size:13px;">
+            <i class="bi bi-search"></i> Buscar
+          </button>
+        </div>
+      </div>
+
+      <div id="busqueda-resultados">
+        <div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);">
+          <i class="bi bi-search" style="font-size:40px;display:block;margin-bottom:12px;"></i>
+          Escribe al menos 2 caracteres para buscar
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ ALERTAS ══ -->
+    <section id="section-alertas" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Alertas del <span class="hl">Sistema</span></h1>
+          <p class="section-sub">Parqueadero lleno, vehículos con +8h, anomalías</p>
+        </div>
+        <button class="btn-save" onclick="cargarAlertas()" style="padding:9px 16px;font-size:13px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.18);">
+          <i class="bi bi-arrow-clockwise"></i> Actualizar
+        </button>
+      </div>
+      <div id="alertas-container">
+        <div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);">
+          <i class="bi bi-hourglass-split" style="font-size:36px;display:block;margin-bottom:12px;"></i>
+          Cargando alertas...
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ EXPORTAR REPORTES ══ -->
+    <section id="section-exportar" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Exportar <span class="hl">Reportes</span></h1>
+          <p class="section-sub">Descarga historial CSV por rango de fechas</p>
+        </div>
+      </div>
+
+      <div class="glass-panel" style="margin-bottom:20px;">
+        <div class="panel-title"><i class="bi bi-calendar-range-fill"></i> Seleccionar rango de fechas</div>
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-top:16px;">
+          <div>
+            <label style="font-size:12px;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;">Desde</label>
+            <input type="date" id="exp-desde" style="padding:9px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.92);font-size:13px;color:#333;outline:none;"/>
+          </div>
+          <div>
+            <label style="font-size:12px;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;">Hasta</label>
+            <input type="date" id="exp-hasta" style="padding:9px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.92);font-size:13px;color:#333;outline:none;"/>
+          </div>
+          <button class="btn-save" onclick="previewExportar()" style="padding:10px 20px;font-size:13px;">
+            <i class="bi bi-eye"></i> Previsualizar
+          </button>
+        </div>
+      </div>
+
+      <div id="exp-preview" style="display:none;">
+        <div class="glass-panel" style="margin-bottom:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+            <div class="panel-title" style="margin-bottom:0;"><i class="bi bi-table"></i> <span id="exp-preview-title">Registros</span></div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn-save" onclick="exportarCSV()" style="padding:9px 16px;font-size:13px;background:rgba(76,175,80,0.2);border-color:rgba(76,175,80,0.5);">
+                <i class="bi bi-filetype-csv"></i> Descargar CSV
+              </button>
+              <button class="btn-save" onclick="exportarExcelRango()" style="padding:9px 16px;font-size:13px;">
+                <i class="bi bi-file-earmark-excel-fill"></i> Descargar Excel
+              </button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="history-table">
+              <thead><tr>
+                <th>#</th><th>Usuario</th><th>Doc.</th><th>Vehículo</th><th>Placa/Modelo</th><th>Lado</th><th>Entrada</th><th>Salida</th><th>Duración</th><th>Estado</th>
+              </tr></thead>
+              <tbody id="exp-tbody"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:rgba(255,255,255,0.4);" id="exp-count"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ LOG DE AUDITORÍA ══ -->
+    <section id="section-auditoria" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Log de <span class="hl">Auditoría</span></h1>
+          <p class="section-sub">Quién cambió qué y cuándo — acciones de admin, trazabilidad</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn-save" onclick="cargarAuditoria()" style="padding:9px 16px;font-size:13px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.18);">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar
+          </button>
+          <button class="btn-save" onclick="exportarAuditoriaCSV()" style="padding:9px 16px;font-size:13px;background:rgba(76,175,80,0.15);border:1.5px solid rgba(76,175,80,0.35);">
+            <i class="bi bi-download"></i> Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="glass-panel" style="margin-bottom:16px;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+          <div style="flex:1;min-width:160px;">
+            <label style="font-size:12px;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;"><i class="bi bi-funnel"></i> Tipo de acción</label>
+            <select id="aud-filtro-tipo" onchange="filtrarAuditoria()" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:#fff;font-size:13px;">
+              <option value="">Todas las acciones</option>
+              <option value="entrada">Entradas</option>
+              <option value="salida">Salidas</option>
+              <option value="registro">Registro de usuario</option>
+              <option value="rol">Cambio de rol</option>
+              <option value="toggle">Activar/Desactivar</option>
+            </select>
+          </div>
+          <div style="flex:1;min-width:160px;">
+            <label style="font-size:12px;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;"><i class="bi bi-calendar"></i> Desde</label>
+            <input type="date" id="aud-desde" onchange="filtrarAuditoria()" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.92);color:#333;font-size:13px;box-sizing:border-box;"/>
+          </div>
+          <div style="flex:1;min-width:160px;">
+            <label style="font-size:12px;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;"><i class="bi bi-calendar-check"></i> Hasta</label>
+            <input type="date" id="aud-hasta" onchange="filtrarAuditoria()" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.92);color:#333;font-size:13px;box-sizing:border-box;"/>
+          </div>
+          <div style="flex:2;min-width:200px;">
+            <label style="font-size:12px;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;"><i class="bi bi-search"></i> Buscar usuario/acción</label>
+            <input type="text" id="aud-buscar" placeholder="Nombre, documento..." oninput="filtrarAuditoria()" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:#fff;font-size:13px;box-sizing:border-box;"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="glass-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div class="panel-title" style="margin-bottom:0;"><i class="bi bi-list-ul"></i> Registro de actividad</div>
+          <span id="aud-count" style="font-size:12px;color:rgba(255,255,255,0.4);"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="history-table">
+            <thead><tr>
+              <th>Fecha / Hora</th>
+              <th>Actor</th>
+              <th>Acción</th>
+              <th>Afectado</th>
+              <th>Detalle</th>
+            </tr></thead>
+            <tbody id="aud-tbody">
+              <tr><td colspan="5" style="text-align:center;padding:40px;opacity:.4;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:8px;">
+          <span id="aud-page-info" style="font-size:12px;color:rgba(255,255,255,0.35);"></span>
+          <div id="aud-page-btns" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+        </div>
       </div>
     </section>
 

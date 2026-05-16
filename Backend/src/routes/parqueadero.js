@@ -599,8 +599,6 @@ router.post('/admin-salida', requireRol('admin', 'guardia', 'superadmin'), async
   }
 });
 
-module.exports = router;
-
 // ══════════════════════════════════════════════════════════════════════
 // ── ENDPOINTS EXCLUSIVOS SUPERADMIN ──────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════
@@ -766,3 +764,248 @@ router.put('/usuarios/:id/rol', requireRol('superadmin'), async (req, res) => {
     return res.status(500).json({ ok: false, message: 'Error interno.' });
   }
 });
+
+
+// ── GET /api/parqueadero/metricas ─────────────────────────────────────
+// Dashboard de métricas: totales generales del sistema
+router.get('/metricas', requireRol('superadmin'), async (req, res) => {
+  try {
+    const [usuariosR, vehiculosR, registrosR, picosR, tiposR] = await Promise.all([
+      query(`SELECT
+        COUNT(*) FILTER (WHERE activo = true)  AS total_activos,
+        COUNT(*) FILTER (WHERE activo = false) AS total_inactivos,
+        COUNT(*) FILTER (WHERE rol = 'aprendiz')   AS aprendices,
+        COUNT(*) FILTER (WHERE rol = 'funcionario') AS funcionarios,
+        COUNT(*) FILTER (WHERE rol = 'instructor')  AS instructores,
+        COUNT(*) FILTER (WHERE rol IN ('admin','guardia')) AS guardias,
+        COUNT(*) FILTER (WHERE activo = true AND created_at::date = (NOW() AT TIME ZONE 'America/Bogota')::date) AS nuevos_hoy
+        FROM usuarios`),
+      query(`SELECT COUNT(*) AS total_vehiculos,
+        COUNT(*) FILTER (WHERE tv.nombre = 'Auto')        AS autos,
+        COUNT(*) FILTER (WHERE tv.nombre = 'Motocicleta') AS motos,
+        COUNT(*) FILTER (WHERE tv.nombre = 'Bicicleta')   AS bicicletas
+        FROM vehiculos v JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
+        WHERE v.activo = true`),
+      query(`SELECT
+        COUNT(*) AS total_registros,
+        COUNT(*) FILTER (WHERE (fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::date = (NOW() AT TIME ZONE 'America/Bogota')::date) AS hoy,
+        COUNT(*) FILTER (WHERE (fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::date >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '7 days')::date) AS ultimos_7_dias,
+        COUNT(*) FILTER (WHERE (fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::date >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '30 days')::date) AS ultimos_30_dias
+        FROM registros_uso`),
+      query(`SELECT EXTRACT(HOUR FROM (fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))::INT AS hora,
+        COUNT(*) AS total
+        FROM registros_uso
+        WHERE (fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::date >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '30 days')::date
+        GROUP BY hora ORDER BY total DESC LIMIT 3`),
+      query(`SELECT tv.nombre AS tipo, COUNT(*) AS total
+        FROM registros_uso r JOIN vehiculos v ON v.id_vehiculo = r.id_vehiculo
+        JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
+        WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::date >= (NOW() AT TIME ZONE 'America/Bogota' - INTERVAL '30 days')::date
+        GROUP BY tv.nombre ORDER BY total DESC`),
+    ]);
+    return res.json({ ok: true, data: {
+      usuarios:  usuariosR.rows[0],
+      vehiculos: vehiculosR.rows[0],
+      registros: registrosR.rows[0],
+      picos_hora: picosR.rows,
+      por_tipo:   tiposR.rows,
+    }});
+  } catch (err) {
+    console.error('metricas:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+// ── GET /api/parqueadero/buscar ────────────────────────────────────────
+// Búsqueda global: usuarios por nombre, documento, placa o QR
+router.get('/buscar', requireRol('superadmin'), async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (q.length < 2) return res.status(400).json({ ok: false, message: 'Mínimo 2 caracteres.' });
+  try {
+    const [uRes, vRes] = await Promise.all([
+      query(`SELECT u.id_usuario, u.nombre_completo, u.numero_id, u.tipo_id, u.rol, u.activo,
+              u.qr_code, u.email, c.nombre AS centro_nombre,
+              EXISTS(SELECT 1 FROM registros_uso r WHERE r.id_usuario = u.id_usuario AND r.estado = 'activo') AS dentro
+             FROM usuarios u LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
+             WHERE LOWER(u.nombre_completo) LIKE LOWER(@q) OR u.numero_id LIKE @q2 OR LOWER(u.qr_code) LIKE LOWER(@q)
+             ORDER BY u.activo DESC, u.nombre_completo LIMIT 20`,
+        { q: '%'+q+'%', q2: '%'+q+'%' }),
+      query(`SELECT v.id_vehiculo, v.id_usuario, v.placa, v.modelo, v.color, tv.nombre AS tipo,
+              u.nombre_completo, u.numero_id
+             FROM vehiculos v JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
+             JOIN usuarios u ON u.id_usuario = v.id_usuario
+             WHERE LOWER(v.placa) LIKE LOWER(@q) OR LOWER(v.modelo) LIKE LOWER(@q)
+             AND v.activo = true
+             ORDER BY v.placa LIMIT 10`,
+        { q: '%'+q+'%' }),
+    ]);
+    return res.json({ ok: true, data: { usuarios: uRes.rows, vehiculos: vRes.rows } });
+  } catch (err) {
+    console.error('buscar:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+// ── GET /api/parqueadero/alertas ──────────────────────────────────────
+// Alertas del sistema: parqueadero lleno, vehículos con +8h, etc.
+router.get('/alertas', requireRol('superadmin'), async (req, res) => {
+  try {
+    const [cuposR, vehiculosLargosR, sinSalidaR] = await Promise.all([
+      query(`SELECT l.nombre AS lado, c.ocupados, l.capacidad,
+              ROUND(c.ocupados::numeric / NULLIF(l.capacidad,0) * 100) AS pct
+             FROM cupos c JOIN lados l ON l.id_lado = c.id_lado`),
+      query(`SELECT r.id_registro, u.nombre_completo, u.numero_id,
+              COALESCE(v.placa, v.modelo) AS identificador, tv.nombre AS tipo_vehiculo,
+              r.fecha_entrada,
+              EXTRACT(EPOCH FROM (NOW() - r.fecha_entrada)) / 3600 AS horas_dentro
+             FROM registros_uso r
+             JOIN usuarios u ON u.id_usuario = r.id_usuario
+             JOIN vehiculos v ON v.id_vehiculo = r.id_vehiculo
+             JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
+             WHERE r.estado = 'activo'
+               AND r.fecha_entrada < NOW() - INTERVAL '8 hours'
+             ORDER BY r.fecha_entrada ASC`),
+      query(`SELECT COUNT(*) AS sin_salida
+             FROM registros_uso WHERE estado = 'activo'`),
+    ]);
+    const alertas = [];
+    cuposR.rows.forEach(row => {
+      if (Number(row.pct) >= 90)
+        alertas.push({ tipo: 'capacidad', nivel: Number(row.pct) >= 100 ? 'critico' : 'advertencia',
+          titulo: `Lado ${row.lado} al ${row.pct}%`,
+          descripcion: `${row.ocupados} de ${row.capacidad} espacios ocupados.` });
+    });
+    vehiculosLargosR.rows.forEach(row => {
+      alertas.push({ tipo: 'tiempo', nivel: 'info',
+        titulo: `Vehículo +${Math.floor(row.horas_dentro)}h dentro`,
+        descripcion: `${row.nombre_completo} — ${row.identificador} (${row.tipo_vehiculo})`,
+        detalle: row });
+    });
+    return res.json({ ok: true, data: { alertas, sin_salida: sinSalidaR.rows[0].sin_salida } });
+  } catch (err) {
+    console.error('alertas:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+// ── GET /api/parqueadero/exportar ─────────────────────────────────────
+// Exportar historial por rango de fechas
+router.get('/exportar', requireRol('superadmin'), async (req, res) => {
+  const { desde, hasta } = req.query;
+  if (!desde || !hasta) return res.status(400).json({ ok: false, message: 'Parámetros desde y hasta requeridos.' });
+  try {
+    const result = await query(
+      `SELECT r.id_registro,
+              u.nombre_completo, u.numero_id, u.tipo_id, u.rol,
+              tv.nombre AS tipo_vehiculo,
+              COALESCE(v.placa, v.modelo) AS identificador, v.color,
+              l.nombre AS lado,
+              r.fecha_entrada, r.fecha_salida,
+              EXTRACT(EPOCH FROM (r.fecha_salida - r.fecha_entrada)) / 60 AS duracion_min,
+              r.estado
+       FROM registros_uso r
+       JOIN usuarios       u  ON u.id_usuario  = r.id_usuario
+       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
+       JOIN lados          l  ON l.id_lado     = r.id_lado
+       WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
+             BETWEEN @desde::DATE AND @hasta::DATE
+       ORDER BY r.fecha_entrada DESC`,
+      { desde, hasta }
+    );
+    return res.json({ ok: true, data: result.rows.map(r => ({
+      ...r,
+      fecha_entrada: r.fecha_entrada ? new Date(r.fecha_entrada).toISOString() : null,
+      fecha_salida:  r.fecha_salida  ? new Date(r.fecha_salida).toISOString()  : null,
+    }))});
+  } catch (err) {
+    console.error('exportar:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+
+// ── GET /api/parqueadero/auditoria ────────────────────────────────────
+// Log de auditoría: entradas/salidas + registros de usuario por rango
+router.get('/auditoria', requireRol('superadmin'), async (req, res) => {
+  const { desde, hasta, tipo, q } = req.query;
+  const fechaDesde = desde || new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0,10);
+  const fechaHasta = hasta || new Date().toISOString().slice(0,10);
+  try {
+    const params = { desde: fechaDesde, hasta: fechaHasta };
+
+    // Entradas y salidas del parqueadero
+    let registros = [];
+    if (!tipo || tipo === 'entrada' || tipo === 'salida') {
+      const r = await query(
+        `SELECT
+          r.id_registro::text AS id,
+          r.fecha_entrada AS fecha,
+          CASE WHEN r.fecha_salida IS NOT NULL THEN 'salida' ELSE 'entrada' END AS tipo_accion,
+          u.nombre_completo AS actor,
+          u.numero_id AS actor_doc,
+          u.rol AS actor_rol,
+          COALESCE(v.placa, v.modelo, 'Vehículo') AS afectado,
+          CONCAT(tv.nombre, ' · Lado ', l.nombre) AS detalle
+        FROM registros_uso r
+        JOIN usuarios u ON u.id_usuario = r.id_usuario
+        JOIN vehiculos v ON v.id_vehiculo = r.id_vehiculo
+        JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
+        JOIN lados l ON l.id_lado = r.id_lado
+        WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
+              BETWEEN @desde::DATE AND @hasta::DATE
+        ORDER BY r.fecha_entrada DESC
+        LIMIT 500`, params);
+      // Si filtra por tipo: solo entrada (sin salida registrada) o salida
+      registros = r.rows.filter(row => {
+        if (tipo === 'entrada') return row.tipo_accion === 'entrada';
+        if (tipo === 'salida')  return row.tipo_accion === 'salida';
+        return true;
+      }).map(row => ({ ...row, fecha: row.fecha }));
+    }
+
+    // Registros de nuevas cuentas
+    let regUsuarios = [];
+    if (!tipo || tipo === 'registro') {
+      const r = await query(
+        `SELECT
+          u.id_usuario::text AS id,
+          u.fecha_registro AS fecha,
+          'registro' AS tipo_accion,
+          'Sistema / Admin' AS actor,
+          '' AS actor_doc,
+          'sistema' AS actor_rol,
+          u.nombre_completo AS afectado,
+          CONCAT(u.rol, ' · ', COALESCE(c.nombre, 'Sin centro')) AS detalle
+        FROM usuarios u
+        LEFT JOIN centros_formacion c ON c.id_centro = u.id_centro
+        WHERE u.fecha_registro IS NOT NULL
+          AND (u.fecha_registro AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
+              BETWEEN @desde::DATE AND @hasta::DATE
+        ORDER BY u.fecha_registro DESC
+        LIMIT 200`, params);
+      regUsuarios = r.rows;
+    }
+
+    // Combinar y ordenar por fecha desc
+    let todos = [...registros, ...regUsuarios].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+
+    // Filtro de texto
+    if (q && q.trim().length >= 2) {
+      const lq = q.trim().toLowerCase();
+      todos = todos.filter(e =>
+        (e.actor||'').toLowerCase().includes(lq) ||
+        (e.actor_doc||'').toLowerCase().includes(lq) ||
+        (e.afectado||'').toLowerCase().includes(lq) ||
+        (e.detalle||'').toLowerCase().includes(lq)
+      );
+    }
+
+    return res.json({ ok: true, data: todos });
+  } catch (err) {
+    console.error('auditoria:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+module.exports = router;

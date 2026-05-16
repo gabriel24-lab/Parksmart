@@ -438,6 +438,7 @@ function showSection(name, btn) {
   }
   if (name === 'metricas') cargarMetricas();
   if (name === 'alertas')  cargarAlertas();
+  if (name === 'auditoria') { cargarAuditoria(); }
   if (name === 'busqueda') {
     const inp = document.getElementById('global-search-input');
     if (inp && !inp.value) {
@@ -814,4 +815,137 @@ document.addEventListener('DOMContentLoaded', () => {
     expDesde.value = d.toISOString().slice(0,10);
   }
   setInterval(cargarAlertas, 300000); // refrescar alertas cada 5 min
+  // Fechas por defecto en auditoría (últimos 7 días)
+  const audHoy = new Date().toISOString().slice(0,10);
+  const audHasta = document.getElementById('aud-hasta');
+  const audDesde = document.getElementById('aud-desde');
+  if (audHasta) audHasta.value = audHoy;
+  if (audDesde) { const d7 = new Date(); d7.setDate(d7.getDate()-7); audDesde.value = d7.toISOString().slice(0,10); }
 });
+
+// ═══════════════════════════════════════════════
+// ══ 5. LOG DE AUDITORÍA ══
+// ═══════════════════════════════════════════════
+let _audRegistros = [];
+const AUD_PER_PAGE = 30;
+let _audPage = 1;
+
+const AUD_TIPO_CFG = {
+  entrada:  { icon:'bi-box-arrow-in-right', color:'#42a5f5', label:'Entrada'   },
+  salida:   { icon:'bi-box-arrow-right',    color:'#66bb6a', label:'Salida'    },
+  registro: { icon:'bi-person-plus-fill',   color:'#ce93d8', label:'Registro'  },
+  rol:      { icon:'bi-shuffle',            color:'#ffa726', label:'Cambio Rol'},
+  toggle:   { icon:'bi-toggle2-on',         color:'#78909c', label:'Activar/Des'},
+};
+
+async function cargarAuditoria() {
+  const desde = document.getElementById('aud-desde')?.value;
+  const hasta  = document.getElementById('aud-hasta')?.value;
+  const tipo   = document.getElementById('aud-filtro-tipo')?.value || '';
+  const q      = document.getElementById('aud-buscar')?.value || '';
+  const tbody  = document.getElementById('aud-tbody');
+  if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;opacity:.45;"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>`;
+  try {
+    let url = '/parqueadero/auditoria?';
+    if (desde) url += `desde=${desde}&`;
+    if (hasta)  url += `hasta=${hasta}&`;
+    if (tipo)   url += `tipo=${tipo}&`;
+    if (q.trim().length >= 2) url += `q=${encodeURIComponent(q.trim())}`;
+    const res  = await apiFetch(url);
+    if (!res) return;
+    const data = await res.json();
+    if (!data.ok) { showToast(data.message || 'Error cargando auditoría', 'error'); return; }
+    _audRegistros = data.data;
+    _audPage = 1;
+    renderAuditoria();
+  } catch (e) { console.warn('auditoria:', e); showToast('Error de conexión.', 'error'); }
+}
+
+function filtrarAuditoria() {
+  clearTimeout(window._audTimer);
+  window._audTimer = setTimeout(cargarAuditoria, 400);
+}
+
+function renderAuditoria() {
+  const tbody    = document.getElementById('aud-tbody');
+  const countEl  = document.getElementById('aud-count');
+  const pageInfo = document.getElementById('aud-page-info');
+  const pageBtns = document.getElementById('aud-page-btns');
+  if (!tbody) return;
+
+  const total   = _audRegistros.length;
+  const pages   = Math.max(1, Math.ceil(total / AUD_PER_PAGE));
+  _audPage      = Math.min(_audPage, pages);
+  const start   = (_audPage - 1) * AUD_PER_PAGE;
+  const slice   = _audRegistros.slice(start, start + AUD_PER_PAGE);
+
+  if (countEl)  countEl.textContent  = total + ' eventos';
+  if (pageInfo) pageInfo.textContent = `Página ${_audPage} de ${pages} · ${total} resultados`;
+
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;opacity:.4;"><i class="bi bi-journal-x" style="font-size:28px;display:block;margin-bottom:10px;"></i>Sin eventos en este rango</td></tr>`;
+  } else {
+    tbody.innerHTML = slice.map(e => {
+      const cfg   = AUD_TIPO_CFG[e.tipo_accion] || { icon:'bi-dot', color:'#aaa', label: e.tipo_accion };
+      const fecha = fmtDT(e.fecha);
+      const rolBadge = e.actor_rol && e.actor_rol !== 'sistema'
+        ? `<span style="font-size:10px;padding:1px 7px;border-radius:20px;background:${SA_ROL_COLORS[e.actor_rol]||'#555'}22;color:${SA_ROL_COLORS[e.actor_rol]||'#aaa'};border:0.5px solid ${SA_ROL_COLORS[e.actor_rol]||'#555'}44;">${SA_ROL_LABELS[e.actor_rol]||e.actor_rol}</span>`
+        : '';
+      return `<tr>
+        <td style="font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">${fecha}</td>
+        <td>
+          <div style="font-size:13px;color:#fff;">${e.actor||'—'}</div>
+          <div style="display:flex;gap:5px;align-items:center;margin-top:2px;">
+            ${e.actor_doc ? `<span style="font-size:11px;color:rgba(255,255,255,0.35);">${e.actor_doc}</span>` : ''}
+            ${rolBadge}
+          </div>
+        </td>
+        <td>
+          <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;background:${cfg.color}18;border:0.5px solid ${cfg.color}44;color:${cfg.color};">
+            <i class="bi ${cfg.icon}"></i> ${cfg.label}
+          </span>
+        </td>
+        <td style="font-size:13px;color:rgba(255,255,255,0.8);">${e.afectado||'—'}</td>
+        <td style="font-size:12px;color:rgba(255,255,255,0.45);">${e.detalle||'—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Paginación
+  if (pageBtns) {
+    let btns = '';
+    btns += `<button onclick="audGoPage(${_audPage-1})" ${_audPage===1?'disabled':''} style="padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:12px;" ${_audPage===1?'style="opacity:.4"':''}>‹ Ant</button>`;
+    for (let p = Math.max(1,_audPage-2); p <= Math.min(pages,_audPage+2); p++) {
+      btns += `<button onclick="audGoPage(${p})" style="padding:5px 12px;border-radius:8px;border:1px solid ${p===_audPage?'rgba(156,39,176,0.6)':'rgba(255,255,255,0.18)'};background:${p===_audPage?'rgba(156,39,176,0.25)':'rgba(255,255,255,0.06)'};color:#fff;cursor:pointer;font-size:12px;font-weight:${p===_audPage?'700':'400'};">${p}</button>`;
+    }
+    btns += `<button onclick="audGoPage(${_audPage+1})" ${_audPage===pages?'disabled':''} style="padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:12px;">Sig ›</button>`;
+    pageBtns.innerHTML = btns;
+  }
+}
+
+function audGoPage(p) {
+  const pages = Math.max(1, Math.ceil(_audRegistros.length / AUD_PER_PAGE));
+  if (p < 1 || p > pages) return;
+  _audPage = p;
+  renderAuditoria();
+  document.getElementById('section-auditoria')?.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function exportarAuditoriaCSV() {
+  if (!_audRegistros.length) { showToast('Primero carga el log.', 'error'); return; }
+  const cols = ['Fecha','Actor','Documento','Rol','Tipo Acción','Afectado','Detalle'];
+  const rows = _audRegistros.map(e => [
+    e.fecha ? new Date(e.fecha).toLocaleString('es-CO',{timeZone:'America/Bogota'}) : '',
+    e.actor||'', e.actor_doc||'', e.actor_rol||'',
+    AUD_TIPO_CFG[e.tipo_accion]?.label || e.tipo_accion,
+    e.afectado||'', e.detalle||'',
+  ]);
+  const csv = [cols,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Auditoria_Parksmart_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('CSV de auditoría descargado', 'success');
+}
