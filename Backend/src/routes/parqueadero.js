@@ -22,8 +22,9 @@ function normalizeRegistroFechas(row) {
   };
 }
 
-// ── Lógica de entrada (equivalente al stored proc) ────────────────────
+// ── Lógica de entrada (dinámica: lee config del lado desde la BD) ──────
 async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
+  // 1. Verificar que no tenga ya una entrada activa
   const activeCheck = await client.query(
     `SELECT id_registro FROM registros_uso WHERE id_usuario = $1 AND estado = 'activo'`,
     [id_usuario]
@@ -31,39 +32,62 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
   if (activeCheck.rows.length > 0)
     throw new Error('Ya tienes una entrada activa en el parqueadero.');
 
-  // Verificar si el vehículo es bicicleta (id_tipo = 1)
-  // Las bicicletas NO consumen cupos — solo se contabilizan
+  // 2. Leer config dinámica del lado (habilitado, modo, tipos permitidos)
+  const ladoCheck = await client.query(
+    `SELECT l.habilitado, l.modo, l.id_centro
+     FROM lados l
+     WHERE l.id_lado = $1`,
+    [id_lado]
+  );
+  if (!ladoCheck.rows.length) throw new Error('Lado de parqueo no encontrado.');
+  const lado = ladoCheck.rows[0];
+  if (!lado.habilitado) throw new Error('Este lado del parqueadero está deshabilitado temporalmente.');
+
+  // 3. Leer tipo del vehículo
   const tipoCheck = await client.query(
-    `SELECT id_tipo FROM vehiculos WHERE id_vehiculo = $1`,
+    `SELECT v.id_tipo, tv.nombre AS tipo_nombre
+     FROM vehiculos v
+     JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
+     WHERE v.id_vehiculo = $1`,
     [id_vehiculo]
   );
-  const esBicicleta = tipoCheck.rows.length > 0 && Number(tipoCheck.rows[0].id_tipo) === 1;
+  if (!tipoCheck.rows.length) throw new Error('Vehículo no encontrado.');
+  const { id_tipo, tipo_nombre } = tipoCheck.rows[0];
 
-  // Solo el Lado A (id_lado=1) tiene cupos controlados. El Lado B es espacio abierto.
-  const esLadoA = Number(id_lado) === 1;
+  // 4. Verificar que el tipo está permitido en este lado
+  const tipoPermitido = await client.query(
+    `SELECT 1 FROM lados_tipos_permitidos WHERE id_lado = $1 AND id_tipo = $2`,
+    [id_lado, id_tipo]
+  );
+  if (!tipoPermitido.rows.length)
+    throw new Error(`Este lado no acepta vehículos de tipo "${tipo_nombre}".`);
 
-  if (!esBicicleta && esLadoA) {
-    // Verificar y descontar cupos solo para vehículos no-bicicleta en Lado A
+  // 5. Verificar cupos solo si el lado es controlado Y el tipo NO es bicicleta
+  const esBicicleta = Number(id_tipo) === 1;
+  const esControlado = lado.modo === 'controlado';
+
+  if (esControlado && !esBicicleta) {
     const cupoCheck = await client.query(
       `SELECT l.capacidad, c.ocupados
        FROM lados l JOIN cupos c ON c.id_lado = l.id_lado
        WHERE l.id_lado = $1`,
       [id_lado]
     );
-    if (!cupoCheck.rows.length) throw new Error('Lado de parqueo no encontrado.');
+    if (!cupoCheck.rows.length) throw new Error('Información de cupos no encontrada.');
     const { capacidad, ocupados } = cupoCheck.rows[0];
     if (Number(ocupados) >= Number(capacidad))
       throw new Error('No hay cupos disponibles en este lado del parqueadero.');
   }
 
+  // 6. Registrar la entrada
   const insert = await client.query(
     `INSERT INTO registros_uso (id_usuario, id_vehiculo, id_lado, estado)
      VALUES ($1, $2, $3, 'activo') RETURNING id_registro`,
     [id_usuario, id_vehiculo, id_lado]
   );
 
-  // Solo actualizar cupos si NO es bicicleta Y está en Lado A (controlado)
-  if (!esBicicleta && esLadoA) {
+  // 7. Descontar cupo si aplica
+  if (esControlado && !esBicicleta) {
     await client.query(
       `UPDATE cupos SET ocupados = ocupados + 1, ultima_actualizacion = NOW()
        WHERE id_lado = $1`,
@@ -76,9 +100,10 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
 // ── Lógica de salida ──────────────────────────────────────────────────
 async function registrarSalida(client, id_usuario) {
   const activeEntry = await client.query(
-    `SELECT r.id_registro, r.id_lado, r.fecha_entrada, v.id_tipo
+    `SELECT r.id_registro, r.id_lado, r.fecha_entrada, v.id_tipo, l.modo
      FROM registros_uso r
      JOIN vehiculos v ON v.id_vehiculo = r.id_vehiculo
+     JOIN lados     l ON l.id_lado     = r.id_lado
      WHERE r.id_usuario = $1 AND r.estado = 'activo'
      ORDER BY r.fecha_entrada DESC LIMIT 1`,
     [id_usuario]
@@ -86,10 +111,9 @@ async function registrarSalida(client, id_usuario) {
   if (!activeEntry.rows.length)
     throw new Error('No tienes una entrada activa en el parqueadero.');
 
-  const { id_registro, id_lado, fecha_entrada, id_tipo } = activeEntry.rows[0];
-  const esBicicleta = Number(id_tipo) === 1;
-  // Solo el Lado A (id_lado=1) tiene cupos controlados
-  const esLadoA = Number(id_lado) === 1;
+  const { id_registro, id_lado, id_tipo, modo } = activeEntry.rows[0];
+  const esBicicleta  = Number(id_tipo) === 1;
+  const esControlado = modo === 'controlado';
 
   await client.query(
     `UPDATE registros_uso
@@ -99,8 +123,8 @@ async function registrarSalida(client, id_usuario) {
     [id_registro]
   );
 
-  // Solo liberar cupo si NO es bicicleta Y estaba en Lado A (controlado)
-  if (!esBicicleta && esLadoA) {
+  // Liberar cupo solo si el lado es controlado y NO es bicicleta
+  if (esControlado && !esBicicleta) {
     await client.query(
       `UPDATE cupos
        SET ocupados = GREATEST(0, ocupados - 1), ultima_actualizacion = NOW()
@@ -124,60 +148,86 @@ router.get('/cupos', async (req, res) => {
 });
 
 // ── GET /api/parqueadero/ocupacion-rol ────────────────────────────────
+// Devuelve ocupación de todos los lados del centro del usuario.
+// Mantiene compatibilidad con dashboard: lado_a/lado_b siguen existiendo.
 router.get('/ocupacion-rol', async (req, res) => {
   try {
-    const rol = req.user.rol;
+    const rol       = req.user.rol;
+    const id_centro = req.user.id_centro || null;
 
-    const result = await query(
-      `SELECT l.id_lado, l.nombre AS lado, tv.nombre AS tipo, COUNT(*) AS cantidad
-       FROM registros_uso r
-       JOIN vehiculos     v  ON v.id_vehiculo = r.id_vehiculo
-       JOIN tipos_vehiculo tv ON tv.id_tipo   = v.id_tipo
-       JOIN lados         l  ON l.id_lado     = r.id_lado
-       WHERE r.estado = 'activo'
-       GROUP BY l.id_lado, l.nombre, tv.nombre
-       ORDER BY l.id_lado, tv.nombre`
+    // Config de lados del centro del usuario
+    const ladosConfig = await query(
+      `SELECT l.id_lado, l.nombre, l.modo, l.habilitado,
+              COALESCE(l.capacidad, 0) AS capacidad
+       FROM lados l
+       WHERE (@centro::int IS NULL OR l.id_centro = @centro)
+       ORDER BY l.id_lado`,
+      { centro: id_centro }
     );
 
-    const grupos = {};
-    result.rows.forEach(row => {
-      if (!grupos[row.id_lado]) grupos[row.id_lado] = {};
-      grupos[row.id_lado][row.tipo.toLowerCase()] = Number(row.cantidad);
+    // Ocupación real por lado y tipo
+    const ocupR = await query(
+      `SELECT r.id_lado, tv.nombre AS tipo, COUNT(*) AS cantidad
+       FROM registros_uso r
+       JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
+       JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
+       WHERE r.estado = 'activo'
+         AND (@centro::int IS NULL OR r.id_lado IN (
+               SELECT id_lado FROM lados WHERE id_centro = @centro))
+       GROUP BY r.id_lado, tv.nombre`,
+      { centro: id_centro }
+    );
+
+    const ocupMap = {};
+    ocupR.rows.forEach(r => {
+      if (!ocupMap[r.id_lado]) ocupMap[r.id_lado] = {};
+      ocupMap[r.id_lado][r.tipo.toLowerCase()] = Number(r.cantidad);
     });
 
-    const mapA = grupos[1] || {};  // Lado A = id_lado 1 (CONTROLADO)
-    const mapB = grupos[2] || {};  // Lado B = id_lado 2 (ABIERTO)
+    const lados = ladosConfig.rows.map(l => {
+      const tipos      = ocupMap[l.id_lado] || {};
+      const bicis      = tipos['bicicleta'] || 0;
+      const motos      = tipos['motocicleta'] || tipos['moto'] || 0;
+      const carros     = tipos['auto'] || tipos['carro'] || tipos['automóvil'] || 0;
+      const furgos     = tipos['furgoneta'] || 0;
+      const totalDentro    = bicis + motos + carros + furgos;
+      const cupoConsumido  = motos + carros + furgos;
+      return {
+        id_lado:     l.id_lado,
+        nombre:      l.nombre,
+        modo:        l.modo,
+        habilitado:  l.habilitado,
+        capacidad:   l.modo === 'controlado' ? Number(l.capacidad) : null,
+        ocupados:    l.modo === 'controlado' ? cupoConsumido : null,
+        disponibles: l.modo === 'controlado'
+          ? Math.max(0, Number(l.capacidad) - cupoConsumido)
+          : null,
+        dentro:      totalDentro,
+        carros, motos, bicicletas: bicis, furgonetas: furgos,
+      };
+    });
 
-    // Lado A: cupos son para carros, motos y furgonetas (bicicletas solo se cuentan)
-    const bicisA    = mapA['bicicleta'] || 0;
-    const totalA    = Object.values(mapA).reduce((s, v) => s + v, 0);
-    const ocupadosA = totalA - bicisA; // solo vehículos que consumen cupo
-    const CAPACIDAD_A = 21;
-
-    // Lado B: espacio abierto — solo conteo total por tipo
-    const totalB = Object.values(mapB).reduce((s, v) => s + v, 0);
+    // Retrocompatibilidad con CIGEC (id_lado 1 y 2)
+    const la = lados.find(l => l.id_lado === 1);
+    const lb = lados.find(l => l.id_lado === 2);
 
     return res.json({
       ok: true,
       data: {
         rol,
         vista: rol === 'aprendiz' ? 'aprendiz' : 'funcionario',
-        lado_a: {
-          ocupados:    ocupadosA,
-          capacidad:   CAPACIDAD_A,
-          disponibles: Math.max(0, CAPACIDAD_A - ocupadosA),
-          carros:      (mapA['auto'] || mapA['carro'] || mapA['automóvil'] || 0),
-          motos:       (mapA['motocicleta'] || mapA['moto'] || 0),
-          bicicletas:  bicisA,
-          furgonetas:  (mapA['furgoneta'] || 0),
-        },
-        lado_b: {
-          carros:      (mapB['auto'] || mapB['carro'] || mapB['automóvil'] || 0),
-          motos:       (mapB['motocicleta'] || mapB['moto'] || 0),
-          bicicletas:  (mapB['bicicleta'] || 0),
-          furgonetas:  (mapB['furgoneta'] || 0),
-          total:       totalB,
-        },
+        lados,
+        lado_a: la ? {
+          ocupados: la.ocupados ?? 0, capacidad: la.capacidad ?? 0,
+          disponibles: la.disponibles ?? 0,
+          carros: la.carros, motos: la.motos,
+          bicicletas: la.bicicletas, furgonetas: la.furgonetas,
+        } : null,
+        lado_b: lb ? {
+          carros: lb.carros, motos: lb.motos,
+          bicicletas: lb.bicicletas, furgonetas: lb.furgonetas,
+          total: lb.dentro,
+        } : null,
       },
     });
   } catch (err) {
@@ -258,7 +308,8 @@ router.post('/entrada', async (req, res) => {
     return res.status(201).json({ ok: true, message: 'Entrada registrada.', id_registro });
   } catch (err) {
     await client.query('ROLLBACK');
-    if (err.message?.includes('activa') || err.message?.includes('cupos'))
+    const biz = ['activa','cupos','deshabilitado','no acepta','no encontrado'];
+    if (biz.some(k => err.message?.toLowerCase().includes(k)))
       return res.status(409).json({ ok: false, message: err.message });
     console.error(err);
     return res.status(500).json({ ok: false, message: 'Error interno.' });

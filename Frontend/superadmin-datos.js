@@ -1031,74 +1031,36 @@ function exportarAuditoriaCSV() {
   showToast('CSV de auditoría descargado', 'success');
 }
 // ════════════════════════════════════════════════════════════
-// ══ GESTIÓN DE PARQUEADERO (superadmin) ══
+// ══ GESTIÓN DE PARQUEADERO (superadmin) — API REAL ══
 // ════════════════════════════════════════════════════════════
-// Estado local en memoria — espejo de lo que devuelve el backend.
-// Mientras el backend real no tenga endpoints de gestión de lados,
-// se usa localStorage como persistencia provisional (mismo dominio).
-// Cuando el backend esté listo, reemplazar pkLoad/pkSave con apiFetch.
-
-const PK_STORE_KEY = 'parksmart_pk_config';
-
-// ─── Estructura de dato por defecto (migrada del CIGEC actual) ────────
-function pkDefaultCentroConfig(id_centro) {
-  // El CIGEC (id=1) ya tiene Lado A y Lado B activos.
-  // Cualquier otro centro arranca sin lados.
-  if (String(id_centro) === '1') {
-    return {
-      id_centro,
-      lados: [
-        {
-          id: 'lado-1',
-          nombre: 'Lado A',
-          habilitado: true,
-          modo: 'controlado',        // 'controlado' | 'libre'
-          capacidad: 21,
-          tipos: ['Bicicleta', 'Moto', 'Carro'],
-        },
-        {
-          id: 'lado-2',
-          nombre: 'Lado B',
-          habilitado: true,
-          modo: 'libre',
-          capacidad: null,
-          tipos: ['Bicicleta', 'Moto', 'Carro'],
-        },
-      ],
-    };
-  }
-  return { id_centro, lados: [] };
-}
-
-function pkLoad(id_centro) {
-  try {
-    const raw = localStorage.getItem(PK_STORE_KEY);
-    const all = raw ? JSON.parse(raw) : {};
-    return all[String(id_centro)] || pkDefaultCentroConfig(id_centro);
-  } catch { return pkDefaultCentroConfig(id_centro); }
-}
-
-function pkSave(config) {
-  try {
-    const raw = localStorage.getItem(PK_STORE_KEY);
-    const all = raw ? JSON.parse(raw) : {};
-    all[String(config.id_centro)] = config;
-    localStorage.setItem(PK_STORE_KEY, JSON.stringify(all));
-  } catch { showToast('No se pudo guardar la configuración.', 'error'); }
-}
 
 // ─── Estado activo ────────────────────────────────────────────────────
-let pkConfig     = null;  // config del centro seleccionado
-let pkOcupacion  = {};    // { [id_lado]: { carros, motos, bicicletas } }
-let pkModalCtx   = null;  // { mode:'edit'|'add', ladoId? }
+let pkConfig    = null;   // { id_centro, lados: [...] }
+let pkModalCtx  = null;   // { mode:'edit'|'add', ladoId? }
 
 const TIPOS_DISPONIBLES = ['Bicicleta', 'Moto', 'Carro'];
 const TIPO_ICONS = { Bicicleta: 'bi-bicycle', Moto: 'bi-scooter', Carro: 'bi-car-front-fill' };
 
+// ─── Helpers API ─────────────────────────────────────────────────────
+async function pkApiGet(id_centro) {
+  const res  = await apiFetch(`/parqueadero/config/${id_centro}`);
+  if (!res) return null;
+  const data = await res.json();
+  if (!data.ok) { showToast(data.message || 'Error cargando configuración', 'error'); return null; }
+  // Normalizar: el backend devuelve {id, nombre, habilitado, modo, capacidad, tipos, ocupacion}
+  // El render usa lado.id y lado.tipos; el backend devuelve id_lado y tipos (array de nombres)
+  return {
+    id_centro: data.data.id_centro,
+    lados: (data.data.lados || []).map(l => ({
+      ...l,
+      id: l.id,  // ya viene como `id` desde el route
+    })),
+  };
+}
+
 // ─── Inicialización ───────────────────────────────────────────────────
 async function pkInit() {
   await pkCargarSelectCentros();
-  // Seleccionar el primer centro disponible
   const sel = document.getElementById('pk-centro-select');
   if (sel && sel.options.length > 1) {
     sel.selectedIndex = 1;
@@ -1132,35 +1094,18 @@ async function pkCargarCentro() {
     return;
   }
 
-  pkConfig = pkLoad(id);
+  // Mostrar loading
+  document.getElementById('pk-lados-container').innerHTML =
+    `<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);">
+       <i class="bi bi-arrow-repeat" style="font-size:28px;display:block;margin-bottom:8px;animation:spin 1s linear infinite;"></i>
+       Cargando configuración...
+     </div>`;
 
-  // Traer ocupación real desde el backend (registros activos)
-  try {
-    const res  = await apiFetch('/parqueadero/ocupacion-rol');
-    if (res) {
-      const data = await res.json();
-      if (data.ok && data.data) {
-        const { lado_a, lado_b } = data.data;
-        pkOcupacion = {
-          'lado-1': {
-            carros:      lado_a?.carros      || 0,
-            motos:       lado_a?.motos       || 0,
-            bicicletas:  lado_a?.bicicletas  || 0,
-            ocupados:    lado_a?.ocupados    || 0,
-          },
-          'lado-2': {
-            carros:      lado_b?.carros      || 0,
-            motos:       lado_b?.motos       || 0,
-            bicicletas:  lado_b?.bicicletas  || 0,
-            ocupados:    (lado_b?.carros||0) + (lado_b?.motos||0),
-          },
-        };
-      }
-    }
-  } catch {}
-
+  pkConfig = await pkApiGet(id);
+  if (!pkConfig) return;
   pkRenderLados();
 }
+
 
 // ─── Render principal ─────────────────────────────────────────────────
 function pkRenderLados() {
@@ -1184,9 +1129,12 @@ function pkRenderLados() {
 }
 
 function pkRenderLadoCard(lado) {
-  const occ     = pkOcupacion[lado.id] || {};
-  const dentro  = (occ.carros||0) + (occ.motos||0) + (occ.bicicletas||0);
-  const ocupados = occ.ocupados !== undefined ? occ.ocupados : ((occ.carros||0) + (occ.motos||0));
+  // El backend ya incluye ocupacion dentro del objeto lado
+  const occ      = lado.ocupacion || {};
+  const dentro   = (occ.bicicleta||0) + (occ.motocicleta||occ.moto||0) + (occ.auto||occ.carro||0) + (occ.furgoneta||0);
+  const ocupados = lado.ocupados !== null && lado.ocupados !== undefined
+    ? lado.ocupados
+    : ((occ.auto||occ.carro||0) + (occ.motocicleta||occ.moto||0) + (occ.furgoneta||0));
 
   // Badge de modo
   const modeBadge = !lado.habilitado
@@ -1274,7 +1222,7 @@ function pkRenderLadoCard(lado) {
 
 // ─── Toggle habilitar/deshabilitar ───────────────────────────────────
 function pkToggleLado(ladoId) {
-  const lado = pkConfig?.lados.find(l => l.id === ladoId);
+  const lado = pkConfig?.lados.find(l => String(l.id) === String(ladoId));
   if (!lado) return;
   const accion = lado.habilitado ? 'deshabilitar' : 'habilitar';
   openSAModal({
@@ -1284,11 +1232,15 @@ function pkToggleLado(ladoId) {
            ${lado.habilitado ? '<br><small style="color:rgba(255,255,255,0.4);">Los usuarios no podrán registrar entradas en este lado mientras esté deshabilitado.</small>' : ''}`,
     btnClass: lado.habilitado ? 'warn' : 'ok',
     btnLabel: accion.charAt(0).toUpperCase() + accion.slice(1),
-    onConfirm: () => {
-      lado.habilitado = !lado.habilitado;
-      pkSave(pkConfig);
-      pkRenderLados();
-      showToast(`Lado "${lado.nombre}" ${lado.habilitado ? 'habilitado' : 'deshabilitado'}`, 'success');
+    onConfirm: async () => {
+      try {
+        const res  = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados/${ladoId}/toggle`, { method: 'PUT' });
+        const data = await res.json();
+        if (!data.ok) { showToast(data.message || 'Error al cambiar estado', 'error'); return; }
+        pkConfig = { id_centro: pkConfig.id_centro, lados: (data.data?.lados || []) };
+        pkRenderLados();
+        showToast(data.message || 'Estado actualizado', 'success');
+      } catch { showToast('Error de conexión', 'error'); }
     },
   });
 }
@@ -1302,11 +1254,15 @@ function pkEliminarLado(ladoId, nombre) {
            <small style="color:rgba(244,67,54,0.7);">Los registros de uso históricos no se verán afectados.</small>`,
     btnClass: 'danger',
     btnLabel: 'Eliminar',
-    onConfirm: () => {
-      pkConfig.lados = pkConfig.lados.filter(l => l.id !== ladoId);
-      pkSave(pkConfig);
-      pkRenderLados();
-      showToast(`Lado "${nombre}" eliminado`, 'info');
+    onConfirm: async () => {
+      try {
+        const res  = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados/${ladoId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.ok) { showToast(data.message || 'No se pudo eliminar', 'error'); return; }
+        pkConfig = { id_centro: pkConfig.id_centro, lados: (data.data?.lados || []) };
+        pkRenderLados();
+        showToast(data.message || `Lado "${nombre}" eliminado`, 'info');
+      } catch { showToast('Error de conexión', 'error'); }
     },
   });
 }
@@ -1395,12 +1351,12 @@ function pkCloseModal() {
   pkModalCtx = null;
 }
 
-function pkModalSave() {
-  const nombre    = document.getElementById('pk-f-nombre')?.value.trim();
-  const modo      = document.getElementById('pk-f-modo')?.value;
-  const capVal    = document.getElementById('pk-f-capacidad')?.value;
-  const habVal    = document.getElementById('pk-f-habilitado')?.value;
-  const capacidad = modo === 'controlado' ? (parseInt(capVal) || null) : null;
+async function pkModalSave() {
+  const nombre     = document.getElementById('pk-f-nombre')?.value.trim();
+  const modo       = document.getElementById('pk-f-modo')?.value;
+  const capVal     = document.getElementById('pk-f-capacidad')?.value;
+  const habVal     = document.getElementById('pk-f-habilitado')?.value;
+  const capacidad  = modo === 'controlado' ? (parseInt(capVal) || null) : null;
   const habilitado = habVal !== '0';
 
   if (!nombre) { showToast('El nombre del lado es obligatorio.', 'error'); return; }
@@ -1408,26 +1364,29 @@ function pkModalSave() {
     showToast('Ingresa una capacidad válida para el modo controlado.', 'error'); return;
   }
 
-  // Tipos seleccionados
   const checks = document.querySelectorAll('#pk-tipos-check input[type=checkbox]:checked');
   const tipos  = Array.from(checks).map(c => c.value);
   if (!tipos.length) { showToast('Selecciona al menos un tipo de vehículo.', 'error'); return; }
 
-  if (pkModalCtx?.mode === 'add') {
-    const newId = 'lado-' + Date.now();
-    pkConfig.lados.push({ id: newId, nombre, habilitado, modo, capacidad, tipos });
-    showToast(`Lado "${nombre}" agregado`, 'success');
-  } else if (pkModalCtx?.mode === 'edit') {
-    const idx = pkConfig.lados.findIndex(l => l.id === pkModalCtx.ladoId);
-    if (idx >= 0) {
-      pkConfig.lados[idx] = { ...pkConfig.lados[idx], nombre, habilitado, modo, capacidad, tipos };
-      showToast(`Lado "${nombre}" actualizado`, 'success');
-    }
-  }
+  const body = JSON.stringify({ nombre, modo, capacidad, habilitado, tipos });
+  const hdrs = { 'Content-Type': 'application/json' };
 
-  pkSave(pkConfig);
-  pkCloseModal();
-  pkRenderLados();
+  try {
+    let res;
+    if (pkModalCtx?.mode === 'add') {
+      res = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados`,
+                           { method: 'POST', headers: hdrs, body });
+    } else if (pkModalCtx?.mode === 'edit') {
+      res = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados/${pkModalCtx.ladoId}`,
+                           { method: 'PUT', headers: hdrs, body });
+    }
+    const data = await res.json();
+    if (!data.ok) { showToast(data.message || 'Error al guardar', 'error'); return; }
+    pkConfig = { id_centro: pkConfig.id_centro, lados: (data.data?.lados || []) };
+    pkCloseModal();
+    pkRenderLados();
+    showToast(data.message || 'Guardado correctamente', 'success');
+  } catch { showToast('Error de conexión', 'error'); }
 }
 
 // ─── Override showSection para incluir parqueadero ────────────────────
