@@ -436,6 +436,15 @@ function showSection(name, btn) {
     if (typeof cargarCuposDesdeAPI  === 'function') cargarCuposDesdeAPI();
     cargarGuardias();
   }
+  if (name === 'metricas') cargarMetricas();
+  if (name === 'alertas')  cargarAlertas();
+  if (name === 'busqueda') {
+    const inp = document.getElementById('global-search-input');
+    if (inp && !inp.value) {
+      const cont = document.getElementById('busqueda-resultados');
+      if (cont) cont.innerHTML = '<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);"><i class="bi bi-search" style="font-size:40px;display:block;margin-bottom:12px;"></i>Escribe al menos 2 caracteres para buscar</div>';
+    }
+  }
 }
 
 // startClock → en admin usa #live-time; en superadmin usa #sa-clock
@@ -448,3 +457,361 @@ function startClock() {
   tick();
   setInterval(tick, 1000);
 }
+// ════════════════════════════════════════════════════════════
+// ══ MÓDULOS AZULES — IMPLEMENTACIÓN COMPLETA ══
+// ════════════════════════════════════════════════════════════
+
+// ── Helpers compartidos ───────────────────────────────────────────────
+function fmtDur(min) {
+  if (min == null) return '—';
+  const m = Math.round(min);
+  return m >= 60 ? Math.floor(m/60)+'h '+Math.round(m%60)+'m' : m+'m';
+}
+function fmtDT(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short',timeZone:'America/Bogota'});
+}
+function fmtHora(h) {
+  if (h == null) return '?';
+  const hh = Number(h);
+  return hh === 0 ? '12 AM' : hh < 12 ? hh+'AM' : hh === 12 ? '12PM' : (hh-12)+'PM';
+}
+
+// ═══════════════════════════════════════════════
+// ══ 1. DASHBOARD DE MÉTRICAS ══
+// ═══════════════════════════════════════════════
+async function cargarMetricas() {
+  try {
+    const res  = await apiFetch('/parqueadero/metricas');
+    if (!res) return;
+    const data = await res.json();
+    if (!data.ok) { showToast(data.message || 'Error cargando métricas', 'error'); return; }
+    const { usuarios, vehiculos, registros, picos_hora, por_tipo } = data.data;
+
+    // Stats rápidos
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v ?? '0'; };
+    set('met-total-activos',   usuarios.total_activos);
+    set('met-total-vehiculos', vehiculos.total_vehiculos);
+    set('met-reg-hoy',         registros.hoy);
+    set('met-reg-7d',          registros.ultimos_7_dias);
+    set('met-reg-30d',         registros.ultimos_30_dias);
+    set('met-nuevos-hoy',      usuarios.nuevos_hoy);
+
+    // Distribución por rol
+    const roles = [
+      { label:'Aprendices',    val: usuarios.aprendices,    color:'#1976d2' },
+      { label:'Funcionarios',  val: usuarios.funcionarios,  color:'#2e7d32' },
+      { label:'Instructores',  val: usuarios.instructores,  color:'#6a1b9a' },
+      { label:'Guardias',      val: usuarios.guardias,      color:'#e65100' },
+    ];
+    const totalRoles = roles.reduce((s,r)=>s+Number(r.val||0),0) || 1;
+    const rolesEl = document.getElementById('met-roles');
+    if (rolesEl) rolesEl.innerHTML = roles.map(r => {
+      const pct = Math.round(Number(r.val||0)/totalRoles*100);
+      return `<div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+          <span style="color:rgba(255,255,255,0.75);">${r.label}</span>
+          <span style="color:#fff;font-weight:600;">${r.val||0} <span style="color:rgba(255,255,255,0.4);font-weight:400;">(${pct}%)</span></span>
+        </div>
+        <div style="height:7px;border-radius:4px;background:rgba(255,255,255,0.08);overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${r.color};border-radius:4px;transition:width .5s;"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Vehículos por tipo
+    const totalVeh = por_tipo.reduce((s,t)=>s+Number(t.total||0),0) || 1;
+    const vColores = { 'Auto':'#42a5f5','Motocicleta':'#66bb6a','Bicicleta':'#ffa726','Furgoneta':'#ab47bc' };
+    const vehEl = document.getElementById('met-vehiculos-tipo');
+    if (vehEl) vehEl.innerHTML = por_tipo.map(t => {
+      const pct = Math.round(Number(t.total)/totalVeh*100);
+      const col = vColores[t.tipo] || '#78909c';
+      return `<div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+          <span style="color:rgba(255,255,255,0.75);">${t.tipo}</span>
+          <span style="color:#fff;font-weight:600;">${t.total} <span style="color:rgba(255,255,255,0.4);font-weight:400;">(${pct}%)</span></span>
+        </div>
+        <div style="height:7px;border-radius:4px;background:rgba(255,255,255,0.08);overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${col};border-radius:4px;transition:width .5s;"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Horas pico
+    const picosEl = document.getElementById('met-picos');
+    if (picosEl) {
+      if (!picos_hora.length) {
+        picosEl.innerHTML = '<span style="color:rgba(255,255,255,0.3);font-size:13px;">Sin datos suficientes</span>';
+      } else {
+        const medals = ['🥇','🥈','🥉'];
+        picosEl.innerHTML = picos_hora.map((p,i) => `
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);min-width:140px;">
+            <span style="font-size:22px;">${medals[i]||'⭐'}</span>
+            <div>
+              <div style="font-size:18px;font-weight:700;color:#fff;">${fmtHora(p.hora)}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.45);">${p.total} ingresos</div>
+            </div>
+          </div>`).join('');
+      }
+    }
+  } catch (e) { console.warn('metricas:', e); showToast('Error de conexión.', 'error'); }
+}
+
+// ═══════════════════════════════════════════════
+// ══ 2. BÚSQUEDA GLOBAL ══
+// ═══════════════════════════════════════════════
+let _busqTimer = null;
+function buscarGlobal(q) {
+  clearTimeout(_busqTimer);
+  const contenedor = document.getElementById('busqueda-resultados');
+  if (!contenedor) return;
+  if (!q || q.trim().length < 2) {
+    contenedor.innerHTML = `<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);">
+      <i class="bi bi-search" style="font-size:40px;display:block;margin-bottom:12px;"></i>
+      Escribe al menos 2 caracteres para buscar
+    </div>`;
+    return;
+  }
+  contenedor.innerHTML = `<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.4);">
+    <i class="bi bi-hourglass-split" style="font-size:28px;display:block;margin-bottom:10px;"></i>Buscando...
+  </div>`;
+  _busqTimer = setTimeout(async () => {
+    try {
+      const res  = await apiFetch('/parqueadero/buscar?q='+encodeURIComponent(q.trim()));
+      if (!res) return;
+      const data = await res.json();
+      if (!data.ok) { contenedor.innerHTML = `<div style="padding:20px;color:#ef9a9a;">${data.message}</div>`; return; }
+      const { usuarios, vehiculos } = data.data;
+      if (!usuarios.length && !vehiculos.length) {
+        contenedor.innerHTML = `<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);">
+          <i class="bi bi-emoji-frown" style="font-size:36px;display:block;margin-bottom:10px;"></i>
+          Sin resultados para "<strong style="color:rgba(255,255,255,0.5);">${q}</strong>"
+        </div>`;
+        return;
+      }
+      let html = '';
+      if (usuarios.length) {
+        html += `<div class="glass-panel" style="margin-bottom:16px;">
+          <div class="panel-title"><i class="bi bi-people-fill"></i> Usuarios encontrados (${usuarios.length})</div>
+          <div class="table-wrap"><table class="history-table">
+            <thead><tr><th>Nombre</th><th>Documento</th><th>Rol</th><th>Centro</th><th>Estado</th><th>QR</th></tr></thead>
+            <tbody>${usuarios.map(u => {
+              const rolColor = SA_ROL_COLORS[u.rol]||'#555';
+              const rolLabel = SA_ROL_LABELS[u.rol]||u.rol;
+              const dentro   = u.dentro ? '<span class="event-badge in" style="font-size:10px;">Dentro</span>' : '';
+              const estado   = u.activo ? '<span class="event-badge in">Activo</span>' : '<span class="event-badge out">Inactivo</span>';
+              return `<tr style="${u.activo?'':'opacity:0.55;'}">
+                <td><div class="user-cell"><div class="mini-av">${u.nombre_completo.split(' ').map(w=>w[0]).slice(0,2).join('')}</div><span>${u.nombre_completo} ${dentro}</span></div></td>
+                <td>${u.tipo_id||''} · ${u.numero_id}</td>
+                <td><span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;background:${rolColor}22;border:0.5px solid ${rolColor}55;color:${rolColor};">${rolLabel}</span></td>
+                <td style="font-size:12px;color:rgba(255,255,255,0.55);">${u.centro_nombre||'—'}</td>
+                <td>${estado}</td>
+                <td style="font-size:11px;color:rgba(255,255,255,0.35);font-family:monospace;">${(u.qr_code||'').slice(-12)}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table></div>
+        </div>`;
+      }
+      if (vehiculos.length) {
+        html += `<div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-car-front-fill"></i> Vehículos encontrados (${vehiculos.length})</div>
+          <div class="table-wrap"><table class="history-table">
+            <thead><tr><th>Placa / Modelo</th><th>Tipo</th><th>Color</th><th>Propietario</th><th>Documento</th></tr></thead>
+            <tbody>${vehiculos.map(v => `<tr>
+              <td><strong>${v.placa||v.modelo||'—'}</strong></td>
+              <td>${v.tipo}</td>
+              <td>${v.color||'—'}</td>
+              <td>${v.nombre_completo}</td>
+              <td style="font-size:12px;color:rgba(255,255,255,0.5);">${v.numero_id}</td>
+            </tr>`).join('')}</tbody>
+          </table></div>
+        </div>`;
+      }
+      contenedor.innerHTML = html;
+    } catch (e) { console.warn('busqueda:', e); }
+  }, 400);
+}
+
+// ═══════════════════════════════════════════════
+// ══ 3. ALERTAS DEL SISTEMA ══
+// ═══════════════════════════════════════════════
+async function cargarAlertas() {
+  const cont = document.getElementById('alertas-container');
+  if (!cont) return;
+  cont.innerHTML = `<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.4);">
+    <i class="bi bi-hourglass-split" style="font-size:28px;display:block;margin-bottom:10px;"></i>Verificando sistema...
+  </div>`;
+  try {
+    const res  = await apiFetch('/parqueadero/alertas');
+    if (!res) return;
+    const data = await res.json();
+    if (!data.ok) { cont.innerHTML = `<div style="padding:20px;color:#ef9a9a;">${data.message}</div>`; return; }
+    const { alertas } = data.data;
+
+    // Badge en nav
+    const badge = document.getElementById('nav-alert-badge');
+    if (badge) {
+      if (alertas.length > 0) {
+        badge.style.display = 'flex';
+        badge.textContent   = alertas.length > 9 ? '9+' : alertas.length;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    if (!alertas.length) {
+      cont.innerHTML = `<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.3);">
+        <i class="bi bi-shield-check" style="font-size:48px;display:block;margin-bottom:14px;color:rgba(76,175,80,0.6);"></i>
+        <div style="font-size:16px;font-weight:600;color:rgba(255,255,255,0.5);">Todo en orden</div>
+        <div style="font-size:13px;margin-top:6px;">No hay alertas activas en este momento</div>
+      </div>`;
+      return;
+    }
+
+    const nivelCfg = {
+      critico:      { color:'#ef5350', bg:'rgba(239,83,80,0.12)', border:'rgba(239,83,80,0.35)', icon:'bi-exclamation-triangle-fill' },
+      advertencia:  { color:'#ffa726', bg:'rgba(255,167,38,0.10)', border:'rgba(255,167,38,0.30)', icon:'bi-exclamation-circle-fill' },
+      info:         { color:'#42a5f5', bg:'rgba(66,165,245,0.08)', border:'rgba(66,165,245,0.25)', icon:'bi-clock-history' },
+    };
+
+    cont.innerHTML = `
+      <div style="display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;">
+        ${['critico','advertencia','info'].map(n => {
+          const c = alertas.filter(a=>a.nivel===n).length;
+          const cfg = nivelCfg[n];
+          return `<div style="padding:12px 20px;border-radius:12px;background:${cfg.bg};border:1px solid ${cfg.border};display:flex;align-items:center;gap:10px;">
+            <i class="bi ${cfg.icon}" style="color:${cfg.color};font-size:18px;"></i>
+            <div><div style="font-size:20px;font-weight:700;color:#fff;">${c}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45);">${n.charAt(0).toUpperCase()+n.slice(1)}</div></div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        ${alertas.map(a => {
+          const cfg = nivelCfg[a.nivel] || nivelCfg.info;
+          const hora = a.detalle?.fecha_entrada ? fmtDT(a.detalle.fecha_entrada) : '';
+          const horas = a.detalle?.horas_dentro ? Math.floor(a.detalle.horas_dentro)+'h '+(Math.round((a.detalle.horas_dentro%1)*60))+'m' : '';
+          return `<div style="padding:16px 20px;border-radius:14px;background:${cfg.bg};border:1px solid ${cfg.border};display:flex;align-items:flex-start;gap:14px;">
+            <i class="bi ${cfg.icon}" style="color:${cfg.color};font-size:22px;margin-top:2px;flex-shrink:0;"></i>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:4px;">${a.titulo}</div>
+              <div style="font-size:13px;color:rgba(255,255,255,0.6);">${a.descripcion}</div>
+              ${hora ? `<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:5px;"><i class="bi bi-clock"></i> Entró: ${hora}${horas?' — lleva '+horas:''}</div>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } catch (e) { console.warn('alertas:', e); cont.innerHTML = '<div style="padding:20px;color:#ef9a9a;">Error de conexión.</div>'; }
+}
+
+// ═══════════════════════════════════════════════
+// ══ 4. EXPORTAR REPORTES ══
+// ═══════════════════════════════════════════════
+let expRegistros = [];
+
+async function previewExportar() {
+  const desde = document.getElementById('exp-desde')?.value;
+  const hasta = document.getElementById('exp-hasta')?.value;
+  if (!desde || !hasta) { showToast('Selecciona el rango de fechas.', 'error'); return; }
+  if (desde > hasta)    { showToast('La fecha "desde" debe ser anterior a "hasta".', 'error'); return; }
+  const preview = document.getElementById('exp-preview');
+  const tbody   = document.getElementById('exp-tbody');
+  const count   = document.getElementById('exp-count');
+  const title   = document.getElementById('exp-preview-title');
+  if (tbody) tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;opacity:.5;"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>`;
+  if (preview) preview.style.display = 'block';
+  try {
+    const res  = await apiFetch(`/parqueadero/exportar?desde=${desde}&hasta=${hasta}`);
+    if (!res) return;
+    const data = await res.json();
+    if (!data.ok) { showToast(data.message || 'Error al obtener datos.', 'error'); if(preview) preview.style.display='none'; return; }
+    expRegistros = data.data;
+    if (title) title.textContent = `Registros del ${desde} al ${hasta} (${expRegistros.length})`;
+    if (count) count.textContent = `${expRegistros.length} registros encontrados`;
+    if (!tbody) return;
+    if (!expRegistros.length) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;opacity:.5;">Sin registros en ese rango</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = expRegistros.map((r,i) => `<tr>
+      <td>${i+1}</td>
+      <td>${r.nombre_completo||'—'}</td>
+      <td style="font-size:11px;">${r.tipo_id||''} ${r.numero_id||''}</td>
+      <td>${r.tipo_vehiculo||'—'}</td>
+      <td style="font-size:11px;">${r.identificador||'—'} ${r.color?'· '+r.color:''}</td>
+      <td>${r.lado||'—'}</td>
+      <td style="font-size:11px;">${fmtDT(r.fecha_entrada)}</td>
+      <td style="font-size:11px;">${fmtDT(r.fecha_salida)}</td>
+      <td>${fmtDur(r.duracion_min)}</td>
+      <td>${r.estado==='completado'?'<span class="event-badge in">Completado</span>':'<span class="event-badge out">En curso</span>'}</td>
+    </tr>`).join('');
+  } catch (e) { console.warn('exportar preview:', e); showToast('Error de conexión.', 'error'); }
+}
+
+function exportarCSV() {
+  if (!expRegistros.length) { showToast('Primero previsualiza los datos.', 'error'); return; }
+  const cols = ['#','Nombre','Documento','Rol','Tipo Vehículo','Identificador','Color','Lado','Entrada','Salida','Duración (min)','Estado'];
+  const rows = expRegistros.map((r,i) => [
+    i+1, r.nombre_completo||'', `${r.tipo_id||''} ${r.numero_id||''}`.trim(), r.rol||'',
+    r.tipo_vehiculo||'', r.identificador||'', r.color||'', r.lado||'',
+    r.fecha_entrada ? new Date(r.fecha_entrada).toLocaleString('es-CO',{timeZone:'America/Bogota'}) : '',
+    r.fecha_salida  ? new Date(r.fecha_salida).toLocaleString('es-CO',{timeZone:'America/Bogota'})  : '',
+    r.duracion_min != null ? Math.round(r.duracion_min) : '',
+    r.estado==='completado' ? 'Completado' : 'En curso',
+  ]);
+  const csv = [cols, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Parksmart_${document.getElementById('exp-desde')?.value}_${document.getElementById('exp-hasta')?.value}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('CSV descargado', 'success');
+}
+
+function exportarExcelRango() {
+  if (!expRegistros.length) { showToast('Primero previsualiza los datos.', 'error'); return; }
+  const desde = document.getElementById('exp-desde')?.value || '';
+  const hasta = document.getElementById('exp-hasta')?.value || '';
+  const cols  = ['#','Nombre','Documento','Rol','Tipo Vehículo','Identificador','Color','Lado','Entrada','Salida','Duración','Estado'];
+  const rows  = expRegistros.map((r,i) => [
+    i+1, r.nombre_completo||'—', `${r.tipo_id||''} ${r.numero_id||''}`.trim(), r.rol||'—',
+    r.tipo_vehiculo||'—', r.identificador||'—', r.color||'—', r.lado||'—',
+    r.fecha_entrada ? new Date(r.fecha_entrada).toLocaleString('es-CO',{timeZone:'America/Bogota'}) : '—',
+    r.fecha_salida  ? new Date(r.fecha_salida).toLocaleString('es-CO',{timeZone:'America/Bogota'})  : '—',
+    fmtDur(r.duracion_min),
+    r.estado==='completado' ? 'Completado' : 'En curso',
+  ]);
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+    <head><meta charset="UTF-8"></head><body><table>
+    <tr><td colspan="${cols.length}" style="background:#4a148c;color:#fff;font-size:15pt;font-weight:700;padding:10pt;">
+      Parksmart — Registros ${desde} al ${hasta}
+    </td></tr>
+    <tr>${cols.map(c=>`<td style="background:#6a1b9a;color:#fff;font-weight:700;padding:7pt 10pt;">${c}</td>`).join('')}</tr>
+    ${rows.map(r=>`<tr>${r.map(v=>`<td style="padding:6pt 10pt;border:0.5pt solid #e1bee7;">${v}</td>`).join('')}</tr>`).join('')}
+    </table></body></html>`;
+  const blob = new Blob(['\uFEFF'+html], {type:'application/vnd.ms-excel;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Parksmart_${desde}_${hasta}.xls`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Excel descargado', 'success');
+}
+
+// ══ showSection extendido — ver bloque showSection arriba para módulos nuevos ══
+
+// Cargar alertas al inicio para mostrar el badge en el nav
+document.addEventListener('DOMContentLoaded', () => {
+  cargarAlertas();
+  // Poner fecha de hoy por defecto en exportar
+  const hoy = new Date().toISOString().slice(0,10);
+  const expHasta = document.getElementById('exp-hasta');
+  const expDesde = document.getElementById('exp-desde');
+  if (expHasta) expHasta.value = hoy;
+  if (expDesde) {
+    const d = new Date(); d.setDate(d.getDate()-7);
+    expDesde.value = d.toISOString().slice(0,10);
+  }
+  setInterval(cargarAlertas, 300000); // refrescar alertas cada 5 min
+});
