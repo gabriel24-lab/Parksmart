@@ -151,6 +151,67 @@
 
     /* ── Exportar ── */
     .stat-card.purple .stat-icon { background:rgba(156,39,176,0.18);color:#ce93d8; }
+
+    /* ── Compact stats grid (dashboard inicio) ── */
+    .compact-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .cstat-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      transition: border-color 0.2s;
+      min-width: 0;
+    }
+    .cstat-card:hover { border-color: rgba(255,255,255,0.18); }
+    .cstat-card.green { border-color: rgba(76,175,80,0.25); }
+    .cstat-card.red   { border-color: rgba(244,67,54,0.25); }
+    .cstat-card.blue  { border-color: rgba(33,150,243,0.25); }
+    .cstat-card.yellow{ border-color: rgba(255,193,7,0.25); }
+    .cstat-card.purple{ border-color: rgba(156,39,176,0.25); }
+    .cstat-icon {
+      width: 34px; height: 34px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
+    .cstat-card.green  .cstat-icon { background:rgba(76,175,80,0.15);   color:#81c784; }
+    .cstat-card.red    .cstat-icon { background:rgba(244,67,54,0.15);   color:#ef9a9a; }
+    .cstat-card.blue   .cstat-icon { background:rgba(33,150,243,0.15);  color:#90caf9; }
+    .cstat-card.yellow .cstat-icon { background:rgba(255,193,7,0.15);   color:#ffe082; }
+    .cstat-card.purple .cstat-icon { background:rgba(156,39,176,0.15);  color:#ce93d8; }
+    .cstat-body { flex:1; min-width:0; display:flex; flex-direction:column; }
+    .cstat-number { font-size:20px; font-weight:700; color:#fff; line-height:1; }
+    .cstat-label  { font-size:11px; color:rgba(255,255,255,0.45); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cstat-badge  {
+      font-size:10px; font-weight:600; padding:2px 8px; border-radius:20px;
+      background:rgba(76,175,80,0.18); color:#a5d6a7;
+      white-space:nowrap; flex-shrink:0; align-self:flex-start;
+    }
+    .cstat-badge.blue-b { background:rgba(33,150,243,0.18); color:#90caf9; }
+    @media (max-width: 480px) {
+      .compact-stats-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Análisis charts ── */
+    .anal-pico-row {
+      display:flex; align-items:center; gap:10px; padding:8px 12px;
+      border-radius:10px; background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.08);
+    }
+    .anal-pico-rank { font-size:18px; width:28px; text-align:center; flex-shrink:0; }
+    .anal-pico-info { flex:1; min-width:0; }
+    .anal-pico-hora { font-size:15px; font-weight:700; color:#fff; }
+    .anal-pico-sub  { font-size:11px; color:rgba(255,255,255,0.4); }
+    .anal-pico-bar-wrap { flex:2; }
+    .anal-pico-bar-track { height:6px; background:rgba(255,255,255,0.07); border-radius:3px; overflow:hidden; }
+    .anal-pico-bar-fill  { height:100%; border-radius:3px; background:linear-gradient(90deg,#1976d2,#42a5f5); transition:width .6s; }
+    .anal-pico-count { font-size:13px; font-weight:600; color:#fff; min-width:28px; text-align:right; }
   </style>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
@@ -197,7 +258,7 @@
         <i class="bi bi-person-plus-fill"></i><span>Registrar Usuario</span>
       </button>
       <button class="nav-item" onclick="showSection('metricas', this)">
-        <i class="bi bi-bar-chart-line-fill"></i><span>Métricas</span>
+        <i class="bi bi-graph-up-arrow"></i><span>Análisis</span>
       </button>
       <button class="nav-item" onclick="showSection('busqueda', this)">
         <i class="bi bi-search-heart-fill"></i><span>Búsqueda Global</span>
@@ -249,55 +310,55 @@
         </div>
       </div>
 
-      <!-- Stats principales -->
-      <div class="stats-grid" style="margin-bottom:24px;">
-        <div class="stat-card green">
-          <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="stat-disponibles">—</span>
-            <span class="stat-label">Espacios disponibles</span>
+      <!-- Stats principales — grid 2 col compacto -->
+      <div class="compact-stats-grid" style="margin-bottom:24px;">
+        <div class="cstat-card green">
+          <div class="cstat-icon"><i class="bi bi-car-front-fill"></i></div>
+          <div class="cstat-body">
+            <span class="cstat-number" id="stat-disponibles">—</span>
+            <span class="cstat-label">Espacios disponibles</span>
           </div>
-          <div class="stat-badge">Lado A</div>
+          <span class="cstat-badge">Lado A</span>
         </div>
-        <div class="stat-card red">
-          <div class="stat-icon"><i class="bi bi-p-circle-fill"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="stat-ocupados">—</span>
-            <span class="stat-label">Espacios ocupados</span>
+        <div class="cstat-card red">
+          <div class="cstat-icon"><i class="bi bi-p-circle-fill"></i></div>
+          <div class="cstat-body">
+            <span class="cstat-number" id="stat-ocupados">—</span>
+            <span class="cstat-label">Espacios ocupados</span>
           </div>
-          <div class="stat-badge" style="background:rgba(244,67,54,0.2);color:#ef9a9a;">Lado A</div>
+          <span class="cstat-badge" style="background:rgba(244,67,54,0.2);color:#ef9a9a;">Lado A</span>
         </div>
-        <div class="stat-card blue">
-          <div class="stat-icon"><i class="bi bi-box-arrow-in-right"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="stat-entradas">—</span>
-            <span class="stat-label">Entradas hoy</span>
+        <div class="cstat-card blue">
+          <div class="cstat-icon"><i class="bi bi-box-arrow-in-right"></i></div>
+          <div class="cstat-body">
+            <span class="cstat-number" id="stat-entradas">—</span>
+            <span class="cstat-label">Entradas hoy</span>
           </div>
-          <div class="stat-badge blue-b">Hoy</div>
+          <span class="cstat-badge blue-b">Hoy</span>
         </div>
-        <div class="stat-card yellow">
-          <div class="stat-icon"><i class="bi bi-percent"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="stat-pct">—</span>
-            <span class="stat-label">Ocupación</span>
+        <div class="cstat-card yellow">
+          <div class="cstat-icon"><i class="bi bi-percent"></i></div>
+          <div class="cstat-body">
+            <span class="cstat-number" id="stat-pct">—</span>
+            <span class="cstat-label">Ocupación</span>
           </div>
-          <div class="stat-badge" style="background:rgba(255,193,7,0.2);color:#ffe082;">%</div>
+          <span class="cstat-badge" style="background:rgba(255,193,7,0.2);color:#ffe082;">%</span>
         </div>
-        <div class="stat-card purple">
-          <div class="stat-icon"><i class="bi bi-shield-fill"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="stat-guardias">—</span>
-            <span class="stat-label">Guardias activos</span>
+        <div class="cstat-card purple">
+          <div class="cstat-icon"><i class="bi bi-shield-fill"></i></div>
+          <div class="cstat-body">
+            <span class="cstat-number" id="stat-guardias">—</span>
+            <span class="cstat-label">Guardias activos</span>
           </div>
-          <div class="stat-badge" style="background:rgba(156,39,176,0.2);color:#ce93d8;">Sistema</div>
+          <span class="cstat-badge" style="background:rgba(156,39,176,0.2);color:#ce93d8;">Sistema</span>
         </div>
-        <div class="stat-card blue">
-          <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="stat-usuarios-total">—</span>
-            <span class="stat-label">Usuarios registrados</span>
+        <div class="cstat-card blue">
+          <div class="cstat-icon"><i class="bi bi-people-fill"></i></div>
+          <div class="cstat-body">
+            <span class="cstat-number" id="stat-usuarios-total">—</span>
+            <span class="cstat-label">Usuarios registrados</span>
           </div>
-          <div class="stat-badge blue-b">Total</div>
+          <span class="cstat-badge blue-b">Total</span>
         </div>
       </div>
 
@@ -786,44 +847,92 @@
     </section>
 
 
-    <!-- ══ MÉTRICAS ══ -->
+    <!-- ══ ANÁLISIS ══ -->
     <section id="section-metricas" class="section">
       <div class="section-header">
         <div>
-          <h1>Dashboard de <span class="hl">Métricas</span></h1>
-          <p class="section-sub">Estadísticas generales del sistema Parksmart</p>
+          <h1>Panel de <span class="hl">Análisis</span></h1>
+          <p class="section-sub">Estadísticas ejecutivas del sistema Parksmart</p>
         </div>
-        <button class="btn-save" onclick="cargarMetricas()" style="padding:9px 16px;font-size:13px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.18);">
-          <i class="bi bi-arrow-clockwise"></i> Actualizar
-        </button>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select id="anal-periodo" onchange="cargarMetricas()" style="padding:9px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);color:#fff;font-family:inherit;font-size:13px;outline:none;">
+            <option value="7">Últimos 7 días</option>
+            <option value="30" selected>Últimos 30 días</option>
+            <option value="90">Últimos 90 días</option>
+          </select>
+          <button class="btn-save" onclick="cargarMetricas()" style="padding:9px 16px;font-size:13px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.18);">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar
+          </button>
+        </div>
       </div>
 
-      <!-- Stats rápidos -->
-      <div class="stats-grid" style="margin-bottom:20px;" id="met-stats-grid">
-        <div class="stat-card blue"><div class="stat-icon"><i class="bi bi-people-fill"></i></div><div class="stat-info"><span class="stat-number" id="met-total-activos">—</span><span class="stat-label">Usuarios activos</span></div></div>
-        <div class="stat-card green"><div class="stat-icon"><i class="bi bi-car-front-fill"></i></div><div class="stat-info"><span class="stat-number" id="met-total-vehiculos">—</span><span class="stat-label">Vehículos registrados</span></div></div>
-        <div class="stat-card yellow"><div class="stat-icon"><i class="bi bi-box-arrow-in-right"></i></div><div class="stat-info"><span class="stat-number" id="met-reg-hoy">—</span><span class="stat-label">Ingresos hoy</span></div></div>
-        <div class="stat-card blue"><div class="stat-icon"><i class="bi bi-calendar-week"></i></div><div class="stat-info"><span class="stat-number" id="met-reg-7d">—</span><span class="stat-label">Últimos 7 días</span></div></div>
-        <div class="stat-card green"><div class="stat-icon"><i class="bi bi-calendar-month"></i></div><div class="stat-info"><span class="stat-number" id="met-reg-30d">—</span><span class="stat-label">Últimos 30 días</span></div></div>
-        <div class="stat-card purple"><div class="stat-icon"><i class="bi bi-person-plus"></i></div><div class="stat-info"><span class="stat-number" id="met-nuevos-hoy">—</span><span class="stat-label">Nuevos usuarios hoy</span></div></div>
+      <!-- KPIs ejecutivos -->
+      <div class="compact-stats-grid" style="margin-bottom:24px;" id="anal-kpis">
+        <div class="cstat-card blue"><div class="cstat-icon"><i class="bi bi-people-fill"></i></div><div class="cstat-body"><span class="cstat-number" id="met-total-activos">—</span><span class="cstat-label">Usuarios activos</span></div><span class="cstat-badge blue-b">Total</span></div>
+        <div class="cstat-card green"><div class="cstat-icon"><i class="bi bi-car-front-fill"></i></div><div class="cstat-body"><span class="cstat-number" id="met-total-vehiculos">—</span><span class="cstat-label">Vehículos registrados</span></div><span class="cstat-badge">Sistema</span></div>
+        <div class="cstat-card yellow"><div class="cstat-icon"><i class="bi bi-box-arrow-in-right"></i></div><div class="cstat-body"><span class="cstat-number" id="met-reg-hoy">—</span><span class="cstat-label">Ingresos hoy</span></div><span class="cstat-badge" style="background:rgba(255,193,7,0.2);color:#ffe082;">Hoy</span></div>
+        <div class="cstat-card blue"><div class="cstat-icon"><i class="bi bi-calendar-week"></i></div><div class="cstat-body"><span class="cstat-number" id="met-reg-7d">—</span><span class="cstat-label">Últimos 7 días</span></div><span class="cstat-badge blue-b">7d</span></div>
+        <div class="cstat-card green"><div class="cstat-icon"><i class="bi bi-calendar-month"></i></div><div class="cstat-body"><span class="cstat-number" id="met-reg-30d">—</span><span class="cstat-label">Últimos 30 días</span></div><span class="cstat-badge">30d</span></div>
+        <div class="cstat-card purple"><div class="cstat-icon"><i class="bi bi-person-plus"></i></div><div class="cstat-body"><span class="cstat-number" id="met-nuevos-hoy">—</span><span class="cstat-label">Nuevos usuarios hoy</span></div><span class="cstat-badge" style="background:rgba(156,39,176,0.2);color:#ce93d8;">Nuevo</span></div>
       </div>
 
+      <!-- Fila 1: Ingresos por hora + Ingresos por día -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="two-col-grid">
-        <!-- Distribución por rol -->
         <div class="glass-panel">
-          <div class="panel-title"><i class="bi bi-pie-chart-fill"></i> Usuarios por rol</div>
-          <div id="met-roles" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;"></div>
+          <div class="panel-title"><i class="bi bi-clock-fill"></i> Ingresos por hora del día <span style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:400;">(promedio histórico)</span></div>
+          <div class="chart-canvas-wrap" style="height:230px;"><canvas id="chartAnalHora"></canvas></div>
         </div>
-        <!-- Distribución por vehículo -->
         <div class="glass-panel">
-          <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Vehículos por tipo</div>
-          <div id="met-vehiculos-tipo" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;"></div>
+          <div class="panel-title"><i class="bi bi-calendar3-week"></i> Ingresos diarios <span id="anal-periodo-label" style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:400;">(últimos 30 días)</span></div>
+          <div class="chart-canvas-wrap" style="height:230px;"><canvas id="chartAnalDias"></canvas></div>
         </div>
       </div>
 
+      <!-- Fila 2: Distribución vehículos (donut) + Usuarios por rol (barras) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="two-col-grid">
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-pie-chart-fill"></i> Distribución de vehículos</div>
+          <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:8px;">
+            <div style="position:relative;width:160px;height:160px;flex-shrink:0;">
+              <canvas id="chartAnalDonut"></canvas>
+            </div>
+            <div id="anal-donut-legend" style="flex:1;min-width:120px;display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+        </div>
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Usuarios por rol</div>
+          <div class="chart-canvas-wrap" style="height:190px;margin-top:8px;"><canvas id="chartAnalRoles"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Fila 3: Horas pico ranking + Día de la semana con más uso -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="two-col-grid">
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-lightning-charge-fill" style="color:#ffd54f;"></i> Horas pico — top 5 ingreso</div>
+          <div id="anal-picos-list" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;"></div>
+        </div>
+        <div class="glass-panel">
+          <div class="panel-title"><i class="bi bi-calendar-day-fill"></i> Afluencia por día de la semana</div>
+          <div class="chart-canvas-wrap" style="height:190px;margin-top:8px;"><canvas id="chartAnalSemana"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Fila 4: Tabla de métricas detalladas por vehículo -->
       <div class="glass-panel">
-        <div class="panel-title"><i class="bi bi-clock-fill"></i> Horas pico (últimos 30 días)</div>
-        <div id="met-picos" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;"></div>
+        <div class="panel-title"><i class="bi bi-table"></i> Resumen por tipo de vehículo</div>
+        <div class="table-wrap" style="margin-top:8px;">
+          <table class="history-table" id="anal-veh-table">
+            <thead><tr>
+              <th>Tipo de vehículo</th>
+              <th>Registros totales</th>
+              <th>% del total</th>
+              <th>Participación</th>
+            </tr></thead>
+            <tbody id="anal-veh-tbody">
+              <tr><td colspan="4" style="text-align:center;padding:30px;opacity:.4;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
