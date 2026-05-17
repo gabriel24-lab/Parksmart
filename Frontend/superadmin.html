@@ -1325,6 +1325,209 @@
   <script src="/Frontend/admin-scanner.js"></script>
   <script src="/Frontend/superadmin-datos.js"></script>
   <script src="/Frontend/bg-animation.js"></script>
-  <script src="/Frontend/custom-select.js"></script>
+
+  <!-- ══ CARNET FLOTANTE DE USUARIO (SuperAdmin) ══ -->
+  <div class="user-card-overlay" id="user-card-overlay" onclick="handleUserCardOverlayClick(event)" role="dialog" aria-modal="true" aria-labelledby="uc-user-name">
+    <div class="user-id-card" id="user-id-card">
+
+      <!-- Header -->
+      <div class="uc-header">
+        <div class="uc-header-left">
+          <div class="uc-logo-dot"><i class="bi bi-p-circle-fill"></i></div>
+          <div>
+            <div class="uc-brand">ParkSmart</div>
+            <div class="uc-brand-sub">Carnet de usuario · SENA</div>
+          </div>
+        </div>
+        <button class="uc-close" onclick="closeSAUserCard()" aria-label="Cerrar carnet">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="uc-body">
+        <div class="uc-top">
+          <div class="uc-photo-wrap" id="uc-photo-wrap">
+            <span class="uc-initials" id="uc-initials">??</span>
+          </div>
+          <div class="uc-info">
+            <p class="uc-name" id="uc-user-name">—</p>
+            <span class="uc-role-badge" id="uc-role-badge"><i class="bi bi-person-fill"></i> —</span>
+            <div class="uc-row"><i class="bi bi-person-badge-fill"></i><span class="uc-lbl" id="uc-tipo-id">CC</span><span class="uc-val" id="uc-num-id">—</span></div>
+            <div class="uc-row"><i class="bi bi-building-fill"></i><span class="uc-lbl"></span><span class="uc-val" id="uc-centro">—</span></div>
+            <div class="uc-row"><i class="bi bi-envelope-fill"></i><span class="uc-lbl"></span><span class="uc-val" id="uc-email">—</span></div>
+          </div>
+        </div>
+
+        <div class="uc-divider"></div>
+
+        <div class="uc-bottom">
+          <div class="uc-vehicle-section">
+            <div class="uc-sec-label">Vehículo registrado</div>
+            <div id="uc-vehicle-content">
+              <span style="opacity:.45;font-size:12px;">Sin vehículo</span>
+            </div>
+          </div>
+          <div class="uc-status-section">
+            <div class="uc-sec-label">Estado cuenta</div>
+            <div class="uc-status-badge" id="uc-status-badge">
+              <span class="uc-status-dot" id="uc-status-dot"></span>
+              <span id="uc-status-text">—</span>
+            </div>
+            <div class="uc-last-seen" id="uc-last-seen"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="uc-footer">
+        <div class="uc-qr-mini" aria-hidden="true">
+          <div class="uc-qp"></div><div class="uc-qp"></div><div class="uc-qp"></div><div class="uc-qp w"></div><div class="uc-qp"></div>
+          <div class="uc-qp"></div><div class="uc-qp w"></div><div class="uc-qp"></div><div class="uc-qp w"></div><div class="uc-qp"></div>
+          <div class="uc-qp"></div><div class="uc-qp"></div><div class="uc-qp"></div><div class="uc-qp"></div><div class="uc-qp w"></div>
+          <div class="uc-qp w"></div><div class="uc-qp"></div><div class="uc-qp w"></div><div class="uc-qp"></div><div class="uc-qp w"></div>
+          <div class="uc-qp"></div><div class="uc-qp w"></div><div class="uc-qp"></div><div class="uc-qp"></div><div class="uc-qp"></div>
+        </div>
+        <div class="uc-id-code" id="uc-id-code">—</div>
+        <button class="uc-qr-btn" id="uc-qr-btn">
+          <i class="bi bi-qr-code"></i> Ver QR
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <style>
+    /* ══ CARNET FLOTANTE — SUPERADMIN ══ */
+    .user-card-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.62);
+      backdrop-filter: blur(7px);
+      -webkit-backdrop-filter: blur(7px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 8000;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.22s ease;
+      padding: 16px;
+    }
+    .user-card-overlay.visible { opacity: 1; pointer-events: all; }
+    .user-id-card {
+      width: 360px; max-width: 100%;
+      background: #111314;
+      border: 1px solid rgba(47,164,64,0.38);
+      border-radius: 18px; overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(47,164,64,0.08);
+      transform: scale(0.9) translateY(16px);
+      transition: transform 0.28s cubic-bezier(.34,1.56,.64,1);
+    }
+    .user-card-overlay.visible .user-id-card { transform: scale(1) translateY(0); }
+    .uc-header {
+      background: #13261a;
+      border-bottom: 1px solid rgba(47,164,64,0.2);
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .uc-header-left { display: flex; align-items: center; gap: 10px; }
+    .uc-logo-dot {
+      width: 30px; height: 30px; background: #2FA440; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 10px rgba(47,164,64,0.4); flex-shrink: 0;
+    }
+    .uc-logo-dot i { font-size: 15px; color: #fff; }
+    .uc-brand     { font-size: 13px; font-weight: 600; color: #2FA440; }
+    .uc-brand-sub { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 1px; }
+    .uc-close {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,0.07);
+      border: 0.5px solid rgba(255,255,255,0.12);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.15s; flex-shrink: 0;
+    }
+    .uc-close:hover { background: rgba(255,255,255,0.14); }
+    .uc-close i { font-size: 12px; color: rgba(255,255,255,0.5); }
+    .uc-body { padding: 20px 20px 16px; }
+    .uc-top  { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+    .uc-photo-wrap {
+      flex-shrink: 0; width: 76px; height: 90px; border-radius: 12px;
+      background: linear-gradient(160deg,#1a3d1f,#2FA440 130%);
+      border: 2px solid rgba(47,164,64,0.45);
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .uc-photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .uc-initials { font-size: 26px; font-weight: 600; color: rgba(255,255,255,0.9); letter-spacing: -1px; }
+    .uc-info  { flex: 1; min-width: 0; }
+    .uc-name  { font-size: 16px; font-weight: 600; color: #fff; margin: 0 0 6px; line-height: 1.25; }
+    .uc-role-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+      background: rgba(47,164,64,0.13); border: 0.5px solid rgba(47,164,64,0.38);
+      color: #2FA440; margin-bottom: 11px;
+    }
+    .uc-row { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+    .uc-row i { font-size: 12px; color: rgba(255,255,255,0.28); flex-shrink: 0; }
+    .uc-lbl { font-size: 11px; color: rgba(255,255,255,0.3); min-width: 20px; flex-shrink: 0; }
+    .uc-val { font-size: 12px; color: rgba(255,255,255,0.78); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .uc-masked { color: rgba(255,255,255,0.28); letter-spacing: 1.5px; }
+    .uc-divider { height: 0.5px; background: rgba(255,255,255,0.07); margin: 14px 0; }
+    .uc-bottom { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .uc-vehicle-section { flex: 1; min-width: 0; }
+    .uc-sec-label { font-size: 10px; color: rgba(255,255,255,0.28); text-transform: uppercase; letter-spacing: 0.9px; margin-bottom: 7px; }
+    .uc-vtag {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 6px; font-size: 12px;
+      background: rgba(33,150,243,0.13); border: 0.5px solid rgba(33,150,243,0.28);
+      color: rgba(160,210,255,0.9); margin-bottom: 4px;
+    }
+    .uc-vtag i { font-size: 12px; }
+    .uc-placa { font-size: 11px; color: rgba(255,255,255,0.35); font-family: monospace; display: block; margin-top: 2px; }
+    .uc-status-section { text-align: center; flex-shrink: 0; }
+    .uc-status-badge {
+      padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+      display: inline-flex; align-items: center; gap: 5px; margin-bottom: 4px;
+    }
+    .uc-status-badge.st-in  { background:rgba(47,164,64,0.15); border:0.5px solid rgba(47,164,64,0.4); color:#2FA440; }
+    .uc-status-badge.st-out { background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.45); }
+    .uc-status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .uc-status-dot.dot-in  { background:#2FA440; box-shadow:0 0 6px #2FA440; animation: ucPulse 2s infinite; }
+    .uc-status-dot.dot-out { background: rgba(255,255,255,0.3); }
+    @keyframes ucPulse { 0%,100%{box-shadow:0 0 4px #2FA440} 50%{box-shadow:0 0 10px #2FA440} }
+    .uc-last-seen { font-size: 10px; color: rgba(255,255,255,0.25); }
+    .uc-footer {
+      padding: 12px 20px 16px;
+      border-top: 0.5px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .uc-qr-mini {
+      width: 54px; height: 54px; background: #fff; border-radius: 7px; padding: 4px;
+      display: grid; grid-template-columns: repeat(5,1fr); gap: 1.5px; flex-shrink: 0;
+    }
+    .uc-qp   { border-radius: 1.5px; background: #111; }
+    .uc-qp.w { background: transparent; }
+    .uc-id-code { font-family: monospace; font-size: 10px; color: rgba(255,255,255,0.28); flex: 1; line-height: 1.6; }
+    .uc-qr-btn {
+      padding: 7px 14px; border-radius: 8px;
+      background: rgba(47,164,64,0.1); border: 0.5px solid rgba(47,164,64,0.3);
+      color: #2FA440; font-size: 12px; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .uc-qr-btn:hover { background: rgba(47,164,64,0.18); border-color: rgba(47,164,64,0.5); }
+    .uc-qr-btn i { font-size: 14px; }
+    /* Nombre clickeable en tabla SA */
+    .user-name-link {
+      background: none; border: none; cursor: pointer;
+      color: inherit; font-family: inherit; font-size: inherit;
+      font-weight: 500; padding: 0; text-align: left;
+      display: inline; transition: color 0.15s;
+    }
+    .user-name-link:hover { color: #2FA440; text-decoration: underline; text-decoration-style: dotted; }
+    /* Badge de superadmin en carnet */
+    .uc-role-badge.sa-badge {
+      background: rgba(123,31,162,0.18);
+      border-color: rgba(123,31,162,0.45);
+      color: #ce93d8;
+    }
+  </style>
+
 </body>
 </html>

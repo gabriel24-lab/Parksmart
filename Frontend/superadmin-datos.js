@@ -244,9 +244,23 @@ function renderSAUsersTable(list) {
     const controles   = isSA
       ? '<span style="font-size:11px;color:rgba(255,255,255,0.3);">\u2014 superadmin \u2014</span>'
       : '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><select class="sa-rol-select" onchange="cambiarRol('+u.id_usuario+', this.value)">'+rolesOpts+'</select><button class="'+toggleClass+'" onclick="toggleUsuario('+u.id_usuario+', this)">'+toggleLabel+'</button></div>';
-    return '<tr style="'+(u.activo?'':'opacity:0.5;')+'"><td><div class="user-cell"><div class="mini-av">'+u.nombre.split(' ').map(w=>w[0]).slice(0,2).join('')+'</div><span>'+u.nombre+'</span></div></td><td>'+u.tipoId+' \u00b7 '+numMasked+'</td><td><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;background:'+rolColor+'22;border:0.5px solid '+rolColor+'55;color:'+rolColor+';">'+rolLabel+'</span></td><td class="centro-td">'+u.centro+'</td><td>'+estadoBadge+'</td><td>'+controles+'</td></tr>';
+    const initials = u.nombre.split(' ').map(w=>w[0]).slice(0,2).join('');
+    return `<tr style="${u.activo ? '' : 'opacity:0.5;'}">
+      <td>
+        <div class="user-cell">
+          <div class="mini-av">${initials}</div>
+          <button class="user-name-link" onclick="showSAUserCard('${u.id}')" title="Ver carnet de ${u.nombre}">${u.nombre}</button>
+        </div>
+      </td>
+      <td>${u.tipoId} \u00b7 ${numMasked}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;background:${rolColor}22;border:0.5px solid ${rolColor}55;color:${rolColor};">${rolLabel}</span></td>
+      <td class="centro-td">${u.centro}</td>
+      <td>${estadoBadge}</td>
+      <td>${controles}</td>
+    </tr>`;
   }).join('');
 }
+
 
 function filterUsers() {
   const q       = document.getElementById('user-search')?.value.toLowerCase()  || '';
@@ -1416,3 +1430,123 @@ showSection = function(name, btn) {
   _showSectionPrevRef(name, btn);
   if (name === 'parqueadero') pkInit();
 };
+// ════════════════════════════════════════════════════════════
+// ══ CARNET FLOTANTE DE USUARIO — SUPERADMIN ══
+// ════════════════════════════════════════════════════════════
+
+function showSAUserCard(qrId) {
+  const u = saUsuarios.find(x => x.id === qrId);
+  if (!u) return;
+
+  // ── Foto o iniciales ──
+  const photoWrap = document.getElementById('uc-photo-wrap');
+  const initials  = u.nombre.split(' ').filter(Boolean).map(w => w[0]).slice(0,2).join('').toUpperCase();
+  if (u.foto) {
+    photoWrap.innerHTML = `<img src="${u.foto}" alt="Foto de ${u.nombre}">`;
+  } else {
+    photoWrap.innerHTML = `<span class="uc-initials">${initials}</span>`;
+  }
+
+  // ── Nombre ──
+  document.getElementById('uc-user-name').textContent = u.nombre;
+
+  // ── Rol ──
+  const rolLabels = {
+    aprendiz:'Aprendiz', funcionario:'Funcionario',
+    instructor:'Instructor', admin:'Administrador',
+    guardia:'Guardia', superadmin:'Super Admin',
+  };
+  const rolIcons = {
+    aprendiz:'bi-mortarboard-fill', funcionario:'bi-briefcase-fill',
+    instructor:'bi-book-fill', admin:'bi-shield-fill',
+    guardia:'bi-shield-shaded', superadmin:'bi-shield-lock-fill',
+  };
+  const rol = u.rol || 'aprendiz';
+  const badge = document.getElementById('uc-role-badge');
+  badge.innerHTML = `<i class="bi ${rolIcons[rol] || 'bi-person-fill'}"></i> ${rolLabels[rol] || rol}`;
+  // Color especial para superadmin
+  badge.className = 'uc-role-badge' + (rol === 'superadmin' ? ' sa-badge' : '');
+
+  // ── Identificación (últimos 4 visibles) ──
+  const numStr = String(u.numId || '');
+  const maskedNum = numStr.length > 4
+    ? `<span class="uc-masked">${'• '.repeat(numStr.length - 4).trim()}</span> ${numStr.slice(-4)}`
+    : numStr;
+  document.getElementById('uc-tipo-id').textContent = u.tipoId || 'ID';
+  document.getElementById('uc-num-id').innerHTML = maskedNum;
+
+  // ── Centro ──
+  const centroEl = document.getElementById('uc-centro');
+  const centro = u.centro || 'No asignado';
+  centroEl.textContent = centro.length > 28 ? centro.slice(0, 26) + '…' : centro;
+  centroEl.title = centro;
+
+  // ── Email ──
+  const emailEl = document.getElementById('uc-email');
+  if (emailEl) {
+    emailEl.textContent = u.email ? (u.email.length > 26 ? u.email.slice(0,24)+'…' : u.email) : 'Sin correo';
+    emailEl.title = u.email || '';
+  }
+
+  // ── Vehículos ──
+  const vehContent = document.getElementById('uc-vehicle-content');
+  if (u.vehiculos && u.vehiculos.length > 0) {
+    const v = u.vehiculos[0];
+    const t = (v.tipo || '').toLowerCase();
+    const vIcon = (t === 'auto' || t === 'carro' || t === 'furgoneta') ? 'bi-car-front-fill'
+                : (t === 'motocicleta' || t === 'moto') ? 'bi-scooter'
+                : 'bi-bicycle';
+    const detail = [v.color, v.descripcion].filter(Boolean).join(' · ');
+    const placa  = v.placa ? v.placa.toUpperCase() : (v.modelo || '');
+    const fotoVeh = v.foto_url
+      ? `<div style="margin-top:6px;border-radius:6px;overflow:hidden;max-height:52px;">
+           <img src="${v.foto_url}" alt="Foto del vehículo"
+             style="width:100%;height:52px;object-fit:cover;"
+             onerror="this.parentElement.style.display='none'">
+         </div>`
+      : '';
+    vehContent.innerHTML = `
+      <div class="uc-vtag"><i class="bi ${vIcon}"></i> ${v.tipo}${placa ? ' · ' + placa : ''}</div>
+      ${detail ? `<span class="uc-placa">${detail}</span>` : ''}
+      ${fotoVeh}
+      ${u.vehiculos.length > 1 ? `<div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:6px;">+${u.vehiculos.length - 1} vehículo(s) más</div>` : ''}
+    `;
+  } else {
+    vehContent.innerHTML = '<span style="opacity:.45;font-size:12px;">Sin vehículo</span>';
+  }
+
+  // ── Estado de la CUENTA (activo/inactivo) — en SA no tenemos "dentro/fuera" directo ──
+  const activo = u.activo;
+  const statusBadge = document.getElementById('uc-status-badge');
+  const statusDot   = document.getElementById('uc-status-dot');
+  statusBadge.className = `uc-status-badge ${activo ? 'st-in' : 'st-out'}`;
+  statusDot.className   = `uc-status-dot ${activo ? 'dot-in' : 'dot-out'}`;
+  document.getElementById('uc-status-text').textContent = activo ? 'Activo' : 'Inactivo';
+  document.getElementById('uc-last-seen').textContent   = activo ? 'Cuenta habilitada' : 'Cuenta deshabilitada';
+
+  // ── ID Code ──
+  const qrDisplay = qrId.length > 20 ? qrId.slice(0,8) + '…' + qrId.slice(-4) : qrId;
+  document.getElementById('uc-id-code').textContent = qrDisplay;
+
+  // ── Botón Ver QR — reutiliza el modal qr-modal existente ──
+  document.getElementById('uc-qr-btn').onclick = () => {
+    closeSAUserCard();
+    if (typeof showUserQR === 'function') showUserQR(qrId, u.nombre);
+  };
+
+  // ── Mostrar overlay ──
+  document.getElementById('user-card-overlay').classList.add('visible');
+}
+
+function closeSAUserCard() {
+  document.getElementById('user-card-overlay').classList.remove('visible');
+}
+
+function handleUserCardOverlayClick(e) {
+  if (e.target === document.getElementById('user-card-overlay')) closeSAUserCard();
+}
+
+// Cerrar con Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeSAUserCard();
+});
