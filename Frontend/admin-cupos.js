@@ -141,6 +141,14 @@
 
   // ══ INIT ══
   window.addEventListener('DOMContentLoaded', async () => {
+    // ── Guard de rol: solo admin, guardia y superadmin pueden acceder ──
+    const _u = Auth.getUser();
+    if (!_u || !['admin', 'guardia', 'superadmin'].includes(_u.rol)) {
+      Auth.clear();
+      window.location.href = 'login.html';
+      return;
+    }
+
     startClock();
     
     // Render placeholders
