@@ -164,6 +164,17 @@ router.post('/admin-register',
     if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
 
     const { nombre_completo, numero_id, rol, tipo_id, email, id_centro } = req.body;
+
+    // Cada rol solo puede crear usuarios con roles iguales o inferiores al suyo
+    const rolesPermitidos = {
+      guardia:    ['aprendiz'],
+      admin:      ['aprendiz', 'funcionario', 'instructor', 'guardia'],
+      superadmin: ['aprendiz', 'funcionario', 'instructor', 'admin', 'guardia', 'superadmin'],
+    };
+    const permitidos = rolesPermitidos[req.user.rol] || [];
+    if (!permitidos.includes(rol)) {
+      return res.status(403).json({ ok: false, message: `Tu rol no puede crear usuarios con el rol "${rol}".` });
+    }
     // Si no se envía password, la contraseña temporal es el número de identificación
     const password = (req.body.password && req.body.password.trim()) || numero_id;
 
