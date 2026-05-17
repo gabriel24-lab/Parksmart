@@ -772,7 +772,11 @@ body {
   .topbar { display:flex; }
   .sidebar { transform:translateX(-100%); }
   .sidebar.open { transform:translateX(0); }
-  .main { margin-left:0; padding: 76px 16px 30px; }
+  .main {
+    margin-left: 0;
+    padding: 76px 16px calc(80px + env(safe-area-inset-bottom)) !important;
+    min-height: 100vh;
+  }
   
   .glass-panel { padding: 20px 16px; margin-bottom: 20px; border-radius: var(--radius-sm); }
   .section-header { flex-direction:column; gap:12px; margin-bottom: 20px; }
@@ -1401,13 +1405,15 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 150;
+    z-index: 9999;
     background: rgba(13, 18, 13, 0.98);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--border-gold, rgba(47, 164, 64, 0.2));
     padding: 4px 0 calc(4px + env(safe-area-inset-bottom));
     gap: 0;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
 
   .bottom-nav-item {
@@ -1494,11 +1500,6 @@ body {
     align-items: center;
     justify-content: center;
     pointer-events: none;
-  }
-
-  /* Añadir padding inferior al main */
-  .main {
-    padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
   }
 
   /* ══ PANEL "MÁS" estilo Canva ══ */
