@@ -1060,10 +1060,15 @@ async function pkApiGet(id_centro) {
 
 // ─── Inicialización ───────────────────────────────────────────────────
 async function pkInit() {
-  await pkCargarSelectCentros();
   const sel = document.getElementById('pk-centro-select');
-  if (sel && sel.options.length > 1) {
-    sel.selectedIndex = 1;
+  // Solo cargar el select de centros si aún no tiene opciones reales
+  if (!sel || sel.options.length <= 1) {
+    await pkCargarSelectCentros();
+  }
+  // Solo autoseleccionar el primero si no hay ninguno seleccionado aún
+  const selAfter = document.getElementById('pk-centro-select');
+  if (selAfter && selAfter.value === '' && selAfter.options.length > 1) {
+    selAfter.selectedIndex = 1;
     await pkCargarCentro();
   }
 }
@@ -1283,7 +1288,7 @@ function pkAgregarLado() {
 }
 
 function pkEditarLado(ladoId) {
-  const lado = pkConfig?.lados.find(l => l.id === ladoId);
+  const lado = pkConfig?.lados.find(l => String(l.id) === String(ladoId));
   if (!lado) return;
   pkModalCtx = { mode: 'edit', ladoId };
   pkOpenModal({ ...lado, icon: '✏️', title: `Editar "${lado.nombre}"` });
