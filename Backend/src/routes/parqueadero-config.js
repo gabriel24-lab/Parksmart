@@ -136,7 +136,12 @@ router.post('/config/:id_centro/lados',
     const id_centro = parseInt(req.params.id_centro);
     if (!id_centro) return res.status(400).json({ ok: false, message: 'id_centro inválido.' });
 
-    const { nombre, modo, capacidad, habilitado = true, tipos } = req.body;
+    const { nombre, capacidad, habilitado = true, tipos } = req.body;
+
+    // Sanitizar modo: extraer solo el valor válido sin importar
+    // si el frontend envió el texto completo del <option> en lugar del value.
+    const modoRaw  = (req.body.modo || '').toString().toLowerCase();
+    const modo     = modoRaw.startsWith('controlado') ? 'controlado' : 'libre';
 
     if (modo === 'controlado' && (!capacidad || Number(capacidad) < 1)) {
       return res.status(400).json({ ok: false, message: 'El modo controlado requiere una capacidad mayor a 0.' });
@@ -227,7 +232,12 @@ router.put('/config/:id_centro/lados/:id_lado',
     const id_lado   = parseInt(req.params.id_lado);
     if (!id_centro || !id_lado) return res.status(400).json({ ok: false, message: 'IDs inválidos.' });
 
-    const { nombre, modo, capacidad, habilitado, tipos } = req.body;
+    const { nombre, capacidad, habilitado, tipos } = req.body;
+
+    // Sanitizar modo: extraer solo el valor válido sin importar
+    // si el frontend envió el texto completo del <option> en lugar del value.
+    const modoRaw  = (req.body.modo || '').toString().toLowerCase();
+    const modo     = modoRaw.startsWith('controlado') ? 'controlado' : 'libre';
 
     if (modo === 'controlado' && (!capacidad || Number(capacidad) < 1)) {
       return res.status(400).json({ ok: false, message: 'El modo controlado requiere una capacidad mayor a 0.' });
