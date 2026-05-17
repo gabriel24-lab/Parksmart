@@ -1268,13 +1268,15 @@ function pkToggleLado(ladoId) {
     btnLabel: accion.charAt(0).toUpperCase() + accion.slice(1),
     onConfirm: async () => {
       try {
-        const res  = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados/${ladoId}/toggle`, { method: 'PUT' });
+        const res = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados/${ladoId}/toggle`, { method: 'PUT' });
+        if (!res) { showToast('Error de sesión. Vuelve a iniciar sesión.', 'error'); return; }
         const data = await res.json();
         if (!data.ok) { showToast(data.message || 'Error al cambiar estado', 'error'); return; }
-        pkConfig = { id_centro: pkConfig.id_centro, lados: (data.data?.lados || []) };
+        const idCentro = pkConfig.id_centro;
+        pkConfig = await pkApiGet(idCentro);
         pkRenderLados();
         showToast(data.message || 'Estado actualizado', 'success');
-      } catch { showToast('Error de conexión', 'error'); }
+      } catch (e) { console.error('pkToggleLado error:', e); showToast('Error de conexión', 'error'); }
     },
   });
 }
@@ -1290,13 +1292,15 @@ function pkEliminarLado(ladoId, nombre) {
     btnLabel: 'Eliminar',
     onConfirm: async () => {
       try {
-        const res  = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados/${ladoId}`, { method: 'DELETE' });
+        const res = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados/${ladoId}`, { method: 'DELETE' });
+        if (!res) { showToast('Error de sesión. Vuelve a iniciar sesión.', 'error'); return; }
         const data = await res.json();
         if (!data.ok) { showToast(data.message || 'No se pudo eliminar', 'error'); return; }
-        pkConfig = { id_centro: pkConfig.id_centro, lados: (data.data?.lados || []) };
+        const idCentro = pkConfig.id_centro;
+        pkConfig = await pkApiGet(idCentro);
         pkRenderLados();
         showToast(data.message || `Lado "${nombre}" eliminado`, 'info');
-      } catch { showToast('Error de conexión', 'error'); }
+      } catch (e) { console.error('pkEliminarLado error:', e); showToast('Error de conexión', 'error'); }
     },
   });
 }
@@ -1416,13 +1420,15 @@ async function pkModalSave() {
       res = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados/${pkModalCtx.ladoId}`,
                            { method: 'PUT', headers: hdrs, body });
     }
+    if (!res) { showToast('Error de sesión. Vuelve a iniciar sesión.', 'error'); return; }
     const data = await res.json();
     if (!data.ok) { showToast(data.message || 'Error al guardar', 'error'); return; }
-    pkConfig = { id_centro: pkConfig.id_centro, lados: (data.data?.lados || []) };
+    const idCentro = pkConfig.id_centro;
+    pkConfig = await pkApiGet(idCentro);
     pkCloseModal();
     pkRenderLados();
     showToast(data.message || 'Guardado correctamente', 'success');
-  } catch { showToast('Error de conexión', 'error'); }
+  } catch (e) { console.error('pkModalSave error:', e); showToast('Error de conexión', 'error'); }
 }
 
 // ─── Override showSection para incluir parqueadero ────────────────────
