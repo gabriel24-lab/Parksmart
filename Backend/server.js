@@ -50,6 +50,17 @@ const generalLimiter = rateLimit({
   message: { ok: false, message: 'Demasiadas solicitudes. Espera un momento e intenta de nuevo.' },
 });
 
+// ── Validación de variables de entorno críticas ──────────────────────
+if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
+  console.error('❌ FATAL: JWT_SECRET o JWT_REFRESH_SECRET no están definidos en las variables de entorno.');
+  console.error('   El servidor no puede arrancar de forma segura sin estas claves.');
+  process.exit(1);
+}
+if (!process.env.DATABASE_URL) {
+  console.error('❌ FATAL: DATABASE_URL no está definida.');
+  process.exit(1);
+}
+
 // ── Trust proxy (Render siempre está detrás de un proxy) ─────────────
 // 1 = confiar solo en el primer proxy (el de Render). Necesario para
 // que express-rate-limit lea correctamente la IP real del usuario.
