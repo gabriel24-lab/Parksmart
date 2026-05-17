@@ -1552,3 +1552,146 @@ function handleUserCardOverlayClick(e) {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeSAUserCard();
 });
+
+// ════════════════════════════════════════════════════════════
+// ══ BÚSQUEDA GLOBAL ══
+// ════════════════════════════════════════════════════════════
+
+let _buscarTimer = null;
+
+async function buscarGlobal(q) {
+  const cont = document.getElementById('busqueda-resultados');
+  if (!cont) return;
+
+  q = (q || '').trim();
+
+  if (q.length < 2) {
+    cont.innerHTML = `
+      <div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);">
+        <i class="bi bi-search" style="font-size:40px;display:block;margin-bottom:12px;"></i>
+        Escribe al menos 2 caracteres para buscar
+      </div>`;
+    return;
+  }
+
+  // Debounce: esperar 350ms tras el último teclazo
+  clearTimeout(_buscarTimer);
+  _buscarTimer = setTimeout(async () => {
+    cont.innerHTML = `
+      <div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);">
+        <i class="bi bi-hourglass-split" style="font-size:32px;display:block;margin-bottom:12px;"></i>
+        Buscando...
+      </div>`;
+
+    try {
+      const res  = await apiFetch(`/parqueadero/buscar?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+
+      if (!data.ok) {
+        cont.innerHTML = `<div style="text-align:center;padding:40px;color:rgba(255,80,80,0.7);">${data.message || 'Error al buscar'}</div>`;
+        return;
+      }
+
+      const usuarios  = data.data.usuarios  || [];
+      const vehiculos = data.data.vehiculos  || [];
+
+      if (!usuarios.length && !vehiculos.length) {
+        cont.innerHTML = `
+          <div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);">
+            <i class="bi bi-emoji-frown" style="font-size:40px;display:block;margin-bottom:12px;"></i>
+            Sin resultados para "<strong style="color:rgba(255,255,255,0.4);">${q}</strong>"
+          </div>`;
+        return;
+      }
+
+      let html = '';
+
+      // ── Usuarios ──────────────────────────────────────────
+      if (usuarios.length) {
+        html += `
+          <div style="font-size:11px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,0.35);
+                      text-transform:uppercase;margin-bottom:10px;">
+            <i class="bi bi-people"></i> Usuarios (${usuarios.length})
+          </div>
+          <div style="display:grid;gap:8px;margin-bottom:24px;">`;
+
+        usuarios.forEach(u => {
+          const initials = (u.nombre_completo || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+          const rolLabel = { superadmin:'Superadmin', admin:'Admin', guardia:'Guardia', instructor:'Instructor', funcionario:'Funcionario', aprendiz:'Aprendiz' }[u.rol] || u.rol;
+          const estadoBadge = u.dentro
+            ? `<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:rgba(47,164,64,0.2);color:#2FA440;border:1px solid rgba(47,164,64,0.3);">Dentro</span>`
+            : '';
+          const activoBadge = !u.activo
+            ? `<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:rgba(255,80,80,0.15);color:#ff5050;border:1px solid rgba(255,80,80,0.25);">Inactivo</span>`
+            : '';
+
+          html += `
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                        background:rgba(255,255,255,0.04);border-radius:10px;
+                        border:1px solid rgba(255,255,255,0.07);">
+              <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
+                          background:linear-gradient(135deg,#1a3d1f,#2FA440);
+                          display:flex;align-items:center;justify-content:center;
+                          font-size:13px;font-weight:600;">${initials}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:14px;font-weight:500;color:#fff;
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  ${u.nombre_completo}
+                </div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">
+                  ${u.tipo_id || ''} ${u.numero_id || ''} · ${rolLabel} · ${u.centro_nombre || 'Sin centro'}
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                ${estadoBadge}${activoBadge}
+              </div>
+            </div>`;
+        });
+
+        html += `</div>`;
+      }
+
+      // ── Vehículos ─────────────────────────────────────────
+      if (vehiculos.length) {
+        html += `
+          <div style="font-size:11px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,0.35);
+                      text-transform:uppercase;margin-bottom:10px;">
+            <i class="bi bi-car-front"></i> Vehículos (${vehiculos.length})
+          </div>
+          <div style="display:grid;gap:8px;">`;
+
+        vehiculos.forEach(v => {
+          const icono = { bicicleta:'bicycle', motocicleta:'motorcycle', moto:'motorcycle', auto:'car-front', carro:'car-front', furgoneta:'truck' }[(v.tipo||'').toLowerCase()] || 'car-front';
+          html += `
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                        background:rgba(255,255,255,0.04);border-radius:10px;
+                        border:1px solid rgba(255,255,255,0.07);">
+              <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
+                          background:rgba(255,255,255,0.07);
+                          display:flex;align-items:center;justify-content:center;font-size:18px;">
+                <i class="bi bi-${icono}"></i>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:14px;font-weight:500;color:#fff;">
+                  ${v.placa || v.modelo || '—'}
+                  <span style="font-size:12px;font-weight:400;color:rgba(255,255,255,0.4);">
+                    · ${v.tipo} · ${v.color || '—'}
+                  </span>
+                </div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">
+                  Propietario: ${v.nombre_completo} · ${v.numero_id}
+                </div>
+              </div>
+            </div>`;
+        });
+
+        html += `</div>`;
+      }
+
+      cont.innerHTML = html;
+
+    } catch (e) {
+      cont.innerHTML = `<div style="text-align:center;padding:40px;color:rgba(255,80,80,0.7);">Error de conexión al buscar.</div>`;
+    }
+  }, 350);
+}
