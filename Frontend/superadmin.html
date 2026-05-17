@@ -331,10 +331,27 @@
     .sidebar-mas-btn.mas-open > i:first-child { color: var(--brand-color, #2FA440); }
     .sidebar-mas-chevron.rotated { transform: rotate(90deg); }
 
-    /* ══ FIX: Bottom nav siempre visible en móvil ══ */
+        /* ══ FIX: Bottom nav fijo + contenido completamente visible en móvil ══ */
     @media (max-width: 768px) {
+      html {
+        height: 100%;
+        overflow: hidden;
+      }
       body {
-        padding-bottom: calc(80px + env(safe-area-inset-bottom));
+        height: 100%;
+        overflow: hidden;
+      }
+      .main {
+        /* El main ocupa todo el espacio disponible bajo el topbar y scrollea internamente */
+        position: fixed;
+        top: 56px; /* altura del topbar */
+        left: 0;
+        right: 0;
+        bottom: calc(62px + env(safe-area-inset-bottom)); /* altura del bottom-nav */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-left: 0 !important;
+        padding: 20px 16px 24px !important;
       }
       .bottom-nav {
         position: fixed !important;
