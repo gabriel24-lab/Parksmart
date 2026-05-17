@@ -1327,9 +1327,11 @@ function pkOpenModal({ icon, title, nombre, modo, capacidad, habilitado, tipos }
   document.getElementById('pk-modal-icon').textContent  = icon;
   document.getElementById('pk-modal-title').textContent = title;
 
+  // Normalizar tipos a minúsculas para comparación case-insensitive
+  const tiposNorm = (tipos || []).map(t => t.toLowerCase());
   const tiposChecks = TIPOS_DISPONIBLES.map(t => `
     <label class="pk-check-item">
-      <input type="checkbox" value="${t}" ${tipos?.includes(t) ? 'checked' : ''}
+      <input type="checkbox" value="${t}" ${tiposNorm.includes(t.toLowerCase()) ? 'checked' : ''}
              onchange="pkUpdateTiposAll()">
       <i class="bi ${TIPO_ICONS[t]}"></i> ${t}
     </label>`).join('');
