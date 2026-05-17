@@ -204,7 +204,15 @@
         // ── Barra/tarjetas Lado A del inicio (cupos controlados) ──────────────────────
         const ocup = d.lado_a.ocupados    ?? 0;
         const disp = d.lado_a.disponibles ?? 0;
-        const pct  = d.lado_a.capacidad > 0 ? Math.round(ocup * 100 / d.lado_a.capacidad) : 0;
+        const cap  = d.lado_a.capacidad   ?? 0;
+        const pct  = cap > 0 ? Math.round(ocup * 100 / cap) : 0;
+
+        // Actualizar label de capacidad dinámicamente (reemplaza el valor hardcodeado)
+        const ladoALabel = document.getElementById('lado-a-cupos-label');
+        if (ladoALabel && cap > 0) {
+          ladoALabel.textContent = `(máx. ${cap} cupos · controlado)`;
+          ladoALabel.style.display = '';
+        }
 
         const elOcup   = document.getElementById('num-ocup-b');
         const elDisp   = document.getElementById('num-disp-b');
