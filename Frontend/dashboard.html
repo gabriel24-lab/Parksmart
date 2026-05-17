@@ -27,38 +27,6 @@
     .avatar-photo-wrap { position: relative; cursor: pointer; display: inline-block; border-radius: 50%; }
     .avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .2s; font-size: 18px; color: #fff; }
     .avatar-photo-wrap:hover .avatar-overlay { opacity: 1; }
-
-        /* ══ FIX: Bottom nav fijo + contenido completamente visible en móvil ══ */
-    @media (max-width: 768px) {
-      html {
-        height: 100%;
-        overflow: hidden;
-      }
-      body {
-        height: 100%;
-        overflow: hidden;
-      }
-      .main {
-        /* El main ocupa todo el espacio disponible bajo el topbar y scrollea internamente */
-        position: fixed;
-        top: 56px; /* altura del topbar */
-        left: 0;
-        right: 0;
-        bottom: calc(62px + env(safe-area-inset-bottom)); /* altura del bottom-nav */
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        margin-left: 0 !important;
-        padding: 20px 16px 24px !important;
-      }
-      .bottom-nav {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 9999 !important;
-        transform: translateZ(0) !important;
-      }
-    }
   </style>
 </head>
 
