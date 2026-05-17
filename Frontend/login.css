@@ -60,7 +60,7 @@ body {
   align-items: center;
   justify-content: center;
   background: var(--bg-dark);
-  overflow: hidden;
+  overflow-y: auto; /* was hidden — caused content clipping on small screens */
   position: relative;
 }
 
@@ -275,8 +275,25 @@ body {
 }
 
 @media (max-width: 480px) {
-  .card {
-    margin: 16px;
-    padding: 32px 24px 28px;
+  body {
+    align-items: flex-start;
+    padding-top: max(24px, env(safe-area-inset-top));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    overflow-y: auto;
   }
+  .card {
+    margin: 16px auto;
+    padding: 28px 20px 24px;
+    width: calc(100% - 28px);
+  }
+  .title { font-size: 20px; }
+}
+
+@media (max-height: 660px) {
+  /* Landscape / small viewport — compress spacing */
+  .card { padding: 20px 20px 18px; }
+  .logo { margin-bottom: 12px; }
+  .logo img { max-width: 110px; }
+  .title { font-size: 18px; margin-bottom: 12px; }
+  .form-group { margin-bottom: 10px; }
 }

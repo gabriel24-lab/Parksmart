@@ -279,6 +279,13 @@ body {
   z-index: 1; 
 }
 
+/* Two-column responsive grid — collapses to 1 col on mobile via @media (max-width: 768px) */
+.two-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
 
 /* ══ SECTIONS ══ */
 .section { 
@@ -765,27 +772,61 @@ body {
   .topbar { display:flex; }
   .sidebar { transform:translateX(-100%); }
   .sidebar.open { transform:translateX(0); }
-  .main { margin-left:0; padding: 90px 24px 44px; }
+  .main { margin-left:0; padding: 76px 16px 30px; }
   
-  .glass-panel { padding: 30px 24px; margin-bottom: 34px; border-radius: var(--radius-sm); }
-  .section-header { flex-direction:column; gap:16px; margin-bottom: 34px; }
+  .glass-panel { padding: 20px 16px; margin-bottom: 20px; border-radius: var(--radius-sm); }
+  .section-header { flex-direction:column; gap:12px; margin-bottom: 20px; }
+  .section-header h1 { font-size: 22px !important; }
   
-  .profile-form-grid, .reg-form-grid { grid-template-columns:1fr; gap: 22px; }
+  .profile-form-grid, .reg-form-grid { grid-template-columns:1fr; gap: 16px; }
   .full-width { grid-column:1; }
-  .form-row { grid-template-columns:1fr; gap: 20px; }
+  .form-row { grid-template-columns:1fr; gap: 14px; }
+
+  /* Grillas de dos columnas → una columna en móvil */
+  .two-col-grid { grid-template-columns: 1fr !important; gap: 14px !important; gap: 14px; }
   
-  .dash-lado-tabs { gap: 14px; margin-bottom: 32px; }
-  .dash-lado-tab { padding: 16px 22px; width: 100%; justify-content: center; }
+  .dash-lado-tabs { gap: 10px; margin-bottom: 20px; }
+  .dash-lado-tab { padding: 12px 16px; width: 100%; justify-content: center; }
+
+  /* Scanner layout */
+  .scanner-layout { flex-direction: column; gap: 14px; }
+
+  /* Tablas — scroll horizontal */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .history-table { min-width: 540px; }
+
+  /* Chips y filtros */
+  .panel-toolbar { flex-direction: column; gap: 10px; }
+  .filter-wrap { flex-wrap: wrap; gap: 8px; }
+  .filter-wrap select { flex: 1; min-width: 130px; }
 }
 
 @media (max-width:480px) {
-  .cards-row, .cards-row.four { grid-template-columns:1fr !important; gap: 22px; margin-bottom: 34px; }
-  .stat-card { flex-direction: column; text-align: center; gap: 16px; padding: 26px 20px; border-radius: var(--radius-sm); }
-  .stat-icon { margin-bottom: 6px; }
+  .cards-row, .cards-row.four { grid-template-columns:1fr !important; gap: 12px; margin-bottom: 16px; }
+  /* Stat cards: keep horizontal layout on small screens for compactness */
+  .stat-card { flex-direction: row; align-items: center; gap: 12px; padding: 14px 14px; border-radius: var(--radius-sm); }
+  .stat-card .stat-icon { margin-bottom: 0; flex-shrink: 0; }
+  .stat-card .stat-badge { display: none; } /* hide badge at very small size */
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
-  .qr-viewport { min-height: 240px; margin-bottom: 18px; }
-  .cupos-display { flex-direction: column; text-align: center; gap: 24px; margin-bottom: 34px; }
-  .lado-banner { flex-direction: column; text-align: center; gap: 18px; padding: 24px; margin-bottom: 34px; }
+  .history-table { min-width: 480px; font-size: 12px; }
+  .history-table th, .history-table td { padding: 8px 10px; }
+  .qr-viewport { min-height: 220px; margin-bottom: 14px; }
+  .cupos-display { flex-direction: column; text-align: center; gap: 16px; margin-bottom: 18px; }
+  .lado-banner { flex-direction: column; text-align: center; gap: 14px; padding: 18px 14px; margin-bottom: 18px; }
+  /* Compact stats grid — already 2-col, keep it */
+  .compact-stats-grid { gap: 8px; }
+  .cstat-card { padding: 10px 10px; }
+  .cstat-number { font-size: 18px; }
+  /* Section header — stack and reduce */
+  .section-header h1 { font-size: 20px !important; }
+  /* Charts — full width, less height */
+  .chart-canvas-wrap { height: 180px !important; }
+  /* Guardia cards — stack actions */
+  .guardia-actions { flex-wrap: wrap; }
+  .g-btn { flex: 1; justify-content: center; min-width: 80px; }
+  /* Parqueadero pk-lado actions */
+  .pk-lado-actions { flex-wrap: wrap; width: 100%; margin-left: 0; margin-top: 10px; }
+  .pk-btn { flex: 1; justify-content: center; }
 }
 
 /* ══ DASHBOARD LADO TABS ══ */
@@ -1347,11 +1388,13 @@ body {
 /* ═══════════════════════════════════════════════
    BOTTOM NAV — Solo móvil (≤ 768px)
    ═══════════════════════════════════════════════ */
+/* ══ BOTTOM NAV — oculto en desktop ══ */
 .bottom-nav {
-  display: none; /* oculto en desktop */
+  display: none;
 }
 
 @media (max-width: 768px) {
+  /* ── Barra principal ── */
   .bottom-nav {
     display: flex;
     position: fixed;
@@ -1359,11 +1402,11 @@ body {
     left: 0;
     right: 0;
     z-index: 150;
-    background: rgba(18, 24, 18, 0.97);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(13, 18, 13, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--border-gold, rgba(47, 164, 64, 0.2));
-    padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
+    padding: 4px 0 calc(4px + env(safe-area-inset-bottom));
     gap: 0;
   }
 
@@ -1373,28 +1416,29 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 8px 4px;
+    gap: 3px;
+    padding: 8px 4px 6px;
     background: none;
     border: none;
     border-radius: 0;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.4);
     font-size: 10px;
     font-weight: 500;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
     cursor: pointer;
-    transition: color 0.2s, background 0.2s;
+    transition: color 0.18s;
     position: relative;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .bottom-nav-item i {
-    font-size: 22px;
+    font-size: 21px;
     line-height: 1;
-    transition: transform 0.2s, color 0.2s;
+    transition: transform 0.18s, color 0.18s;
   }
 
   .bottom-nav-item span {
-    font-size: 10px;
+    font-size: 9.5px;
     white-space: nowrap;
   }
 
@@ -1402,36 +1446,187 @@ body {
   .bottom-nav-item.active {
     color: var(--brand-color, #2FA440);
   }
-
   .bottom-nav-item.active i {
     transform: translateY(-2px);
   }
-
-  /* Indicador verde encima del ítem activo */
   .bottom-nav-item.active::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 20%;
-    right: 20%;
+    left: 18%;
+    right: 18%;
     height: 2px;
     background: var(--brand-color, #2FA440);
-    border-radius: 0 0 2px 2px;
+    border-radius: 0 0 3px 3px;
   }
 
-  /* Añadir padding inferior al main para que el contenido no quede detrás */
-  .main {
-    padding-bottom: calc(74px + env(safe-area-inset-bottom)) !important;
+  /* Botón "Más" — activo cuando el panel está abierto */
+  .bottom-nav-item.mas-active {
+    color: var(--brand-color, #2FA440);
   }
+  .bottom-nav-item.mas-active i {
+    transform: translateY(-2px);
+  }
+  .bottom-nav-item.mas-active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 18%;
+    right: 18%;
+    height: 2px;
+    background: var(--brand-color, #2FA440);
+    border-radius: 0 0 3px 3px;
+  }
+
+  /* Badge de alertas en bottom nav */
+  .bottom-nav-badge {
+    position: absolute;
+    top: 5px;
+    right: calc(50% - 18px);
+    background: #ef5350;
+    color: #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  /* Añadir padding inferior al main */
+  .main {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* ══ PANEL "MÁS" estilo Canva ══ */
+  .mas-panel-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 140;
+    background: rgba(0,0,0,0);
+    pointer-events: none;
+    transition: background 0.22s;
+  }
+  .mas-panel-overlay.open {
+    background: rgba(0,0,0,0.45);
+    pointer-events: all;
+  }
+
+  .mas-panel {
+    position: fixed;
+    bottom: calc(62px + env(safe-area-inset-bottom));
+    left: 0;
+    right: 0;
+    z-index: 145;
+    background: rgba(15, 20, 15, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(47,164,64,0.18);
+    border-radius: 20px 20px 0 0;
+    padding: 8px 0 12px;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
+  }
+  .mas-panel.open {
+    transform: translateY(0);
+  }
+
+  /* Handle / drag indicator */
+  .mas-panel-handle {
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    margin: 4px auto 10px;
+  }
+
+  /* Título del panel */
+  .mas-panel-title {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    padding: 0 20px 8px;
+    font-weight: 600;
+  }
+
+  /* Items dentro del panel "Más" */
+  .mas-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 20px;
+    width: 100%;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.78);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+  .mas-item:active {
+    background: rgba(255,255,255,0.06);
+  }
+  .mas-item i {
+    font-size: 20px;
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+    color: rgba(255,255,255,0.5);
+  }
+  .mas-item:hover { background: rgba(255,255,255,0.05); }
+  .mas-item .mas-item-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(47,164,64,0.18);
+    border: 0.5px solid rgba(47,164,64,0.35);
+    color: #81c784;
+  }
+  .mas-item .mas-item-arrow {
+    margin-left: auto;
+    font-size: 14px;
+    color: rgba(255,255,255,0.2);
+  }
+  .mas-item.active-section {
+    color: #2FA440;
+    background: rgba(47,164,64,0.06);
+  }
+  .mas-item.active-section i { color: #2FA440; }
+
+  /* Divisor dentro del panel */
+  .mas-divider {
+    height: 0.5px;
+    background: rgba(255,255,255,0.07);
+    margin: 4px 20px;
+  }
+
+  /* Cerrar sesión — rojo */
+  .mas-item.logout {
+    color: rgba(255, 80, 80, 0.7);
+  }
+  .mas-item.logout i { color: rgba(255, 80, 80, 0.55); }
+  .mas-item.logout:active { background: rgba(255,80,80,0.07); }
 }
 
-  /* Cerrar sesión en rojo suave (bottom nav admin) */
-  @media (max-width: 768px) {
-    .bottom-nav-item.logout {
-      color: rgba(255, 80, 80, 0.55);
-    }
-    .bottom-nav-item.logout:hover,
-    .bottom-nav-item.logout:active {
-      color: rgba(255, 80, 80, 0.9);
-    }
+/* Cerrar sesión en rojo suave (bottom nav directo) */
+@media (max-width: 768px) {
+  .bottom-nav-item.logout {
+    color: rgba(255, 80, 80, 0.5);
   }
+  .bottom-nav-item.logout:hover,
+  .bottom-nav-item.logout:active {
+    color: rgba(255, 80, 80, 0.85);
+  }
+}

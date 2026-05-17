@@ -476,7 +476,7 @@
       </div>
 
       <!-- Actividad reciente + guardias activos -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;" class="two-col-grid">
+      <div class="two-col-grid" style="margin-top:20px;">
 
         <!-- Actividad reciente -->
         <div class="glass-panel">
@@ -953,7 +953,7 @@
       </div>
 
       <!-- Fila 1: Ingresos por hora + Ingresos por día -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="two-col-grid">
+      <div class="two-col-grid" style="margin-bottom:20px;" class="two-col-grid">
         <div class="glass-panel">
           <div class="panel-title"><i class="bi bi-clock-fill"></i> Ingresos por hora del día <span style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:400;">(promedio histórico)</span></div>
           <div class="chart-canvas-wrap" style="height:230px;"><canvas id="chartAnalHora"></canvas></div>
@@ -965,7 +965,7 @@
       </div>
 
       <!-- Fila 2: Distribución vehículos (donut) + Usuarios por rol (barras) -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="two-col-grid">
+      <div class="two-col-grid" style="margin-bottom:20px;" class="two-col-grid">
         <div class="glass-panel">
           <div class="panel-title"><i class="bi bi-pie-chart-fill"></i> Distribución de vehículos</div>
           <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:8px;">
@@ -982,7 +982,7 @@
       </div>
 
       <!-- Fila 3: Horas pico ranking + Día de la semana con más uso -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="two-col-grid">
+      <div class="two-col-grid" style="margin-bottom:20px;" class="two-col-grid">
         <div class="glass-panel">
           <div class="panel-title"><i class="bi bi-lightning-charge-fill" style="color:#ffd54f;"></i> Horas pico — top 5 ingreso</div>
           <div id="anal-picos-list" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;"></div>
@@ -1300,24 +1300,166 @@
   <div class="toast-msg" id="toast"></div>
   <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
-  <!-- ═══ BOTTOM NAV (móvil) ═══ -->
+  <!-- ═══ OVERLAY del panel "Más" ═══ -->
+  <div class="mas-panel-overlay" id="mas-overlay" onclick="closeMasPanel()"></div>
+
+  <!-- ═══ PANEL "MÁS" (estilo Canva) ═══ -->
+  <div class="mas-panel" id="mas-panel">
+    <div class="mas-panel-handle"></div>
+    <div class="mas-panel-title">Más opciones</div>
+
+    <button class="mas-item" id="mas-parqueadero" onclick="masGo('parqueadero')">
+      <i class="bi bi-p-circle-fill"></i>
+      <span>Parqueadero</span>
+      <i class="bi bi-chevron-right mas-item-arrow"></i>
+    </button>
+    <button class="mas-item" id="mas-historia" onclick="masGo('historia')">
+      <i class="bi bi-clock-history"></i>
+      <span>Historial</span>
+      <i class="bi bi-chevron-right mas-item-arrow"></i>
+    </button>
+    <button class="mas-item" id="mas-registrar" onclick="masGo('registrar')">
+      <i class="bi bi-person-plus-fill"></i>
+      <span>Registrar Usuario</span>
+      <i class="bi bi-chevron-right mas-item-arrow"></i>
+    </button>
+    <button class="mas-item" id="mas-metricas" onclick="masGo('metricas')">
+      <i class="bi bi-graph-up-arrow"></i>
+      <span>Análisis</span>
+      <i class="bi bi-chevron-right mas-item-arrow"></i>
+    </button>
+    <button class="mas-item" id="mas-busqueda" onclick="masGo('busqueda')">
+      <i class="bi bi-search-heart-fill"></i>
+      <span>Búsqueda Global</span>
+      <i class="bi bi-chevron-right mas-item-arrow"></i>
+    </button>
+    <button class="mas-item" id="mas-alertas" onclick="masGo('alertas')">
+      <i class="bi bi-bell-fill"></i>
+      <span>Alertas</span>
+      <span id="mas-alert-badge" class="mas-item-badge" style="display:none;">0</span>
+      <i class="bi bi-chevron-right mas-item-arrow"></i>
+    </button>
+    <button class="mas-item" id="mas-exportar" onclick="masGo('exportar')">
+      <i class="bi bi-download"></i>
+      <span>Exportar Reportes</span>
+      <i class="bi bi-chevron-right mas-item-arrow"></i>
+    </button>
+    <button class="mas-item" id="mas-auditoria" onclick="masGo('auditoria')">
+      <i class="bi bi-journal-text"></i>
+      <span>Log de Auditoría</span>
+      <i class="bi bi-chevron-right mas-item-arrow"></i>
+    </button>
+    <button class="mas-item" id="mas-perfil" onclick="masGo('perfil')">
+      <i class="bi bi-person-circle"></i>
+      <span>Mi Perfil</span>
+      <i class="bi bi-chevron-right mas-item-arrow"></i>
+    </button>
+
+    <div class="mas-divider"></div>
+    <button class="mas-item logout" onclick="closeMasPanel(); handleLogout();">
+      <i class="bi bi-box-arrow-left"></i>
+      <span>Cerrar sesión</span>
+    </button>
+  </div>
+
+  <!-- ═══ BOTTOM NAV (móvil) — estilo Canva ═══ -->
   <nav class="bottom-nav" id="bottom-nav">
-    <button class="nav-item bottom-nav-item active" onclick="showSection('dashboard', this)">
+    <button class="bottom-nav-item active" id="bn-dashboard" onclick="bnGo('dashboard', this)">
       <i class="bi bi-speedometer2"></i><span>Inicio</span>
     </button>
-    <button class="nav-item bottom-nav-item" onclick="showSection('scanner', this)">
-      <i class="bi bi-qr-code-scan"></i><span>Escanear QR</span>
+    <button class="bottom-nav-item" id="bn-scanner" onclick="bnGo('scanner', this)">
+      <i class="bi bi-qr-code-scan"></i><span>Escanear</span>
     </button>
-    <button class="nav-item bottom-nav-item" onclick="showSection('guardias', this)">
+    <button class="bottom-nav-item" id="bn-guardias" onclick="bnGo('guardias', this)">
       <i class="bi bi-shield-fill"></i><span>Guardias</span>
     </button>
-    <button class="nav-item bottom-nav-item" onclick="showSection('usuarios', this)">
+    <button class="bottom-nav-item" id="bn-usuarios" onclick="bnGo('usuarios', this)">
       <i class="bi bi-people-fill"></i><span>Usuarios</span>
     </button>
-    <button class="nav-item bottom-nav-item logout" onclick="handleLogout()">
-      <i class="bi bi-box-arrow-left"></i><span>Salir</span>
+    <button class="bottom-nav-item" id="bn-mas" onclick="toggleMasPanel()">
+      <i class="bi bi-grid-3x3-gap-fill"></i><span>Más</span>
     </button>
   </nav>
+
+  <script>
+    /* ══ BOTTOM NAV — lógica del panel "Más" ══ */
+    const MAS_SECTIONS = ['parqueadero','historia','registrar','metricas','busqueda','alertas','exportar','auditoria','perfil'];
+
+    function toggleMasPanel() {
+      const panel   = document.getElementById('mas-panel');
+      const overlay = document.getElementById('mas-overlay');
+      const btnMas  = document.getElementById('bn-mas');
+      if (panel.classList.contains('open')) { closeMasPanel(); }
+      else {
+        panel.classList.add('open');
+        overlay.classList.add('open');
+        btnMas.classList.add('mas-active');
+      }
+    }
+
+    function closeMasPanel() {
+      document.getElementById('mas-panel').classList.remove('open');
+      document.getElementById('mas-overlay').classList.remove('open');
+      document.getElementById('bn-mas').classList.remove('mas-active');
+    }
+
+    function masGo(section) {
+      closeMasPanel();
+      document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.mas-item').forEach(i => i.classList.remove('active-section'));
+      const masItem = document.getElementById('mas-' + section);
+      if (masItem) masItem.classList.add('active-section');
+      document.getElementById('bn-mas').classList.add('mas-active');
+      showSection(section, null);
+    }
+
+    function bnGo(section, btn) {
+      closeMasPanel();
+      document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.mas-item').forEach(i => i.classList.remove('active-section'));
+      if (btn) btn.classList.add('active');
+      showSection(section, null);
+    }
+
+    /* Sincronizar bottom-nav cuando el sidebar llama showSection directamente */
+    document.addEventListener('DOMContentLoaded', function() {
+      const origFn = window.showSection;
+      if (!origFn) return;
+      window.showSection = function(section, btn) {
+        origFn(section, btn);
+        /* Solo sincronizar si la llamada viene del sidebar (btn != null y no es bottom-nav) */
+        if (btn && (btn.classList.contains('nav-item') && !btn.classList.contains('bottom-nav-item'))) {
+          syncBottomNav(section);
+        }
+      };
+    });
+
+    function syncBottomNav(section) {
+      const PRIMARY = ['dashboard','scanner','guardias','usuarios'];
+      document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.mas-item').forEach(i => i.classList.remove('active-section'));
+      document.getElementById('bn-mas').classList.remove('mas-active');
+      if (PRIMARY.includes(section)) {
+        const b = document.getElementById('bn-' + section);
+        if (b) b.classList.add('active');
+      } else if (MAS_SECTIONS.includes(section)) {
+        const m = document.getElementById('mas-' + section);
+        if (m) m.classList.add('active-section');
+        document.getElementById('bn-mas').classList.add('mas-active');
+      }
+    }
+
+    /* Sincronizar badge de alertas con el panel Más */
+    document.addEventListener('DOMContentLoaded', function() {
+      const src  = document.getElementById('nav-alert-badge');
+      const dest = document.getElementById('mas-alert-badge');
+      if (!src || !dest) return;
+      new MutationObserver(() => {
+        dest.textContent = src.textContent;
+        dest.style.display = src.style.display === 'none' ? 'none' : 'inline-flex';
+      }).observe(src, { childList:true, attributes:true, attributeFilter:['style'] });
+    });
+  </script>
 
   <script src="/Frontend/api.js"></script>
   <script src="/Frontend/admin-cupos.js"></script>
