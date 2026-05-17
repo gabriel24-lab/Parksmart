@@ -39,7 +39,7 @@ async function getLadosCentro(id_centro) {
     `SELECT ltp.id_lado, tv.id_tipo, tv.nombre
      FROM lados_tipos_permitidos ltp
      JOIN tipos_vehiculo tv ON tv.id_tipo = ltp.id_tipo
-     WHERE ltp.id_lado = ANY(@ids::int[])
+     WHERE ltp.id_lado = ANY(@ids)
      ORDER BY tv.id_tipo`,
     { ids }
   );
@@ -57,7 +57,7 @@ async function getLadosCentro(id_centro) {
      JOIN vehiculos      v  ON v.id_vehiculo = r.id_vehiculo
      JOIN tipos_vehiculo tv ON tv.id_tipo    = v.id_tipo
      WHERE r.estado = 'activo'
-       AND r.id_lado = ANY(@ids::int[])
+       AND r.id_lado = ANY(@ids)
      GROUP BY r.id_lado, tv.nombre`,
     { ids }
   );
@@ -158,8 +158,8 @@ router.post('/config/:id_centro/lados',
       // Resolver ids de tipos (el frontend manda nombres: 'Bicicleta', 'Moto', 'Carro')
       const tiposNombres = Array.isArray(tipos) ? tipos : [];
       const tiposR = await client.query(
-        `SELECT id_tipo, nombre FROM tipos_vehiculo WHERE nombre = ANY($1::text[])`,
-        [tiposNombres]
+        `SELECT id_tipo, nombre FROM tipos_vehiculo WHERE LOWER(nombre) = ANY($1::text[])`,
+        [tiposNombres.map(t => t.toLowerCase())]
       );
       if (!tiposR.rows.length) {
         await client.query('ROLLBACK');
@@ -272,16 +272,23 @@ router.put('/config/:id_centro/lados/:id_lado',
         );
       }
 
-      // Actualizar tipos permitidos: borrar todos y reinsertar
+      // Actualizar tipos permitidos: resolver IDs primero (case-insensitive), luego borrar y reinsertar
+      const tiposNombres = Array.isArray(tipos) ? tipos : [];
+      const tiposR = await client.query(
+        `SELECT id_tipo FROM tipos_vehiculo WHERE LOWER(nombre) = ANY($1::text[])`,
+        [tiposNombres.map(t => t.toLowerCase())]
+      );
+
+      // Si ningún tipo fue reconocido, abortar antes de borrar nada
+      if (!tiposR.rows.length) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ ok: false, message: 'Ningún tipo de vehículo reconocido. Selecciona al menos uno.' });
+      }
+
       await client.query(
         `DELETE FROM lados_tipos_permitidos WHERE id_lado = $1`, [id_lado]
       );
 
-      const tiposNombres = Array.isArray(tipos) ? tipos : [];
-      const tiposR = await client.query(
-        `SELECT id_tipo FROM tipos_vehiculo WHERE nombre = ANY($1::text[])`,
-        [tiposNombres]
-      );
       for (const tv of tiposR.rows) {
         await client.query(
           `INSERT INTO lados_tipos_permitidos (id_lado, id_tipo) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
