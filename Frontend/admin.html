@@ -38,12 +38,8 @@
 
     /* ══ FIX: Bottom nav siempre visible en móvil ══ */
     @media (max-width: 768px) {
-      html, body { height: 100%; overflow: hidden; }
-      .main {
-        height: 100%;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+      body {
+        padding-bottom: calc(80px + env(safe-area-inset-bottom));
       }
       .bottom-nav {
         position: fixed !important;
@@ -51,8 +47,7 @@
         left: 0 !important;
         right: 0 !important;
         z-index: 9999 !important;
-        transform: none !important;
-        will-change: auto !important;
+        transform: translateZ(0) !important;
       }
     }
   </style>
