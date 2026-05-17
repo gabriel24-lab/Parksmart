@@ -1574,7 +1574,6 @@ async function buscarGlobal(q) {
     return;
   }
 
-  // Debounce: esperar 350ms tras el último teclazo
   clearTimeout(_buscarTimer);
   _buscarTimer = setTimeout(async () => {
     cont.innerHTML = `
@@ -1592,10 +1591,42 @@ async function buscarGlobal(q) {
         return;
       }
 
-      const usuarios  = data.data.usuarios  || [];
-      const vehiculos = data.data.vehiculos  || [];
+      // Unir usuarios directos + propietarios de vehículos (deduplicar por id_usuario)
+      const usuariosDirectos = data.data.usuarios  || [];
+      const vehiculos        = data.data.vehiculos  || [];
 
-      if (!usuarios.length && !vehiculos.length) {
+      // Construir mapa de vehículos por id_usuario
+      const vehPorUsuario = {};
+      vehiculos.forEach(v => {
+        if (!vehPorUsuario[v.id_usuario]) vehPorUsuario[v.id_usuario] = [];
+        vehPorUsuario[v.id_usuario].push(v);
+      });
+
+      // Usuarios que solo aparecen por vehículo (no están en usuariosDirectos)
+      const idsDirectos = new Set(usuariosDirectos.map(u => u.id_usuario));
+      const usuariosExtra = [];
+      vehiculos.forEach(v => {
+        if (!idsDirectos.has(v.id_usuario)) {
+          idsDirectos.add(v.id_usuario);
+          usuariosExtra.push({
+            id_usuario:     v.id_usuario,
+            nombre_completo: v.nombre_completo,
+            numero_id:      v.numero_id,
+            tipo_id:        null,
+            rol:            null,
+            activo:         true,
+            qr_code:        null,
+            email:          null,
+            centro_nombre:  null,
+            dentro:         false,
+            _soloVehiculo:  true,
+          });
+        }
+      });
+
+      const todos = [...usuariosDirectos, ...usuariosExtra];
+
+      if (!todos.length) {
         cont.innerHTML = `
           <div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);">
             <i class="bi bi-emoji-frown" style="font-size:40px;display:block;margin-bottom:12px;"></i>
@@ -1604,94 +1635,181 @@ async function buscarGlobal(q) {
         return;
       }
 
-      let html = '';
-
-      // ── Usuarios ──────────────────────────────────────────
-      if (usuarios.length) {
-        html += `
-          <div style="font-size:11px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,0.35);
-                      text-transform:uppercase;margin-bottom:10px;">
-            <i class="bi bi-people"></i> Usuarios (${usuarios.length})
-          </div>
-          <div style="display:grid;gap:8px;margin-bottom:24px;">`;
-
-        usuarios.forEach(u => {
-          const initials = (u.nombre_completo || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-          const rolLabel = { superadmin:'Superadmin', admin:'Admin', guardia:'Guardia', instructor:'Instructor', funcionario:'Funcionario', aprendiz:'Aprendiz' }[u.rol] || u.rol;
-          const estadoBadge = u.dentro
-            ? `<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:rgba(47,164,64,0.2);color:#2FA440;border:1px solid rgba(47,164,64,0.3);">Dentro</span>`
-            : '';
-          const activoBadge = !u.activo
-            ? `<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:rgba(255,80,80,0.15);color:#ff5050;border:1px solid rgba(255,80,80,0.25);">Inactivo</span>`
-            : '';
-
-          html += `
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;
-                        background:rgba(255,255,255,0.04);border-radius:10px;
-                        border:1px solid rgba(255,255,255,0.07);">
-              <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
-                          background:linear-gradient(135deg,#1a3d1f,#2FA440);
-                          display:flex;align-items:center;justify-content:center;
-                          font-size:13px;font-weight:600;">${initials}</div>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:14px;font-weight:500;color:#fff;
-                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                  ${u.nombre_completo}
-                </div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">
-                  ${u.tipo_id || ''} ${u.numero_id || ''} · ${rolLabel} · ${u.centro_nombre || 'Sin centro'}
-                </div>
-              </div>
-              <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-                ${estadoBadge}${activoBadge}
-              </div>
-            </div>`;
-        });
-
-        html += `</div>`;
-      }
-
-      // ── Vehículos ─────────────────────────────────────────
-      if (vehiculos.length) {
-        html += `
-          <div style="font-size:11px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,0.35);
-                      text-transform:uppercase;margin-bottom:10px;">
-            <i class="bi bi-car-front"></i> Vehículos (${vehiculos.length})
-          </div>
-          <div style="display:grid;gap:8px;">`;
-
-        vehiculos.forEach(v => {
-          const icono = { bicicleta:'bicycle', motocicleta:'motorcycle', moto:'motorcycle', auto:'car-front', carro:'car-front', furgoneta:'truck' }[(v.tipo||'').toLowerCase()] || 'car-front';
-          html += `
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;
-                        background:rgba(255,255,255,0.04);border-radius:10px;
-                        border:1px solid rgba(255,255,255,0.07);">
-              <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
-                          background:rgba(255,255,255,0.07);
-                          display:flex;align-items:center;justify-content:center;font-size:18px;">
-                <i class="bi bi-${icono}"></i>
-              </div>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:14px;font-weight:500;color:#fff;">
-                  ${v.placa || v.modelo || '—'}
-                  <span style="font-size:12px;font-weight:400;color:rgba(255,255,255,0.4);">
-                    · ${v.tipo} · ${v.color || '—'}
-                  </span>
-                </div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">
-                  Propietario: ${v.nombre_completo} · ${v.numero_id}
-                </div>
-              </div>
-            </div>`;
-        });
-
-        html += `</div>`;
-      }
-
-      cont.innerHTML = html;
+      // Renderizar un carnet inline por cada usuario encontrado
+      cont.innerHTML = `
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,0.35);
+                    text-transform:uppercase;margin-bottom:14px;">
+          <i class="bi bi-people"></i> ${todos.length} resultado${todos.length !== 1 ? 's' : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          ${todos.map(u => _renderCarnetBusqueda(u, vehPorUsuario[u.id_usuario] || [])).join('')}
+        </div>`;
 
     } catch (e) {
       cont.innerHTML = `<div style="text-align:center;padding:40px;color:rgba(255,80,80,0.7);">Error de conexión al buscar.</div>`;
     }
   }, 350);
+}
+
+// ── Renderiza un carnet completo inline para la búsqueda global ────────
+function _renderCarnetBusqueda(u, vehiculos) {
+  const nombre    = u.nombre_completo || 'Sin nombre';
+  const initials  = nombre.split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  const rol       = u.rol || 'aprendiz';
+  const isSA      = rol === 'superadmin';
+  const activo    = u.activo !== false;
+  const numId     = u.numero_id || '';
+  const numMasked = numId.length > 4
+    ? `<span style="opacity:.45">${'•'.repeat(numId.length - 4)}</span>${numId.slice(-4)}`
+    : numId;
+
+  const rolLabel = SA_ROL_LABELS[rol] || rol;
+  const rolColor = SA_ROL_COLORS[rol] || '#888';
+
+  const rolIcons = {
+    aprendiz:'bi-mortarboard-fill', funcionario:'bi-briefcase-fill',
+    instructor:'bi-book-fill', admin:'bi-shield-fill',
+    guardia:'bi-shield-shaded', superadmin:'bi-shield-lock-fill',
+  };
+
+  // ── Foto o iniciales ──
+  const fotoHtml = u.foto
+    ? `<img src="${u.foto}" alt="${nombre}"
+            style="width:100%;height:100%;object-fit:cover;border-radius:50%;"
+            onerror="this.parentElement.innerHTML='<span style=\'font-size:18px;font-weight:600;\'>${initials}</span>'">`
+    : `<span style="font-size:18px;font-weight:600;">${initials}</span>`;
+
+  // ── Vehículos ──
+  let vehHtml = '<span style="opacity:.4;font-size:12px;">Sin vehículo registrado</span>';
+  if (vehiculos.length > 0) {
+    vehHtml = vehiculos.map(v => {
+      const t      = (v.tipo || v.modelo || '').toLowerCase();
+      const vIcon  = (t.includes('auto') || t.includes('carro') || t.includes('furgon')) ? 'bi-car-front-fill'
+                   : (t.includes('moto')) ? 'bi-scooter'
+                   : 'bi-bicycle';
+      const placa  = v.placa ? v.placa.toUpperCase() : (v.modelo || '—');
+      const detail = [v.color, v.descripcion].filter(Boolean).join(' · ');
+      const fotoV  = v.foto_url
+        ? `<img src="${v.foto_url}" style="width:100%;height:44px;object-fit:cover;border-radius:6px;margin-top:5px;"
+                onerror="this.style.display='none'">`
+        : '';
+      return `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <i class="bi ${vIcon}" style="font-size:15px;color:rgba(255,255,255,0.5);"></i>
+          <div>
+            <div style="font-size:12px;font-weight:500;">${v.tipo || ''} · ${placa}</div>
+            ${detail ? `<div style="font-size:11px;opacity:.45;">${detail}</div>` : ''}
+          </div>
+        </div>${fotoV}`;
+    }).join('');
+  }
+
+  // ── Controles de acción ──
+  const rolesOpts = ['aprendiz','funcionario','instructor','admin'].map(r =>
+    `<option value="${r}"${rol === r ? ' selected' : ''}>${SA_ROL_LABELS[r]}</option>`
+  ).join('');
+
+  const accionesHtml = isSA
+    ? `<div style="font-size:11px;color:rgba(255,255,255,0.3);text-align:center;padding:8px 0;">— superadmin —</div>`
+    : `
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+        <select class="sa-rol-select" onchange="cambiarRol(${u.id_usuario}, this.value)" style="flex:1;min-width:130px;">
+          ${rolesOpts}
+        </select>
+        <button class="sa-toggle-btn ${activo ? 'on' : 'off'}"
+                onclick="_busquedaToggle(${u.id_usuario}, this)">
+          ${activo ? 'Desactivar' : 'Activar'}
+        </button>
+        <button onclick="_busquedaVerQR('${u.qr_code || ''}','${nombre.replace(/'/g, "\\'")}')"
+                style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.07);
+                       border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:12px;cursor:pointer;">
+          <i class="bi bi-qr-code"></i> Ver QR
+        </button>
+      </div>`;
+
+  // ── Badge estado dentro/fuera ──
+  const dentroBadge = u.dentro
+    ? `<span style="font-size:10px;padding:2px 8px;border-radius:20px;
+                    background:rgba(47,164,64,0.2);color:#2FA440;
+                    border:1px solid rgba(47,164,64,0.3);">Dentro</span>`
+    : '';
+
+  return `
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);
+                border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Cabecera: avatar + datos principales -->
+      <div style="display:flex;gap:14px;align-items:flex-start;">
+        <div style="width:54px;height:54px;border-radius:50%;flex-shrink:0;
+                    background:linear-gradient(135deg,#1a3d1f,#2FA440);
+                    display:flex;align-items:center;justify-content:center;overflow:hidden;">
+          ${fotoHtml}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:600;color:#fff;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nombre}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:2px;">
+            ${u.tipo_id ? u.tipo_id + ' · ' : ''}${numMasked}
+            ${u.email ? ` · ${u.email.length > 22 ? u.email.slice(0,20)+'…' : u.email}` : ''}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center;">
+            <span style="font-size:11px;padding:2px 10px;border-radius:20px;font-weight:500;
+                         background:${rolColor}22;border:0.5px solid ${rolColor}55;color:${rolColor};">
+              <i class="bi ${rolIcons[rol] || 'bi-person-fill'}"></i> ${rolLabel}
+            </span>
+            <span style="font-size:11px;padding:2px 10px;border-radius:20px;
+                         background:${activo ? 'rgba(47,164,64,0.15)' : 'rgba(255,80,80,0.12)'};
+                         color:${activo ? '#2FA440' : '#ff5050'};
+                         border:0.5px solid ${activo ? 'rgba(47,164,64,0.3)' : 'rgba(255,80,80,0.25)'};">
+              ${activo ? 'Activo' : 'Inactivo'}
+            </span>
+            ${dentroBadge}
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalles: centro + vehículos -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;
+                    border:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;">
+            <i class="bi bi-building"></i> Centro
+          </div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.75);">${u.centro_nombre || 'No asignado'}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;
+                    border:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;">
+            <i class="bi bi-car-front"></i> Vehículo(s)
+          </div>
+          ${vehHtml}
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      ${accionesHtml}
+    </div>`;
+}
+
+// ── Toggle desde búsqueda global (refresca el resultado) ──────────────
+async function _busquedaToggle(id, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const res  = await apiFetch('/parqueadero/usuarios/' + id + '/toggle', { method: 'PUT' });
+    if (!res) { if (btn) btn.disabled = false; return; }
+    const data = await res.json();
+    if (!data.ok) { showToast(data.message || 'Error.', 'error'); if (btn) btn.disabled = false; return; }
+    showToast(data.message, data.activo ? 'success' : 'info');
+    // Actualizar caché global y re-lanzar la búsqueda actual
+    await cargarUsuariosSA();
+    const q = document.getElementById('global-search-input')?.value || '';
+    buscarGlobal(q);
+  } catch { showToast('Error de conexión.', 'error'); }
+  if (btn) btn.disabled = false;
+}
+
+// ── Ver QR desde búsqueda global ──────────────────────────────────────
+function _busquedaVerQR(qrCode, nombre) {
+  if (!qrCode) { showToast('Este usuario no tiene QR asignado.', 'error'); return; }
+  if (typeof showUserQR === 'function') showUserQR(qrCode, nombre);
 }
