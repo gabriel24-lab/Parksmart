@@ -1,6 +1,10 @@
 // src/routes/catalogos.js
 const router = require('express').Router();
 const { query } = require('../config/db');
+const { authMiddleware } = require('../middlewares/auth');
+
+// Catálogos requieren sesión válida — no son datos públicos
+router.use(authMiddleware);
 
 // Caché simple en memoria — regiones y centros raramente cambian
 // Se invalida cada 24 horas al reiniciar Render
