@@ -305,6 +305,31 @@
     .anal-pico-bar-track { height:6px; background:rgba(255,255,255,0.07); border-radius:3px; overflow:hidden; }
     .anal-pico-bar-fill  { height:100%; border-radius:3px; background:linear-gradient(90deg,#1976d2,#42a5f5); transition:width .6s; }
     .anal-pico-count { font-size:13px; font-weight:600; color:#fff; min-width:28px; text-align:right; }
+
+    /* ── Sidebar "Más" panel (desktop) ── */
+    .sidebar-mas-wrap { position: relative; }
+    .sidebar-mas-panel {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.22s;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .sidebar-mas-panel.open {
+      max-height: 500px;
+      opacity: 1;
+      pointer-events: all;
+    }
+    .sidebar-mas-panel .nav-item {
+      padding-left: 28px;
+      font-size: 13px;
+    }
+    .sidebar-mas-btn.mas-open {
+      color: var(--brand-color, #2FA440) !important;
+      background: rgba(47,164,64,0.07) !important;
+    }
+    .sidebar-mas-btn.mas-open > i:first-child { color: var(--brand-color, #2FA440); }
+    .sidebar-mas-chevron.rotated { transform: rotate(90deg); }
   </style>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
@@ -350,26 +375,40 @@
       <button class="nav-item" onclick="showSection('registrar', this)">
         <i class="bi bi-person-plus-fill"></i><span>Registrar Usuario</span>
       </button>
-      <button class="nav-item" onclick="showSection('metricas', this)">
-        <i class="bi bi-graph-up-arrow"></i><span>Análisis</span>
-      </button>
-      <button class="nav-item" onclick="showSection('busqueda', this)">
-        <i class="bi bi-search-heart-fill"></i><span>Búsqueda Global</span>
-      </button>
-      <button class="nav-item" onclick="showSection('alertas', this)">
-        <i class="bi bi-bell-fill"></i><span>Alertas</span>
-        <span id="nav-alert-badge" style="display:none;margin-left:auto;background:#ef5350;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0;">0</span>
-      </button>
-      <button class="nav-item" onclick="showSection('exportar', this)">
-        <i class="bi bi-download"></i><span>Exportar Reportes</span>
-      </button>
-      <button class="nav-item" onclick="showSection('auditoria', this)">
-        <i class="bi bi-journal-text"></i><span>Log de Auditoría</span>
-      </button>
+
+      <!-- ── Botón "Más" estilo Canva ── -->
       <div class="nav-divider"></div>
-      <button class="nav-item" onclick="showSection('perfil', this)">
-        <i class="bi bi-person-circle"></i><span>Mi Perfil</span>
-      </button>
+      <div class="sidebar-mas-wrap" id="sidebar-mas-wrap">
+        <button class="nav-item sidebar-mas-btn" id="sidebar-mas-btn" onclick="toggleSidebarMas(event)">
+          <i class="bi bi-three-dots"></i><span>Más opciones</span>
+          <i class="bi bi-chevron-right sidebar-mas-chevron" id="sidebar-mas-chevron" style="margin-left:auto;font-size:13px;color:rgba(255,255,255,0.3);transition:transform 0.22s;"></i>
+        </button>
+        <!-- Panel desplegable dentro del sidebar -->
+        <div class="sidebar-mas-panel" id="sidebar-mas-panel">
+          <button class="nav-item" onclick="showSection('metricas', this); closeSidebarMas();">
+            <i class="bi bi-graph-up-arrow"></i><span>Análisis</span>
+          </button>
+          <button class="nav-item" onclick="showSection('busqueda', this); closeSidebarMas();">
+            <i class="bi bi-search-heart-fill"></i><span>Búsqueda Global</span>
+          </button>
+          <button class="nav-item" onclick="showSection('alertas', this); closeSidebarMas();">
+            <i class="bi bi-bell-fill"></i><span>Alertas</span>
+            <span id="nav-alert-badge" style="display:none;margin-left:auto;background:#ef5350;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0;">0</span>
+          </button>
+          <button class="nav-item" onclick="showSection('exportar', this); closeSidebarMas();">
+            <i class="bi bi-download"></i><span>Exportar Reportes</span>
+          </button>
+          <button class="nav-item" onclick="showSection('auditoria', this); closeSidebarMas();">
+            <i class="bi bi-journal-text"></i><span>Log de Auditoría</span>
+          </button>
+          <div class="nav-divider"></div>
+          <button class="nav-item" onclick="showSection('perfil', this); closeSidebarMas();">
+            <i class="bi bi-person-circle"></i><span>Mi Perfil</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-divider"></div>
       <button class="nav-item logout" onclick="handleLogout()">
         <i class="bi bi-box-arrow-left"></i><span>Cerrar sesión</span>
       </button>
@@ -1308,9 +1347,14 @@
     <div class="mas-panel-handle"></div>
     <div class="mas-panel-title">Más opciones</div>
 
-    <button class="mas-item" id="mas-parqueadero" onclick="masGo('parqueadero')">
-      <i class="bi bi-p-circle-fill"></i>
-      <span>Parqueadero</span>
+    <button class="mas-item" id="mas-scanner" onclick="masGo('scanner')">
+      <i class="bi bi-qr-code-scan"></i>
+      <span>Escanear QR</span>
+      <i class="bi bi-chevron-right mas-item-arrow"></i>
+    </button>
+    <button class="mas-item" id="mas-usuarios" onclick="masGo('usuarios')">
+      <i class="bi bi-people-fill"></i>
+      <span>Usuarios</span>
       <i class="bi bi-chevron-right mas-item-arrow"></i>
     </button>
     <button class="mas-item" id="mas-historia" onclick="masGo('historia')">
@@ -1367,23 +1411,23 @@
     <button class="bottom-nav-item active" id="bn-dashboard" onclick="bnGo('dashboard', this)">
       <i class="bi bi-speedometer2"></i><span>Inicio</span>
     </button>
-    <button class="bottom-nav-item" id="bn-scanner" onclick="bnGo('scanner', this)">
-      <i class="bi bi-qr-code-scan"></i><span>Escanear</span>
+    <button class="bottom-nav-item" id="bn-parqueadero" onclick="bnGo('parqueadero', this)">
+      <i class="bi bi-p-circle-fill"></i><span>Parqueadero</span>
     </button>
     <button class="bottom-nav-item" id="bn-guardias" onclick="bnGo('guardias', this)">
       <i class="bi bi-shield-fill"></i><span>Guardias</span>
     </button>
-    <button class="bottom-nav-item" id="bn-usuarios" onclick="bnGo('usuarios', this)">
-      <i class="bi bi-people-fill"></i><span>Usuarios</span>
-    </button>
     <button class="bottom-nav-item" id="bn-mas" onclick="toggleMasPanel()">
-      <i class="bi bi-grid-3x3-gap-fill"></i><span>Más</span>
+      <i class="bi bi-three-dots"></i><span>Más</span>
+    </button>
+    <button class="bottom-nav-item logout" id="bn-logout" onclick="handleLogout()">
+      <i class="bi bi-box-arrow-left"></i><span>Salir</span>
     </button>
   </nav>
 
   <script>
     /* ══ BOTTOM NAV — lógica del panel "Más" ══ */
-    const MAS_SECTIONS = ['parqueadero','historia','registrar','metricas','busqueda','alertas','exportar','auditoria','perfil'];
+    const MAS_SECTIONS = ['scanner','usuarios','historia','registrar','metricas','busqueda','alertas','exportar','auditoria','perfil'];
 
     function toggleMasPanel() {
       const panel   = document.getElementById('mas-panel');
@@ -1435,7 +1479,7 @@
     });
 
     function syncBottomNav(section) {
-      const PRIMARY = ['dashboard','scanner','guardias','usuarios'];
+      const PRIMARY = ['dashboard','parqueadero','guardias'];
       document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.mas-item').forEach(i => i.classList.remove('active-section'));
       document.getElementById('bn-mas').classList.remove('mas-active');
@@ -1459,6 +1503,23 @@
         dest.style.display = src.style.display === 'none' ? 'none' : 'inline-flex';
       }).observe(src, { childList:true, attributes:true, attributeFilter:['style'] });
     });
+
+    /* ══ SIDEBAR MÁS — desktop toggle ══ */
+    function toggleSidebarMas(e) {
+      e.stopPropagation();
+      const panel   = document.getElementById('sidebar-mas-panel');
+      const btn     = document.getElementById('sidebar-mas-btn');
+      const chevron = document.getElementById('sidebar-mas-chevron');
+      const open    = panel.classList.contains('open');
+      panel.classList.toggle('open', !open);
+      btn.classList.toggle('mas-open', !open);
+      chevron.classList.toggle('rotated', !open);
+    }
+    function closeSidebarMas() {
+      document.getElementById('sidebar-mas-panel').classList.remove('open');
+      document.getElementById('sidebar-mas-btn').classList.remove('mas-open');
+      document.getElementById('sidebar-mas-chevron').classList.remove('rotated');
+    }
   </script>
 
   <script src="/Frontend/api.js"></script>
