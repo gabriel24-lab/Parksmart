@@ -549,7 +549,7 @@ body {
 }
 .form-group input::placeholder, .form-group textarea::placeholder { color:#aaa; }
 .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color:var(--brand-color); box-shadow:0 0 0 3px rgba(144,202,249,0.22); }
-.form-group select { -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; background-color:rgba(255,255,255,0.92); padding-right:36px; cursor:pointer; }
+.form-group select { -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; background-color:#1c2b1e; color:#fff; padding-right:36px; cursor:pointer; }
 
 .profile-form-grid, .reg-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
 .profile-form-grid .form-group, .reg-form-grid .form-group { margin-bottom:0; }
@@ -1630,4 +1630,35 @@ body {
   .bottom-nav-item.logout:active {
     color: rgba(255, 80, 80, 0.85);
   }
+}
+
+
+/* ══ SELECT GLOBAL — fondo oscuro en todos los selects del sistema ══ */
+select {
+  background: #1c2b1e !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+}
+select option {
+  background: #1c2b1e !important;
+  color: #fff !important;
+}
+select option:checked,
+select option:hover {
+  background: #2FA440 !important;
+  color: #fff !important;
+}
+.sa-rol-select {
+  background: #1c2b1e !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+}
+.sa-rol-select option {
+  background: #1c2b1e !important;
+  color: #fff !important;
 }
