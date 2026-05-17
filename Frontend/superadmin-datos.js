@@ -93,14 +93,19 @@ async function savePerfilSA() {
   const nombre = document.getElementById('sa-nombre')?.value.trim();
   const email  = document.getElementById('sa-email')?.value.trim();
   if (!nombre) { showToast('Ingresa tu nombre completo.', 'error'); return; }
+  const btn = document.getElementById('btn-save-perfil-sa');
+  if (btn?.disabled) return;
+  const originalHTML = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...'; }
   try {
     const res  = await apiFetch('/usuarios/perfil', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ nombre_completo: nombre, email }) });
-    if (!res) return;
+    if (!res) { if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
     const data = await res.json();
-    if (!data.ok) { showToast(data.message || 'Error al guardar.', 'error'); return; }
+    if (!data.ok) { showToast(data.message || 'Error al guardar.', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
     liveUpdateSAHeader();
     showToast('Perfil actualizado', 'success');
   } catch { showToast('Error de conexión.', 'error'); }
+  if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
 }
 
 async function subirFotoPerfilSA(input) {
@@ -130,14 +135,19 @@ async function changePasswordSA() {
   if (!actual || !nuevo || !confirm) { showToast('Completa los tres campos.', 'error'); return; }
   if (nuevo.length < 8) { showToast('Mínimo 8 caracteres.', 'error'); return; }
   if (nuevo !== confirm) { showToast('Las contraseñas no coinciden.', 'error'); return; }
+  const btn = document.getElementById('btn-change-password');
+  if (btn?.disabled) return;
+  const originalHTML = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Cambiando...'; }
   try {
     const res  = await apiFetch('/usuarios/cambiar-password', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password_actual: actual, password_nuevo: nuevo }) });
-    if (!res) return;
+    if (!res) { if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
     const data = await res.json();
-    if (!data.ok) { showToast(data.message || 'Error.', 'error'); return; }
+    if (!data.ok) { showToast(data.message || 'Error.', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
     ['sec-pass-act','sec-pass-new','sec-pass-confirm'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     showToast('Contraseña actualizada', 'success');
   } catch { showToast('Error de conexión.', 'error'); }
+  if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
 }
 
 function toggleSecPass(inputId, iconId) {
@@ -170,15 +180,19 @@ async function registrarUsuario() {
   const rol    = document.getElementById('reg-rol')?.value;
   const centro = document.getElementById('reg-centro')?.value;
   if (!nombre || !tipoId || !numId || !rol) { showToast('Completa los campos obligatorios.', 'error'); return; }
+  const btn = document.getElementById('btn-registrar-usuario');
+  if (btn?.disabled) return;
+  const originalHTML = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Registrando...'; }
   try {
     const res  = await apiFetch('/auth/admin-register', {
       method:'POST', headers:{'Content-Type':'application/json'},
       // La contraseña temporal es el número de identificación del usuario
       body: JSON.stringify({ nombre_completo: nombre, tipo_id: tipoId, numero_id: numId, email: email||undefined, rol, id_centro: centro||undefined }),
     });
-    if (!res) return;
+    if (!res) { if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
     const data = await res.json();
-    if (!data.ok) { showToast(data.message || (data.errors && data.errors[0]?.msg) || 'Error al registrar.', 'error'); return; }
+    if (!data.ok) { showToast(data.message || (data.errors && data.errors[0]?.msg) || 'Error al registrar.', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
     showToast(`✅ ${nombre} registrado como ${SA_ROL_LABELS[rol]||rol}. Contraseña temporal: ${numId}`, 'success');
     ['reg-nombre','reg-num-id','reg-email'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
     const tipoEl = document.getElementById('reg-tipo-id'); if(tipoEl) tipoEl.value = '';
@@ -187,6 +201,7 @@ async function registrarUsuario() {
     cargarUsuariosSA();
     cargarGuardias();
   } catch { showToast('Error de conexión.', 'error'); }
+  if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
 }
 
 // ══ TABLA USUARIOS SUPERADMIN (con cambio de rol y activar/desactivar) ══
