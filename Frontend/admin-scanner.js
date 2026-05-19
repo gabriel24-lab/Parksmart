@@ -263,6 +263,26 @@ async function processQRResult(rawText) {
     }
   }
 
+// Cache de lados para no hacer fetch repetido en cada escaneo
+let _ladosCache = null;
+async function getLadosHabilitados() {
+  if (_ladosCache) return _ladosCache;
+  try {
+    const res  = await apiFetch('/parqueadero/ocupacion-rol');
+    const data = await res.json();
+    if (data.ok && data.data && data.data.lados) {
+      // Solo lados habilitados
+      _ladosCache = data.data.lados.filter(l => l.habilitado);
+      return _ladosCache;
+    }
+  } catch (e) { console.warn('getLadosHabilitados error:', e); }
+  // Fallback: si la llamada falla, devolver ambos para no bloquear
+  return [{ id_lado: 1, nombre: 'Lado A' }, { id_lado: 2, nombre: 'Lado B' }];
+}
+
+// Invalida el cache cuando se registra una entrada/salida
+function invalidarCacheLados() { _ladosCache = null; }
+
 function buildActionButtons(usuario, vehiculos, dentro) {
     if (dentro) {
       return `<button class="btn-exit" onclick="adminSalida(${usuario.id_usuario})">
@@ -278,22 +298,43 @@ function buildActionButtons(usuario, vehiculos, dentro) {
       const label = `${v.tipo} ${v.placa || v.modelo || v.color || ''}`.trim();
       return `<option value="${v.id_vehiculo}">${label}</option>`;
     }).join('');
-    return `
+
+    // Renderizar con placeholder mientras se cargan los lados
+    const uid = usuario.id_usuario;
+    const html = `
       <div class="scan-action-row">
-        <select id="sel-vehiculo-${usuario.id_usuario}"
+        <select id="sel-vehiculo-${uid}"
           onchange="syncScanVehSelector(this)"
           style="flex:2;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:inherit;font-size:13px;">
           ${optsVeh}
         </select>
-        <select id="sel-lado-${usuario.id_usuario}"
+        <select id="sel-lado-${uid}"
           style="flex:1;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:inherit;font-size:13px;">
-          <option value="1">Lado A (controlado)</option>
-          <option value="2">Lado B (abierto)</option>
+          <option value="">Cargando lados...</option>
         </select>
       </div>
-      <button class="btn-entry" onclick="adminEntrada(${usuario.id_usuario}, '${usuario.id_usuario}')">
+      <button class="btn-entry" onclick="adminEntrada(${uid}, '${uid}')">
         <i class="bi bi-arrow-down-circle-fill"></i> Registrar Entrada
       </button>`;
+
+    // Poblar el select de lados de forma asíncrona con solo los habilitados
+    setTimeout(async () => {
+      const selLado = document.getElementById('sel-lado-' + uid);
+      if (!selLado) return;
+      const lados = await getLadosHabilitados();
+      if (!lados.length) {
+        selLado.innerHTML = '<option value="">Sin lados disponibles</option>';
+        // Deshabilitar el botón de entrada si no hay lados
+        const btnEnt = selLado.closest('.scan-user-body')?.querySelector('.btn-entry');
+        if (btnEnt) { btnEnt.disabled = true; btnEnt.title = 'No hay lados habilitados'; }
+        return;
+      }
+      selLado.innerHTML = lados.map(l =>
+        `<option value="${l.id_lado}">${l.nombre}${l.modo ? ' (' + l.modo + ')' : ''}</option>`
+      ).join('');
+    }, 0);
+
+    return html;
   }
 
   // Sincroniza el select de vehículo con los botones visuales del selector
@@ -305,7 +346,13 @@ function buildActionButtons(usuario, vehiculos, dentro) {
 async function adminEntrada(id_usuario, uid_key) {
   const key = uid_key || id_usuario;
   const id_vehiculo = (document.getElementById('sel-vehiculo-' + key) || document.getElementById('sel-vehiculo'))?.value;
-  const id_lado     = (document.getElementById('sel-lado-' + key)     || document.getElementById('sel-lado'))?.value || '1';
+  const id_lado     = (document.getElementById('sel-lado-' + key)     || document.getElementById('sel-lado'))?.value;
+
+  if (!id_lado || id_lado === '') {
+    showToast('No hay lados habilitados para registrar entrada.', 'error');
+    return;
+  }
+
   try {
     const res  = await apiFetch('/parqueadero/admin-entrada', {
       method: 'POST',
@@ -313,6 +360,7 @@ async function adminEntrada(id_usuario, uid_key) {
     });
     const data = await res.json();
     if (!data.ok) { showToast(data.message, 'error'); return; }
+    invalidarCacheLados(); // refrescar lados por si cambió disponibilidad
     showToast('Entrada registrada ✓');
     await cargarCuposDesdeAPI();
     await cargarUsuariosDesdeAPI();

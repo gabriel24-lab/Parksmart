@@ -249,9 +249,14 @@
             : '--:--';
 
           // Extraer solo 'A' o 'B' del nombre ("Lado A" → "A", "LADO B" → "B")
+          // Si el nombre no contiene A/B, intentar con el número del id_lado (1=A, 2=B)
           const ladoMatch = (r.lado || '').toString().match(/\b([AB])\b/i);
-          const ladoStr   = ladoMatch ? ladoMatch[1].toUpperCase() : 'A';
-          const badgeLado = `<span class="side-badge ${ladoStr.toLowerCase()}">${ladoStr}</span>`;
+          const ladoStr   = ladoMatch
+            ? ladoMatch[1].toUpperCase()
+            : (r.id_lado === 2 ? 'B' : r.id_lado === 1 ? 'A' : null); // null = no clasificar
+          const badgeLado = ladoStr
+            ? `<span class="side-badge ${ladoStr.toLowerCase()}">${ladoStr}</span>`
+            : `<span class="side-badge" style="opacity:.4">?</span>`;
 
           htmlMain += `<tr>
             <td>${nombre}</td>

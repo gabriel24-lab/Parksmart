@@ -494,7 +494,7 @@ router.get('/reciente', requireRol('admin', 'guardia', 'superadmin'), async (req
     // Los activos se ordenan por fecha_entrada, los completados por fecha_salida
     const result = await query(
       `SELECT u.nombre_completo, u.qr_code,
-              tv.nombre AS tipo_vehiculo, r.estado, l.nombre AS lado,
+              tv.nombre AS tipo_vehiculo, r.estado, l.nombre AS lado, r.id_lado,
               r.fecha_entrada,
               CASE WHEN r.estado = 'activo' THEN r.fecha_entrada ELSE r.fecha_salida END AS fecha_accion
        FROM registros_uso r
@@ -659,6 +659,11 @@ router.post('/admin-entrada', requireRol('admin', 'guardia', 'superadmin'), asyn
     return res.status(201).json({ ok: true, message: 'Entrada registrada.', id_registro });
   } catch (err) {
     await client.query('ROLLBACK');
+    // Captura TODOS los errores de negocio (lado deshabilitado, cupos llenos,
+    // entrada ya activa, tipo no permitido, etc.)
+    if (err.tipo === 'conflicto' || err.tipo === 'no_encontrado')
+      return res.status(409).json({ ok: false, message: err.message });
+    // Compatibilidad con mensajes legacy sin err.tipo
     if (err.message?.includes('activa') || err.message?.includes('cupos'))
       return res.status(409).json({ ok: false, message: err.message });
     console.error(err);
