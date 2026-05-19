@@ -6,6 +6,26 @@ const { createClient } = require('@supabase/supabase-js');
 const { query } = require('../config/db');
 const { authMiddleware, requireRol } = require('../middlewares/auth');
 
+// ── Validación de magic bytes ─────────────────────────────────────────
+// Verifica que el buffer sea realmente una imagen válida (JPEG, PNG o WEBP)
+// independientemente del mimetype declarado por el cliente.
+function validarMagicBytes(buffer) {
+  if (!buffer || buffer.length < 12) {
+    const err = new Error('Archivo inválido o demasiado pequeño.');
+    err.status = 400;
+    throw err;
+  }
+  const isJpeg = buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
+  const isPng  = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47;
+  const isWebp = buffer.slice(8, 12).toString('ascii') === 'WEBP';
+
+  if (!isJpeg && !isPng && !isWebp) {
+    const err = new Error('El archivo no es una imagen JPG, PNG o WEBP válida.');
+    err.status = 400;
+    throw err;
+  }
+}
+
 // ── Supabase Storage client ───────────────────────────────────────────
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -149,7 +169,11 @@ router.post('/',
     // ── Subir foto a Supabase Storage ─────────────────────────────────
     let foto_url = null;
     if (req.file) {
-      await validarMagicBytes(req.file.buffer);
+      try {
+        validarMagicBytes(req.file.buffer);
+      } catch (validationErr) {
+        return res.status(400).json({ ok: false, message: validationErr.message });
+      }
       const ext      = req.file.mimetype.split('/')[1].replace('jpeg', 'jpg');
       const fileName = `${Date.now()}-${req.user.id_usuario}.${ext}`;
 
