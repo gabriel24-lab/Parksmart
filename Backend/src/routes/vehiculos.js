@@ -4,7 +4,7 @@ const multer = require('multer');
 const { body, validationResult } = require('express-validator');
 const { createClient } = require('@supabase/supabase-js');
 const { query } = require('../config/db');
-const { authMiddleware } = require('../middlewares/auth');
+const { authMiddleware, requireRol } = require('../middlewares/auth');
 
 // ── Supabase Storage client ───────────────────────────────────────────
 const supabase = createClient(
@@ -23,12 +23,11 @@ const upload = multer({
   },
 });
 
-const { requireRol } = require('../middlewares/auth');
+router.use(authMiddleware);
 
 // ── POST /api/vehiculos/admin ─────────────────────────────────────────
 // Solo admins. Registra un vehículo para otro usuario (sin foto).
 router.post('/admin',
-  authMiddleware,
   requireRol('admin', 'guardia', 'superadmin'),
   [
     body('id_usuario').isInt({ min: 1 }).withMessage('id_usuario requerido.'),
@@ -81,8 +80,6 @@ const TIPOS_POR_ROL = {
   superadmin:  [1, 2, 3, 4],
 };
 const TIPO_NOMBRES = { 1: 'Bicicleta', 2: 'Motocicleta', 3: 'Auto', 4: 'Furgoneta' };
-
-router.use(authMiddleware);
 
 // ── GET /api/vehiculos ────────────────────────────────────────────────
 router.get('/', async (req, res) => {
