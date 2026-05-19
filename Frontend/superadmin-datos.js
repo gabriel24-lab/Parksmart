@@ -385,7 +385,7 @@ function openSAModal({ icon, title, desc, btnClass, btnLabel, onConfirm }) {
   btn.className = 'sa-modal-confirm '+btnClass;
   btn.textContent = btnLabel;
   saModalCb = onConfirm;
-  btn.onclick = async () => { closeSAModal(); if (saModalCb) await saModalCb(); };
+  btn.onclick = async () => { const cb = saModalCb; closeSAModal(); if (cb) await cb(); };
   document.getElementById('sa-confirm-modal').classList.add('visible');
 }
 
