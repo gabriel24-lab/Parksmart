@@ -406,38 +406,54 @@ router.delete('/config/:id_centro/lados/:id_lado', async (req, res) => {
   const id_lado   = parseInt(req.params.id_lado);
   if (!id_centro || !id_lado) return res.status(400).json({ ok: false, message: 'IDs inválidos.' });
 
+  const client = await getClient();
   try {
-    const check = await query(
-      `SELECT id_lado, nombre FROM lados WHERE id_lado = @id AND id_centro = @centro`,
-      { id: id_lado, centro: id_centro }
+    await client.query('BEGIN');
+
+    const check = await client.query(
+      `SELECT id_lado, nombre FROM lados WHERE id_lado = $1 AND id_centro = $2`,
+      [id_lado, id_centro]
     );
-    if (!check.rows.length)
+    if (!check.rows.length) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ ok: false, message: 'Lado no encontrado para este centro.' });
+    }
+
+    const nombreLado = check.rows[0].nombre;
 
     // Verificar si tiene vehículos dentro en este momento
-    const activos = await query(
-      `SELECT COUNT(*) AS total FROM registros_uso WHERE id_lado = @id AND estado = 'activo'`,
-      { id: id_lado }
+    const activos = await client.query(
+      `SELECT COUNT(*) AS total FROM registros_uso WHERE id_lado = $1 AND estado = 'activo'`,
+      [id_lado]
     );
     if (Number(activos.rows[0].total) > 0) {
+      await client.query('ROLLBACK');
       return res.status(409).json({
         ok: false,
-        message: `No se puede eliminar "${check.rows[0].nombre}": hay ${activos.rows[0].total} vehículo(s) dentro ahora mismo.`,
+        message: `No se puede eliminar "${nombreLado}": hay ${activos.rows[0].total} vehículo(s) dentro ahora mismo.`,
       });
     }
 
-    // Eliminar en cascada (tipos_permitidos y cupos se eliminan por ON DELETE CASCADE)
-    await query(`DELETE FROM lados WHERE id_lado = @id`, { id: id_lado });
+    // Eliminar en orden: historial de uso → tipos permitidos → cupos → lado
+    await client.query(`DELETE FROM registros_uso          WHERE id_lado = $1`, [id_lado]);
+    await client.query(`DELETE FROM lados_tipos_permitidos WHERE id_lado = $1`, [id_lado]);
+    await client.query(`DELETE FROM cupos                  WHERE id_lado = $1`, [id_lado]);
+    await client.query(`DELETE FROM lados                  WHERE id_lado = $1`, [id_lado]);
+
+    await client.query('COMMIT');
 
     const lados = await getLadosCentro(id_centro);
     return res.json({
       ok:      true,
-      message: `Lado "${check.rows[0].nombre}" eliminado.`,
+      message: `Lado "${nombreLado}" eliminado.`,
       data:    { id_centro, lados },
     });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('config/delete:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: `Error interno: ${err.message || err}` });
+  } finally {
+    client.release();
   }
 });
 
