@@ -29,8 +29,11 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
     `SELECT id_registro FROM registros_uso WHERE id_usuario = $1 AND estado = 'activo'`,
     [id_usuario]
   );
-  if (activeCheck.rows.length > 0)
-    throw new Error('Ya tienes una entrada activa en el parqueadero.');
+  if (activeCheck.rows.length > 0) {
+    const err = new Error('Ya tienes una entrada activa en el parqueadero.');
+    err.tipo = 'conflicto';
+    throw err;
+  }
 
   // 2. Leer config dinámica del lado (habilitado, modo, tipos permitidos)
   const ladoCheck = await client.query(
@@ -39,9 +42,17 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
      WHERE l.id_lado = $1`,
     [id_lado]
   );
-  if (!ladoCheck.rows.length) throw new Error('Lado de parqueo no encontrado.');
+  if (!ladoCheck.rows.length) {
+    const err = new Error('Lado de parqueo no encontrado.');
+    err.tipo = 'no_encontrado';
+    throw err;
+  }
   const lado = ladoCheck.rows[0];
-  if (!lado.habilitado) throw new Error('Este lado del parqueadero está deshabilitado temporalmente.');
+  if (!lado.habilitado) {
+    const err = new Error('Este lado del parqueadero está deshabilitado temporalmente.');
+    err.tipo = 'conflicto';
+    throw err;
+  }
 
   // 3. Leer tipo del vehículo
   const tipoCheck = await client.query(
@@ -51,7 +62,11 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
      WHERE v.id_vehiculo = $1`,
     [id_vehiculo]
   );
-  if (!tipoCheck.rows.length) throw new Error('Vehículo no encontrado.');
+  if (!tipoCheck.rows.length) {
+    const err = new Error('Vehículo no encontrado.');
+    err.tipo = 'no_encontrado';
+    throw err;
+  }
   const { id_tipo, tipo_nombre } = tipoCheck.rows[0];
 
   // 4. Verificar que el tipo está permitido en este lado
@@ -59,8 +74,11 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
     `SELECT 1 FROM lados_tipos_permitidos WHERE id_lado = $1 AND id_tipo = $2`,
     [id_lado, id_tipo]
   );
-  if (!tipoPermitido.rows.length)
-    throw new Error(`Este lado no acepta vehículos de tipo "${tipo_nombre}".`);
+  if (!tipoPermitido.rows.length) {
+    const err = new Error(`Este lado no acepta vehículos de tipo "${tipo_nombre}".`);
+    err.tipo = 'conflicto';
+    throw err;
+  }
 
   // 5. Verificar cupos solo si el lado es controlado Y el tipo NO es bicicleta
   const esBicicleta = Number(id_tipo) === 1;
@@ -73,10 +91,17 @@ async function registrarEntrada(client, id_usuario, id_vehiculo, id_lado) {
        WHERE l.id_lado = $1`,
       [id_lado]
     );
-    if (!cupoCheck.rows.length) throw new Error('Información de cupos no encontrada.');
+    if (!cupoCheck.rows.length) {
+      const err = new Error('Información de cupos no encontrada.');
+      err.tipo = 'no_encontrado';
+      throw err;
+    }
     const { capacidad, ocupados } = cupoCheck.rows[0];
-    if (Number(ocupados) >= Number(capacidad))
-      throw new Error('No hay cupos disponibles en este lado del parqueadero.');
+    if (Number(ocupados) >= Number(capacidad)) {
+      const err = new Error('No hay cupos disponibles en este lado del parqueadero.');
+      err.tipo = 'conflicto';
+      throw err;
+    }
   }
 
   // 6. Registrar la entrada
@@ -308,9 +333,10 @@ router.post('/entrada', async (req, res) => {
     return res.status(201).json({ ok: true, message: 'Entrada registrada.', id_registro });
   } catch (err) {
     await client.query('ROLLBACK');
-    const biz = ['activa','cupos','deshabilitado','no acepta','no encontrado'];
-    if (biz.some(k => err.message?.toLowerCase().includes(k)))
+    if (err.tipo === 'conflicto')
       return res.status(409).json({ ok: false, message: err.message });
+    if (err.tipo === 'no_encontrado')
+      return res.status(404).json({ ok: false, message: err.message });
     console.error(err);
     return res.status(500).json({ ok: false, message: 'Error interno.' });
   } finally {
@@ -527,6 +553,8 @@ router.get('/usuarios-admin', requireRol('admin', 'guardia', 'superadmin'), asyn
 router.get('/historial-admin', requireRol('admin', 'guardia', 'superadmin'), async (req, res) => {
   const fecha = req.query.fecha;
   if (!fecha) return res.status(400).json({ ok: false, message: 'Parámetro fecha requerido.' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha))
+    return res.status(400).json({ ok: false, message: 'Formato de fecha inválido. Use YYYY-MM-DD.' });
   try {
     const result = await query(
       `SELECT r.id_registro, u.id_usuario, u.nombre_completo,
@@ -612,6 +640,18 @@ router.post('/admin-entrada', requireRol('admin', 'guardia', 'superadmin'), asyn
   const client = await getClient();
   try {
     await client.query('BEGIN');
+
+    // Verificar que el vehículo pertenece al usuario indicado y está activo
+    const veh = await client.query(
+      `SELECT id_vehiculo FROM vehiculos
+       WHERE id_vehiculo = $1 AND id_usuario = $2 AND activo = true`,
+      [parseInt(id_vehiculo), parseInt(id_usuario)]
+    );
+    if (!veh.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ ok: false, message: 'Vehículo no encontrado o no pertenece a este usuario.' });
+    }
+
     const id_registro = await registrarEntrada(
       client, parseInt(id_usuario), parseInt(id_vehiculo), parseInt(id_lado)
     );
@@ -980,7 +1020,7 @@ router.get('/buscar', requireRol('superadmin'), async (req, res) => {
               u.nombre_completo, u.numero_id
              FROM vehiculos v JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
              JOIN usuarios u ON u.id_usuario = v.id_usuario
-             WHERE LOWER(v.placa) LIKE LOWER(@q) OR LOWER(v.modelo) LIKE LOWER(@q)
+             WHERE (LOWER(v.placa) LIKE LOWER(@q) OR LOWER(v.modelo) LIKE LOWER(@q))
              AND v.activo = true
              ORDER BY v.placa LIMIT 10`,
         { q: '%'+q+'%' }),
