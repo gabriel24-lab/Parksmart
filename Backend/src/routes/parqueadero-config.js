@@ -573,53 +573,91 @@ router.delete('/config/centros-admin/:id_centro', async (req, res) => {
   const id_centro = parseInt(req.params.id_centro);
   if (!id_centro) return res.status(400).json({ ok: false, message: 'ID inválido.' });
 
+  const client = await getClient();
   try {
-    const centroCheck = await query(
-      `SELECT nombre FROM centros_formacion WHERE id_centro = @id`,
-      { id: id_centro }
+    await client.query('BEGIN');
+
+    const centroCheck = await client.query(
+      `SELECT nombre FROM centros_formacion WHERE id_centro = $1`,
+      [id_centro]
     );
-    if (!centroCheck.rows.length)
+    if (!centroCheck.rows.length) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ ok: false, message: 'Centro no encontrado.' });
+    }
 
     const nombre = centroCheck.rows[0].nombre;
 
     // Bloquear si tiene usuarios asociados
-    const usuarios = await query(
-      `SELECT COUNT(*) AS total FROM usuarios WHERE id_centro = @id`,
-      { id: id_centro }
+    const usuarios = await client.query(
+      `SELECT COUNT(*) AS total FROM usuarios WHERE id_centro = $1`,
+      [id_centro]
     );
-    if (Number(usuarios.rows[0].total) > 0)
+    if (Number(usuarios.rows[0].total) > 0) {
+      await client.query('ROLLBACK');
       return res.status(409).json({
         ok: false,
         message: `No se puede eliminar "${nombre}": tiene ${usuarios.rows[0].total} usuario(s) registrado(s).`,
       });
+    }
 
-    // Bloquear si tiene lados con vehículos activos
-    const activos = await query(
-      `SELECT COUNT(*) AS total
-       FROM registros_uso ru
-       JOIN lados l ON l.id_lado = ru.id_lado
-       WHERE l.id_centro = @id AND ru.estado = 'activo'`,
-      { id: id_centro }
+    // Obtener los lados del centro
+    const ladosR = await client.query(
+      `SELECT id_lado FROM lados WHERE id_centro = $1`,
+      [id_centro]
     );
-    if (Number(activos.rows[0].total) > 0)
-      return res.status(409).json({
-        ok: false,
-        message: `No se puede eliminar "${nombre}": hay vehículos dentro del parqueadero ahora mismo.`,
-      });
+    const idLados = ladosR.rows.map(r => r.id_lado);
 
-    // Eliminar (los lados y cupos se eliminan por CASCADE si está configurado,
-    // si no, eliminamos manualmente en orden)
-    await query(`DELETE FROM lados_tipos_permitidos WHERE id_lado IN (SELECT id_lado FROM lados WHERE id_centro = @id)`, { id: id_centro });
-    await query(`DELETE FROM cupos  WHERE id_lado IN (SELECT id_lado FROM lados WHERE id_centro = @id)`, { id: id_centro });
-    await query(`DELETE FROM lados  WHERE id_centro = @id`, { id: id_centro });
-    await query(`DELETE FROM centros_formacion WHERE id_centro = @id`, { id: id_centro });
+    // Bloquear si tiene vehículos activos dentro ahora mismo
+    if (idLados.length > 0) {
+      const activos = await client.query(
+        `SELECT COUNT(*) AS total FROM registros_uso WHERE id_lado = ANY($1) AND estado = 'activo'`,
+        [idLados]
+      );
+      if (Number(activos.rows[0].total) > 0) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          ok: false,
+          message: `No se puede eliminar "${nombre}": hay vehículos dentro del parqueadero ahora mismo.`,
+        });
+      }
 
+      // Eliminar registros históricos de uso de estos lados (entradas/salidas pasadas)
+      await client.query(
+        `DELETE FROM registros_uso WHERE id_lado = ANY($1)`,
+        [idLados]
+      );
+
+      // Eliminar en orden: tipos permitidos → cupos → lados
+      await client.query(
+        `DELETE FROM lados_tipos_permitidos WHERE id_lado = ANY($1)`,
+        [idLados]
+      );
+      await client.query(
+        `DELETE FROM cupos WHERE id_lado = ANY($1)`,
+        [idLados]
+      );
+      await client.query(
+        `DELETE FROM lados WHERE id_centro = $1`,
+        [id_centro]
+      );
+    }
+
+    // Finalmente eliminar el centro
+    await client.query(
+      `DELETE FROM centros_formacion WHERE id_centro = $1`,
+      [id_centro]
+    );
+
+    await client.query('COMMIT');
     invalidarCacheCatalogos();
     return res.json({ ok: true, message: `Centro "${nombre}" eliminado correctamente.` });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('centros-admin DELETE:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: `Error interno: ${err.message || err}` });
+  } finally {
+    client.release();
   }
 });
 
