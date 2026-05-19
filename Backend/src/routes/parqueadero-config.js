@@ -163,12 +163,13 @@ router.post('/config/:id_centro/lados',
     body('nombre').trim().notEmpty().withMessage('Nombre requerido.'),
     body('modo').isIn(['controlado','libre']).withMessage('Modo inválido.'),
     body('capacidad').optional({ nullable: true }).isInt({ min: 1, max: 9999 }),
-    body('habilitado').optional().isBoolean(),
+    body('habilitado').optional(),   // llega como boolean nativo desde JSON; no filtrar con isBoolean()
     body('tipos').isArray({ min: 1 }).withMessage('Selecciona al menos un tipo de vehículo.'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    if (!errors.isEmpty())
+      return res.status(400).json({ ok: false, message: errors.array()[0].msg });
 
     const id_centro = parseInt(req.params.id_centro);
     if (!id_centro) return res.status(400).json({ ok: false, message: 'id_centro inválido.' });
@@ -244,7 +245,10 @@ router.post('/config/:id_centro/lados',
     } catch (err) {
       await client.query('ROLLBACK');
       console.error('config/lados POST:', err);
-      return res.status(500).json({ ok: false, message: 'Error interno.' });
+      return res.status(500).json({
+        ok: false,
+        message: `Error interno: ${err.message || err}`,
+      });
     } finally {
       client.release();
     }
@@ -296,12 +300,12 @@ router.put('/config/:id_centro/lados/:id_lado',
     body('nombre').trim().notEmpty().withMessage('Nombre requerido.'),
     body('modo').isIn(['controlado','libre']).withMessage('Modo inválido.'),
     body('capacidad').optional({ nullable: true }).isInt({ min: 1, max: 9999 }),
-    body('habilitado').optional().isBoolean(),
+    body('habilitado').optional(),   // llega como boolean nativo desde JSON
     body('tipos').isArray({ min: 1 }).withMessage('Selecciona al menos un tipo de vehículo.'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    if (!errors.isEmpty()) return res.status(400).json({ ok: false, message: errors.array()[0].msg });
 
     const id_centro = parseInt(req.params.id_centro);
     const id_lado   = parseInt(req.params.id_lado);
@@ -388,7 +392,7 @@ router.put('/config/:id_centro/lados/:id_lado',
     } catch (err) {
       await client.query('ROLLBACK');
       console.error('config/lados PUT:', err);
-      return res.status(500).json({ ok: false, message: 'Error interno.' });
+      return res.status(500).json({ ok: false, message: `Error interno: ${err.message || err}` });
     } finally {
       client.release();
     }
