@@ -886,14 +886,14 @@ router.get('/metricas', requireRol('superadmin'), async (req, res) => {
     // pero el safeQuery lo captura y devuelve ceros.
     const usuariosR = await safeQuery(`
       SELECT
-        COUNT(*) FILTER (WHERE activo = true)                        AS total_activos,
-        COUNT(*) FILTER (WHERE activo = false)                       AS total_inactivos,
-        COUNT(*) FILTER (WHERE rol = 'aprendiz')                     AS aprendices,
-        COUNT(*) FILTER (WHERE rol = 'funcionario')                  AS funcionarios,
-        COUNT(*) FILTER (WHERE rol = 'instructor')                   AS instructores,
-        COUNT(*) FILTER (WHERE rol IN ('admin','guardia'))           AS guardias,
+        COUNT(*) FILTER (WHERE activo = true)::INT                        AS total_activos,
+        COUNT(*) FILTER (WHERE activo = false)::INT                       AS total_inactivos,
+        COUNT(*) FILTER (WHERE rol = 'aprendiz')::INT                     AS aprendices,
+        COUNT(*) FILTER (WHERE rol = 'funcionario')::INT                  AS funcionarios,
+        COUNT(*) FILTER (WHERE rol = 'instructor')::INT                   AS instructores,
+        COUNT(*) FILTER (WHERE rol IN ('admin','guardia','superadmin'))::INT AS guardias,
         COUNT(*) FILTER (WHERE activo = true
-          AND COALESCE(created_at, fecha_registro, NOW())::date = ${HOY}) AS nuevos_hoy
+          AND COALESCE(created_at, fecha_registro, NOW())::date = ${HOY})::INT AS nuevos_hoy
       FROM usuarios
     `, {}, {
       total_activos: 0, total_inactivos: 0,
@@ -933,7 +933,7 @@ router.get('/metricas', requireRol('superadmin'), async (req, res) => {
       FROM registros_uso
     `, {}, { total_registros: 0, hoy: 0, ultimos_7_dias: 0, ultimos_30_dias: 0 });
 
-    // ── 4. Picos por hora (top 5 para gráfica) ───────────────────────
+    // ── 4. Picos por hora (todas las horas para histograma 24h) ──────
     const picosR = await safeQuery(`
       SELECT
         EXTRACT(HOUR FROM (fecha_entrada ${TZ}))::INT AS hora,
@@ -941,8 +941,7 @@ router.get('/metricas', requireRol('superadmin'), async (req, res) => {
       FROM registros_uso
       WHERE (fecha_entrada ${TZ})::date >= (${HOY} - INTERVAL '30 days')
       GROUP BY hora
-      ORDER BY total DESC
-      LIMIT 5
+      ORDER BY hora ASC
     `, {}, null);
 
     // ── 5. Por tipo de vehículo ───────────────────────────────────────

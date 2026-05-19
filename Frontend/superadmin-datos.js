@@ -668,10 +668,10 @@ async function cargarMetricas() {
 
     // ── Chart 4: Roles barras horizontales ───────────────────────────
     const rolesDef = [
-      { label:'Aprendices',   val: Number(usuarios.aprendices||0),   color:'rgba(33,150,243,0.75)'  },
-      { label:'Funcionarios', val: Number(usuarios.funcionarios||0), color:'rgba(76,175,80,0.75)'   },
-      { label:'Instructores', val: Number(usuarios.instructores||0), color:'rgba(156,39,176,0.75)'  },
-      { label:'Guardias',     val: Number(usuarios.guardias||0),     color:'rgba(255,152,0,0.75)'   },
+      { label:'Aprendices',   val: parseInt(usuarios.aprendices)   || 0, color:'rgba(33,150,243,0.75)'  },
+      { label:'Funcionarios', val: parseInt(usuarios.funcionarios) || 0, color:'rgba(76,175,80,0.75)'   },
+      { label:'Instructores', val: parseInt(usuarios.instructores) || 0, color:'rgba(156,39,176,0.75)'  },
+      { label:'Guardias/Admin', val: parseInt(usuarios.guardias)   || 0, color:'rgba(255,152,0,0.75)'   },
     ];
     _mkBarChart('chartAnalRoles',
       rolesDef.map(r=>r.label),
