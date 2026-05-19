@@ -2,10 +2,11 @@
 const router  = require('express').Router();
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
+const { randomInt } = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
-const { authMiddleware } = require('../middlewares/auth');
+const { authMiddleware, requireRol } = require('../middlewares/auth');
 const { enviarCodigoRecuperacion, enviarBienvenidaAdmin, enviarBienvenidaAprendiz } = require('../config/mailer');
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -31,7 +32,8 @@ function maskEmail(email) {
 }
 
 function generarCodigo() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  // crypto.randomInt es criptográficamente seguro (no usar Math.random para códigos de seguridad)
+  return randomInt(100000, 1000000).toString();
 }
 
 // ── GET /api/auth/verificar/:numero_id ───────────────────────────────
@@ -147,6 +149,7 @@ router.post('/register',
 // Permite registrar instructores, funcionarios y cualquier rol.
 router.post('/admin-register',
   authMiddleware,
+  requireRol('admin', 'guardia', 'superadmin'),
   [
     body('nombre_completo').trim().notEmpty().withMessage('Nombre requerido.'),
     body('numero_id').trim().notEmpty().withMessage('Número de identificación requerido.'),
@@ -156,10 +159,6 @@ router.post('/admin-register',
     body('rol').isIn(['aprendiz', 'funcionario', 'instructor', 'admin', 'guardia', 'superadmin']).withMessage('Rol inválido.'),
   ],
   async (req, res) => {
-    if (req.user.rol !== 'admin' && req.user.rol !== 'guardia' && req.user.rol !== 'superadmin') {
-      return res.status(403).json({ ok: false, message: 'Solo los administradores pueden usar este endpoint.' });
-    }
-
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
 
@@ -339,8 +338,20 @@ router.post('/refresh', async (req, res) => {
     if (!row.rows.length) return res.status(401).json({ ok: false, message: 'Refresh token inválido.' });
 
     const payload = { id_usuario: decoded.id_usuario, rol: decoded.rol, email: decoded.email };
-    const { access } = signTokens(payload);
-    return res.json({ ok: true, access_token: access });
+    const { access, refresh } = signTokens(payload);
+
+    // Rotar el refresh token: invalidar el anterior e insertar uno nuevo
+    await query(
+      'UPDATE tokens_sesion SET activo = false WHERE refresh_token = @token',
+      { token: refresh_token }
+    );
+    const exp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await query(
+      'INSERT INTO tokens_sesion (id_usuario, refresh_token, expira_en) VALUES (@uid, @token, @exp)',
+      { uid: decoded.id_usuario, token: refresh, exp }
+    );
+
+    return res.json({ ok: true, access_token: access, refresh_token: refresh });
   } catch {
     return res.status(401).json({ ok: false, message: 'Refresh token expirado.' });
   }
@@ -431,8 +442,8 @@ router.post('/recuperar/enviar-codigo', async (req, res) => {
       return res.json({ ok: true, message: 'Código enviado correctamente.', email_masked: maskEmail(emailDestino) });
     } catch (mailErr) {
       console.error('[mailer] Error enviando código:', mailErr.message);
-      // El código está guardado aunque el correo falle — informar al usuario
-      return res.status(200).json({
+      // El código está guardado aunque el correo falle — informar al usuario con 503
+      return res.status(503).json({
         ok: false,
         message: 'No se pudo enviar el correo. Verifica que el correo sea correcto e intenta de nuevo.',
         email_masked: maskEmail(emailDestino),
