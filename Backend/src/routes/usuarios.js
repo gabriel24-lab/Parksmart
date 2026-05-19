@@ -146,8 +146,6 @@ router.put('/cambiar-password',
 router.post('/foto-perfil', uploadMem.single('foto'), async (req, res) => {
   if (!req.file) return res.status(400).json({ ok: false, message: 'No se recibió ninguna foto.' });
 
-  await validarMagicBytes(req.file.buffer);
-
   try {
     // Validar el tipo de archivo por magic bytes
     const fileType = await validarMagicBytes(req.file.buffer);
@@ -170,7 +168,7 @@ router.post('/foto-perfil', uploadMem.single('foto'), async (req, res) => {
     const foto_url = urlData.publicUrl;
 
     // Borrar foto anterior si existe
-    const old = await require('../config/db').query(
+    const old = await query(
       'SELECT foto_perfil FROM usuarios WHERE id_usuario = @uid',
       { uid: req.user.id_usuario }
     );
@@ -179,7 +177,7 @@ router.post('/foto-perfil', uploadMem.single('foto'), async (req, res) => {
       await supabase.storage.from('perfiles').remove([oldFile]).catch(() => {});
     }
 
-    await require('../config/db').query(
+    await query(
       'UPDATE usuarios SET foto_perfil = @foto WHERE id_usuario = @uid',
       { foto: foto_url, uid: req.user.id_usuario }
     );
@@ -194,7 +192,7 @@ router.post('/foto-perfil', uploadMem.single('foto'), async (req, res) => {
 // ── DELETE /api/usuarios/foto-perfil ─────────────────────────────────
 router.delete('/foto-perfil', async (req, res) => {
   try {
-    const result = await require('../config/db').query(
+    const result = await query(
       'SELECT foto_perfil FROM usuarios WHERE id_usuario = @uid',
       { uid: req.user.id_usuario }
     );
@@ -202,7 +200,7 @@ router.delete('/foto-perfil', async (req, res) => {
     if (foto) {
       const fileName = foto.split('/').pop();
       await supabase.storage.from('perfiles').remove([fileName]).catch(() => {});
-      await require('../config/db').query(
+      await query(
         'UPDATE usuarios SET foto_perfil = NULL WHERE id_usuario = @uid',
         { uid: req.user.id_usuario }
       );
