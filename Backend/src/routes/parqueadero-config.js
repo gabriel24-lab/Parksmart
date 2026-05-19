@@ -104,6 +104,43 @@ router.get('/config/centros', async (req, res) => {
   }
 });
 
+// ── GET /api/parqueadero/config/centros-admin ──────────────────────────
+// Lista completa de centros con su región (para la tabla de gestión)
+// ⚠️  DEBE ir ANTES de GET /config/:id_centro para que Express no capture
+//     "centros-admin" como valor del parámetro :id_centro.
+router.get('/config/centros-admin', async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT cf.id_centro, cf.nombre, cf.id_region, r.nombre AS region_nombre,
+              COUNT(l.id_lado)                            AS total_lados,
+              COUNT(u.id_usuario)                         AS total_usuarios
+       FROM centros_formacion cf
+       LEFT JOIN regiones       r ON r.id_region  = cf.id_region
+       LEFT JOIN lados          l ON l.id_centro  = cf.id_centro
+       LEFT JOIN usuarios       u ON u.id_centro  = cf.id_centro
+       GROUP BY cf.id_centro, cf.nombre, cf.id_region, r.nombre
+       ORDER BY r.nombre, cf.nombre`
+    );
+    return res.json({ ok: true, data: result.rows });
+  } catch (err) {
+    console.error('centros-admin GET:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
+// ── GET /api/parqueadero/config/regiones-admin ─────────────────────────
+// Lista de regiones para poblar el select del formulario
+// ⚠️  DEBE ir ANTES de GET /config/:id_centro por la misma razón.
+router.get('/config/regiones-admin', async (req, res) => {
+  try {
+    const result = await query(`SELECT id_region, nombre FROM regiones ORDER BY nombre`);
+    return res.json({ ok: true, data: result.rows });
+  } catch (err) {
+    console.error('regiones-admin GET:', err);
+    return res.status(500).json({ ok: false, message: 'Error interno.' });
+  }
+});
+
 // ── GET /api/parqueadero/config/:id_centro ─────────────────────────────
 // Config completa de un centro: lados, tipos permitidos y ocupación real
 router.get('/config/:id_centro', async (req, res) => {
@@ -423,40 +460,6 @@ function invalidarCacheCatalogos() {
     console.warn('No se pudo invalidar caché de catálogos:', e.message);
   }
 }
-
-// ── GET /api/parqueadero/config/centros-admin ──────────────────────────
-// Lista completa de centros con su región (para la tabla de gestión)
-router.get('/config/centros-admin', async (req, res) => {
-  try {
-    const result = await query(
-      `SELECT cf.id_centro, cf.nombre, cf.id_region, r.nombre AS region_nombre,
-              COUNT(l.id_lado)                            AS total_lados,
-              COUNT(u.id_usuario)                         AS total_usuarios
-       FROM centros_formacion cf
-       LEFT JOIN regiones       r ON r.id_region  = cf.id_region
-       LEFT JOIN lados          l ON l.id_centro  = cf.id_centro
-       LEFT JOIN usuarios       u ON u.id_centro  = cf.id_centro
-       GROUP BY cf.id_centro, cf.nombre, cf.id_region, r.nombre
-       ORDER BY r.nombre, cf.nombre`
-    );
-    return res.json({ ok: true, data: result.rows });
-  } catch (err) {
-    console.error('centros-admin GET:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
-  }
-});
-
-// ── GET /api/parqueadero/config/regiones-admin ─────────────────────────
-// Lista de regiones para poblar el select del formulario
-router.get('/config/regiones-admin', async (req, res) => {
-  try {
-    const result = await query(`SELECT id_region, nombre FROM regiones ORDER BY nombre`);
-    return res.json({ ok: true, data: result.rows });
-  } catch (err) {
-    console.error('regiones-admin GET:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
-  }
-});
 
 // ── POST /api/parqueadero/config/centros-admin ─────────────────────────
 // Crear un nuevo centro de formación

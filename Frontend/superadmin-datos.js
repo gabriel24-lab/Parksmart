@@ -1272,10 +1272,21 @@ function pkToggleLado(ladoId) {
         if (!res) { showToast('Error de sesión. Vuelve a iniciar sesión.', 'error'); return; }
         const data = await res.json();
         if (!data.ok) { showToast(data.message || 'Error al cambiar estado', 'error'); return; }
-        const idCentro = pkConfig.id_centro;
-        pkConfig = await pkApiGet(idCentro);
-        pkRenderLados();
+
         showToast(data.message || 'Estado actualizado', 'success');
+
+        // Intentar recargar config completa desde el servidor;
+        // si falla (ej. servidor dormido en Render), actualizar solo el lado
+        // afectado localmente para que la UI refleje el cambio de inmediato.
+        const idCentro = pkConfig.id_centro;
+        const nuevoConfig = await pkApiGet(idCentro);
+        if (nuevoConfig) {
+          pkConfig = nuevoConfig;
+        } else {
+          const idx = pkConfig.lados.findIndex(l => String(l.id) === String(ladoId));
+          if (idx !== -1) pkConfig.lados[idx].habilitado = data.habilitado;
+        }
+        pkRenderLados();
       } catch (e) { console.error('pkToggleLado error:', e); showToast('Error de conexión', 'error'); }
     },
   });
