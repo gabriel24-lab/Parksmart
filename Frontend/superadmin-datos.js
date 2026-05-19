@@ -1798,6 +1798,199 @@ function _renderCarnetBusqueda(u, vehiculos) {
 }
 
 // ── Toggle desde búsqueda global (refresca el resultado) ──────────────
+
+// ════════════════════════════════════════════════════════════════════
+// ══ GESTIÓN DE CENTROS DE FORMACIÓN ══
+// ════════════════════════════════════════════════════════════════════
+
+let cfCentros    = [];
+let cfRegiones   = [];
+let cfEditandoId = null;
+
+async function cfCargar() {
+  const wrap = document.getElementById('cf-tabla-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = `<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);font-size:13px;">
+    <i class="bi bi-arrow-repeat" style="font-size:22px;display:block;margin-bottom:8px;animation:spin 1s linear infinite;"></i>
+    Cargando centros...</div>`;
+  try {
+    const res  = await apiFetch('/parqueadero/config/centros-admin');
+    if (!res) return;
+    const data = await res.json();
+    if (!data.ok) { wrap.innerHTML = `<div style="padding:20px;color:#ef9a9a;font-size:13px;">Error: ${data.message}</div>`; return; }
+    cfCentros = data.data;
+    cfRenderTabla();
+  } catch (e) {
+    wrap.innerHTML = `<div style="padding:20px;color:#ef9a9a;font-size:13px;">Error de conexión.</div>`;
+  }
+}
+
+function cfRenderTabla() {
+  const wrap = document.getElementById('cf-tabla-wrap');
+  if (!wrap) return;
+  if (!cfCentros.length) {
+    wrap.innerHTML = `<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.35);font-size:13px;">
+      <i class="bi bi-buildings" style="font-size:28px;display:block;margin-bottom:8px;"></i>
+      No hay centros registrados aún.</div>`;
+    return;
+  }
+  const filas = cfCentros.map(c => `
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+      <td style="padding:12px 14px;font-size:13px;color:#fff;font-weight:500;">${c.nombre}</td>
+      <td style="padding:12px 14px;font-size:12px;color:rgba(255,255,255,0.5);">${c.region_nombre || '—'}</td>
+      <td style="padding:12px 14px;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;">${c.total_lados}</td>
+      <td style="padding:12px 14px;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;">${c.total_usuarios}</td>
+      <td style="padding:12px 14px;text-align:right;">
+        <div style="display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;">
+          <button class="pk-btn" onclick="cfAbrirModal(${c.id_centro})"><i class="bi bi-pencil-fill"></i> Editar</button>
+          <button class="pk-btn red" onclick="cfEliminar(${c.id_centro},'${c.nombre.replace(/'/g, "\\'")}',${c.total_usuarios},${c.total_lados})"><i class="bi bi-trash3-fill"></i></button>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  wrap.innerHTML = `
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.10);">
+            <th style="padding:10px 14px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);text-align:left;text-transform:uppercase;letter-spacing:.06em;">Centro</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);text-align:left;text-transform:uppercase;letter-spacing:.06em;">Regional</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);text-align:center;text-transform:uppercase;letter-spacing:.06em;">Lados</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);text-align:center;text-transform:uppercase;letter-spacing:.06em;">Usuarios</th>
+            <th style="padding:10px 14px;"></th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>`;
+}
+
+async function cfAbrirModal(id_centro = null) {
+  cfEditandoId = id_centro;
+  const modal  = document.getElementById('cf-modal');
+  const icon   = document.getElementById('cf-modal-icon');
+  const title  = document.getElementById('cf-modal-title');
+  const btnG   = document.getElementById('cf-modal-btn-guardar');
+  const inp    = document.getElementById('cf-input-nombre');
+  const selReg = document.getElementById('cf-select-region');
+
+  icon.textContent  = id_centro ? '✏️' : '🏫';
+  title.textContent = id_centro ? 'Editar centro de formación' : 'Nuevo centro de formación';
+  btnG.innerHTML    = id_centro
+    ? '<i class="bi bi-check-lg"></i> Guardar cambios'
+    : '<i class="bi bi-plus-lg"></i> Crear centro';
+  inp.value = '';
+
+  if (!cfRegiones.length) {
+    selReg.innerHTML = '<option value="">Cargando...</option>';
+    try {
+      const res  = await apiFetch('/parqueadero/config/regiones-admin');
+      const data = await res.json();
+      if (data.ok) cfRegiones = data.data;
+    } catch (e) { /* silencioso */ }
+  }
+  selReg.innerHTML = '<option value="">— Selecciona una regional —</option>' +
+    cfRegiones.map(r => `<option value="${r.id_region}">${r.nombre}</option>`).join('');
+
+  if (id_centro) {
+    const centro = cfCentros.find(c => c.id_centro === id_centro);
+    if (centro) { inp.value = centro.nombre; selReg.value = centro.id_region; }
+  }
+
+  modal.classList.add('visible');
+  setTimeout(() => inp.focus(), 100);
+}
+
+function cfCerrarModal() {
+  document.getElementById('cf-modal')?.classList.remove('visible');
+  cfEditandoId = null;
+}
+
+async function cfGuardar() {
+  const nombre    = document.getElementById('cf-input-nombre')?.value.trim();
+  const id_region = document.getElementById('cf-select-region')?.value;
+  const btn       = document.getElementById('cf-modal-btn-guardar');
+
+  if (!nombre)    { showToast('Escribe el nombre del centro.', 'error'); return; }
+  if (!id_region) { showToast('Selecciona una regional.', 'error'); return; }
+
+  const oldHTML = btn.innerHTML;
+  btn.disabled  = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
+
+  try {
+    const esEdicion = cfEditandoId !== null;
+    const url    = esEdicion
+      ? `/parqueadero/config/centros-admin/${cfEditandoId}`
+      : '/parqueadero/config/centros-admin';
+    const method = esEdicion ? 'PUT' : 'POST';
+
+    const res  = await apiFetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, id_region: parseInt(id_region) }),
+    });
+    if (!res) { btn.disabled = false; btn.innerHTML = oldHTML; return; }
+    const data = await res.json();
+
+    if (!data.ok) {
+      showToast(data.message || 'Error al guardar.', 'error');
+      btn.disabled = false; btn.innerHTML = oldHTML;
+      return;
+    }
+
+    showToast(data.message, 'success');
+    cfCerrarModal();
+    await cfCargar();
+    await pkCargarSelectCentros();
+    if (typeof cargarCatalogos === 'function') await cargarCatalogos();
+
+  } catch (e) {
+    showToast('Error de conexión.', 'error');
+    btn.disabled = false; btn.innerHTML = oldHTML;
+  }
+}
+
+function cfEliminar(id_centro, nombre, totalUsuarios, totalLados) {
+  if (totalUsuarios > 0) {
+    showToast(`No se puede eliminar "${nombre}": tiene ${totalUsuarios} usuario(s) registrado(s).`, 'error');
+    return;
+  }
+  openSAModal({
+    icon: '🗑️',
+    title: `Eliminar "${nombre}"`,
+    desc: `¿Confirmas que deseas eliminar este centro de formación?
+           ${Number(totalLados) > 0
+             ? `<br><small style="color:rgba(255,255,255,0.4);">Se eliminarán también sus ${totalLados} lado(s) de parqueadero configurado(s).</small>`
+             : '<br><small style="color:rgba(255,255,255,0.4);">Este centro no tiene lados configurados.</small>'}`,
+    btnClass: 'danger',
+    btnLabel: 'Eliminar',
+    onConfirm: async () => {
+      try {
+        const res  = await apiFetch(`/parqueadero/config/centros-admin/${id_centro}`, { method: 'DELETE' });
+        if (!res) return;
+        const data = await res.json();
+        if (!data.ok) { showToast(data.message || 'Error al eliminar.', 'error'); return; }
+        showToast(data.message, 'success');
+        await cfCargar();
+        await pkCargarSelectCentros();
+        if (typeof cargarCatalogos === 'function') await cargarCatalogos();
+        const sel = document.getElementById('pk-centro-select');
+        if (sel && String(sel.value) === String(id_centro)) {
+          sel.value = ''; pkConfig = null; pkRenderLados();
+        }
+      } catch (e) { showToast('Error de conexión.', 'error'); }
+    },
+  });
+}
+
+// Integrar cfCargar con pkInit para que cargue al entrar a la sección
+const _cfPkInit = pkInit;
+pkInit = async function() {
+  await _cfPkInit();
+  await cfCargar();
+};
+
 async function _busquedaToggle(id, btn) {
   if (btn) btn.disabled = true;
   try {

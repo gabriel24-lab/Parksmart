@@ -634,6 +634,28 @@
         </button>
       </div>
 
+      <!-- ── Gestión de Centros de Formación ── -->
+      <div class="glass-panel" style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <i class="bi bi-buildings-fill" style="font-size:20px;color:var(--brand-color);"></i>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:#fff;">Centros de Formación</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.4);">Administra los centros registrados en el sistema</div>
+            </div>
+          </div>
+          <button class="pk-btn green" onclick="cfAbrirModal()">
+            <i class="bi bi-plus-circle-fill"></i> Nuevo centro
+          </button>
+        </div>
+        <div id="cf-tabla-wrap">
+          <div style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);font-size:13px;">
+            <i class="bi bi-arrow-repeat" style="font-size:22px;display:block;margin-bottom:8px;"></i>
+            Cargando centros...
+          </div>
+        </div>
+      </div>
+
       <!-- Selector de centro -->
       <div class="glass-panel" style="margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
@@ -658,6 +680,34 @@
         </div>
       </div>
     </section>
+
+    <!-- Modal centros de formación -->
+    <div class="sa-modal-overlay" id="cf-modal">
+      <div class="sa-modal-card" style="max-width:440px;">
+        <div class="sa-modal-icon" id="cf-modal-icon">🏫</div>
+        <div class="sa-modal-title" id="cf-modal-title">Nuevo centro de formación</div>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:22px;">
+          <div class="pk-form-group">
+            <label>Nombre del centro <span style="color:#ef9a9a;">*</span></label>
+            <input type="text" id="cf-input-nombre" placeholder="Ej: Centro de Comercio y Servicios" maxlength="120"
+              style="padding:10px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);color:#fff;font-size:13px;outline:none;font-family:inherit;">
+          </div>
+          <div class="pk-form-group">
+            <label>Regional <span style="color:#ef9a9a;">*</span></label>
+            <select id="cf-select-region"
+              style="padding:10px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);color:#fff;font-size:13px;outline:none;font-family:inherit;">
+              <option value="">Cargando regiones...</option>
+            </select>
+          </div>
+        </div>
+        <div class="sa-modal-btns">
+          <button class="sa-modal-cancel" onclick="cfCerrarModal()">Cancelar</button>
+          <button class="sa-modal-confirm ok" id="cf-modal-btn-guardar" onclick="cfGuardar()">
+            <i class="bi bi-check-lg"></i> Guardar
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal parqueadero — editar lado / agregar lado -->
     <div class="sa-modal-overlay" id="pk-modal">
