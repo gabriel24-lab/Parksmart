@@ -107,7 +107,7 @@ app.use('/api/usuarios',    require('./src/routes/usuarios'));
 app.use('/api/vehiculos',   require('./src/routes/vehiculos'));
 app.use('/api/parqueadero', require('./src/routes/parqueadero'));
 app.use('/api/parqueadero', require('./src/routes/parqueadero-config'));
-app.use('/api/catalogos',   require('./src/routes/catalogos'));
+app.use('/api/catalogos',   require('./src/routes/catalogos').router);
 
 // ── Health check ──────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

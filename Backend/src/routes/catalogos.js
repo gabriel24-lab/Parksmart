@@ -72,4 +72,15 @@ router.get('/tipos-vehiculo', async (req, res) => {
   }
 });
 
-module.exports = router;
+// Permite que otros módulos (parqueadero-config) invaliden la caché
+// cuando crean, editan o eliminan centros de formación.
+function clearCache(...keys) {
+  if (!keys.length) {
+    // Sin argumentos → limpiar todo
+    Object.keys(cache).forEach(k => delete cache[k]);
+  } else {
+    keys.forEach(k => delete cache[k]);
+  }
+}
+
+module.exports = { router, clearCache };

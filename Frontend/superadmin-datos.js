@@ -1956,6 +1956,26 @@ async function cfGuardar() {
     await pkCargarSelectCentros();
     if (typeof cargarCatalogos === 'function') await cargarCatalogos();
 
+    // Si se acaba de CREAR un centro (no editar), seleccionarlo automáticamente
+    // en el selector de parqueadero para que el usuario pueda agregar lados de inmediato.
+    if (!esEdicion && data.data?.id_centro) {
+      const sel = document.getElementById('pk-centro-select');
+      if (sel) {
+        sel.value = data.data.id_centro;
+        // Si el select aún no tiene la opción (caché de catalogos), agregarla
+        if (sel.value !== String(data.data.id_centro)) {
+          const opt = document.createElement('option');
+          opt.value = data.data.id_centro;
+          opt.textContent = nombre;
+          sel.appendChild(opt);
+          sel.value = data.data.id_centro;
+        }
+        await pkCargarCentro();
+        // Scroll suave hacia la sección del parqueadero
+        document.getElementById('pk-lados-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
   } catch (e) {
     showToast('Error de conexión.', 'error');
     btn.disabled = false; btn.innerHTML = oldHTML;

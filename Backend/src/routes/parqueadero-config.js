@@ -441,22 +441,15 @@ router.delete('/config/:id_centro/lados/:id_lado', async (req, res) => {
 // ── CRUD CENTROS DE FORMACIÓN (solo superadmin) ───────────────────────
 // ══════════════════════════════════════════════════════════════════════
 
-// Helper: invalida todas las entradas de caché de catalogos en el módulo
-// catalogos.js para que el siguiente request los recargue desde la BD.
-// Lo hacemos accediendo al módulo ya cargado en require.cache.
+// Invalida la caché de centros en catalogos.js para que el próximo
+// GET /catalogos/centros devuelva datos frescos desde la BD.
+const { clearCache: clearCatalogosCache } = require('./catalogos');
 function invalidarCacheCatalogos() {
   try {
-    const catalogosPath = require.resolve('./catalogos');   // ruta absoluta
-    const mod = require.cache[catalogosPath];
-    if (mod) {
-      // El módulo exporta solo el router; la caché es una variable local.
-      // La forma más limpia es forzar una recarga del módulo.
-      delete require.cache[catalogosPath];
-      // Volver a requerir para que el módulo quede activo con caché vacía.
-      require(catalogosPath);
-    }
+    // Elimina todas las entradas de centros (con y sin filtro de región)
+    // y también la de regiones, por si acaso.
+    clearCatalogosCache();
   } catch (e) {
-    // No crítico: si falla la invalidación el caché expira en 24 h de todas formas.
     console.warn('No se pudo invalidar caché de catálogos:', e.message);
   }
 }
