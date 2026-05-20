@@ -1304,6 +1304,62 @@
     }
     .uc-vtag i { font-size: 12px; }
     .uc-placa { font-size: 11px; color: rgba(255,255,255,0.35); font-family: 'DM Mono', monospace; display: block; margin-top: 2px; }
+    .uc-veh-img-wrap {
+      width: 100%; max-width: 100%;
+      height: 72px;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 7px;
+      border: 0.5px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+    }
+    .uc-veh-img {
+      width: 100%; height: 100%;
+      object-fit: cover; object-position: center;
+      display: block;
+    }
+    /* ── Carrusel de vehículos ── */
+    .uc-veh-carousel {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+    }
+    .uc-veh-track {
+      display: flex;
+      transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+      will-change: transform;
+    }
+    .uc-veh-slide {
+      min-width: 100%;
+      box-sizing: border-box;
+      padding-right: 2px; /* evita que la flecha tape el contenido */
+    }
+    .uc-veh-dots {
+      display: flex; justify-content: center; gap: 5px;
+      margin-top: 8px;
+    }
+    .uc-veh-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      cursor: pointer; transition: background 0.2s, transform 0.2s;
+      flex-shrink: 0;
+    }
+    .uc-veh-dot.active {
+      background: #2FA440;
+      transform: scale(1.3);
+    }
+    .uc-veh-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(0,0,0,0.55); border: 0.5px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.7); font-size: 10px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.15s;
+      z-index: 2; padding: 0;
+    }
+    .uc-veh-arrow:hover { background: rgba(47,164,64,0.35); border-color: rgba(47,164,64,0.5); color: #fff; }
+    .uc-veh-prev { left: 0; }
+    .uc-veh-next { right: 0; }
     .uc-status-section { text-align: center; flex-shrink: 0; }
     .uc-status-badge {
       padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
