@@ -489,15 +489,23 @@
           </div>`;
       }
 
-      // Vehículos HTML
+      // Vehículos HTML — agrupado por tipo para no repetir el mismo badge
       const vehiculosHtml = (u.vehiculos && u.vehiculos.length > 0)
-        ? u.vehiculos.map(v => {
-            const t = (v.tipo || '').toLowerCase();
-            const c = (t === 'auto' || t === 'carro' || t === 'furgoneta') ? 'car'
-                    : (t === 'motocicleta' || t === 'moto') ? 'moto'
-                    : 'bike';
-            return `<span class="vtag ${c}">${v.tipo}</span>`;
-          }).join('<div style="margin-top:4px;"></div>')
+        ? (() => {
+            const conteo = {};
+            u.vehiculos.forEach(v => {
+              const tipo = v.tipo || 'Vehículo';
+              conteo[tipo] = (conteo[tipo] || 0) + 1;
+            });
+            return Object.entries(conteo).map(([tipo, n]) => {
+              const t = tipo.toLowerCase();
+              const c = (t === 'auto' || t === 'carro' || t === 'furgoneta') ? 'car'
+                      : (t === 'motocicleta' || t === 'moto') ? 'moto'
+                      : 'bike';
+              const label = n > 1 ? `${tipo} ×${n}` : tipo;
+              return `<span class="vtag ${c}">${label}</span>`;
+            }).join('<div style="margin-top:4px;"></div>');
+          })()
         : `<span style="opacity:0.5;font-size:12px;">Sin Vehículo</span>`;
 
       return `
