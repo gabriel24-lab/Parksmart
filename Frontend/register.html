@@ -324,6 +324,28 @@
       });
     }
 
+    // ── Funciones de enmascaramiento ─────────────────────────────────
+    function enmascararEmail(email) {
+      if (!email) return '';
+      const [usuario, dominio] = email.split('@');
+      const visible = usuario.slice(0, 2);
+      const oculto  = '*'.repeat(Math.max(2, usuario.length - 2));
+      return `${visible}${oculto}@${dominio}`;
+    }
+
+    function enmascararDocumento(doc) {
+      if (!doc) return '';
+      const s = doc.toString();
+      return s.slice(0, 2) + '*'.repeat(Math.max(2, s.length - 4)) + s.slice(-2);
+    }
+
+    function enmascararNombre(nombre) {
+      if (!nombre) return '';
+      return nombre.split(' ').map(palabra =>
+        palabra.length <= 1 ? palabra : palabra[0] + '*'.repeat(palabra.length - 1)
+      ).join(' ');
+    }
+
     // ── PASO 1: Verificar documento ───────────────────────────────────
     async function paso1() {
       if (enviando) return;
@@ -352,11 +374,11 @@
         // Guardar datos y pasar al paso 2
         datosUsuario = { ...data.data, numero_id: nid };
 
-        document.getElementById('user-name').textContent = datosUsuario.nombre_completo;
-        document.getElementById('user-doc').textContent  = nid;
+        document.getElementById('user-name').textContent = enmascararNombre(datosUsuario.nombre_completo);
+        document.getElementById('user-doc').textContent  = enmascararDocumento(nid);
 
         if (datosUsuario.email) {
-          document.getElementById('user-email').textContent = datosUsuario.email;
+          document.getElementById('user-email').textContent = enmascararEmail(datosUsuario.email);
           document.getElementById('user-email-row').style.display = 'block';
         }
 
