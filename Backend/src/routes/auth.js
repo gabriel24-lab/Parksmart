@@ -77,7 +77,7 @@ router.get('/verificar/:numero_id', async (req, res) => {
     });
   } catch (err) {
     console.error('Error en verificar:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo verificar el número de documento. Estamos trabajando en ello.' });
   }
 });
 
@@ -139,7 +139,7 @@ router.post('/register',
       return res.status(201).json({ ok: true, message: 'Usuario registrado correctamente.' });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
+      return res.status(500).json({ ok: false, message: 'No se pudo completar el registro. Por favor intenta de nuevo. Estamos trabajando en ello.' });
     }
   }
 );
@@ -265,7 +265,7 @@ router.post('/admin-register',
         return res.status(409).json({ ok: false, message: 'Un dato único ya existe en el sistema. Verifica los campos e intenta de nuevo.' });
       }
 
-      return res.status(500).json({ ok: false, message: 'Error interno del servidor. Contacta al administrador.' });
+      return res.status(500).json({ ok: false, message: 'No se pudo iniciar sesión en este momento. Por favor intenta de nuevo. Estamos trabajando en ello.' });
     }
   }
 );
@@ -319,7 +319,7 @@ router.post('/login',
       });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
+      return res.status(500).json({ ok: false, message: 'No se pudo completar el registro del administrador. Estamos trabajando en ello.' });
     }
   }
 );
@@ -393,7 +393,7 @@ router.post('/recuperar/solicitar', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo solicitar la recuperación de contraseña. Estamos trabajando en ello.' });
   }
 });
 
@@ -451,7 +451,7 @@ router.post('/recuperar/enviar-codigo', async (req, res) => {
     }
   } catch (err) {
     console.error('Error enviando código:', err);
-    return res.status(500).json({ ok: false, message: 'No se pudo enviar el correo. Verifica la configuración del servidor.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo enviar el correo de recuperación. Verifica tu dirección de email e intenta de nuevo. Estamos trabajando en ello.' });
   }
 });
 
@@ -471,7 +471,7 @@ router.post('/recuperar/verificar-codigo', async (req, res) => {
     return res.json({ ok: true, message: 'Código válido.' });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo verificar el código de recuperación. Estamos trabajando en ello.' });
   }
 });
 
@@ -501,7 +501,7 @@ router.post('/recuperar/nueva-password', async (req, res) => {
     return res.json({ ok: true, message: 'Contraseña actualizada correctamente.' });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo actualizar la contraseña. Por favor intenta de nuevo. Estamos trabajando en ello.' });
   }
 });
 

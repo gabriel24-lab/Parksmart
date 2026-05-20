@@ -168,7 +168,7 @@ router.get('/cupos', async (req, res) => {
     return res.json({ ok: true, data: result.rows });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudieron consultar los cupos disponibles. Estamos trabajando en ello.' });
   }
 });
 
@@ -257,7 +257,7 @@ router.get('/ocupacion-rol', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo obtener la ocupación del parqueadero. Estamos trabajando en ello.' });
   }
 });
 
@@ -301,7 +301,7 @@ router.get('/historial', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar el historial de registros. Estamos trabajando en ello.' });
   }
 });
 
@@ -338,7 +338,7 @@ router.post('/entrada', async (req, res) => {
     if (err.tipo === 'no_encontrado')
       return res.status(404).json({ ok: false, message: err.message });
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo registrar la entrada. Por favor intenta de nuevo. Estamos trabajando en ello.' });
   } finally {
     client.release();
   }
@@ -357,7 +357,7 @@ router.post('/salida', async (req, res) => {
     if (err.message?.includes('activa'))
       return res.status(404).json({ ok: false, message: err.message });
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo registrar la salida. Por favor intenta de nuevo. Estamos trabajando en ello.' });
   } finally {
     client.release();
   }
@@ -385,7 +385,7 @@ router.get('/estado-actual', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo consultar tu estado actual en el parqueadero. Estamos trabajando en ello.' });
   }
 });
 
@@ -449,7 +449,7 @@ router.get('/stats-hoy', requireRol('admin', 'guardia', 'superadmin'), async (re
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudieron cargar las estadísticas del día. Estamos trabajando en ello.' });
   }
 });
 
@@ -511,7 +511,7 @@ router.get('/stats-lado', requireRol('admin', 'guardia', 'superadmin'), async (r
     return res.json({ ok: true, data: { por_hora: porHora.rows, por_tipo: porTipo.rows, por_semana: porSemana.rows } });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudieron cargar las estadísticas por lado. Estamos trabajando en ello.' });
   }
 });
 
@@ -538,7 +538,7 @@ router.get('/reciente', requireRol('admin', 'guardia', 'superadmin'), async (req
     return res.json({ ok: true, data: result.rows.map(normalizeRegistroFechas) });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar la actividad reciente. Estamos trabajando en ello.' });
   }
 });
 
@@ -573,7 +573,7 @@ router.get('/usuarios-admin', requireRol('admin', 'guardia', 'superadmin'), asyn
     return res.json({ ok: true, data });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar la lista de usuarios. Estamos trabajando en ello.' });
   }
 });
 
@@ -604,7 +604,7 @@ router.get('/historial-admin', requireRol('admin', 'guardia', 'superadmin'), asy
     return res.json({ ok: true, data: result.rows.map(normalizeRegistroFechas) });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar el historial de registros. Estamos trabajando en ello.' });
   }
 });
 
@@ -655,7 +655,7 @@ router.post('/escanear', requireRol('admin', 'guardia', 'superadmin'), async (re
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo procesar el escaneo del QR. Estamos trabajando en ello.' });
   }
 });
 
@@ -695,7 +695,7 @@ router.post('/admin-entrada', requireRol('admin', 'guardia', 'superadmin'), asyn
     if (err.message?.includes('activa') || err.message?.includes('cupos'))
       return res.status(409).json({ ok: false, message: err.message });
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo registrar la entrada del usuario. Estamos trabajando en ello.' });
   } finally {
     client.release();
   }
@@ -717,7 +717,7 @@ router.post('/admin-salida', requireRol('admin', 'guardia', 'superadmin'), async
     if (err.message?.includes('activa'))
       return res.status(404).json({ ok: false, message: err.message });
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar la lista de guardias. Estamos trabajando en ello.' });
   } finally {
     client.release();
   }
@@ -745,7 +745,7 @@ router.get('/guardias', requireRol('superadmin'), async (req, res) => {
     return res.json({ ok: true, data: result.rows });
   } catch (err) {
     console.error('guardias GET:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar la lista de guardias. Estamos trabajando en ello.' });
   }
 });
 
@@ -774,7 +774,7 @@ router.put('/guardias/:id/toggle', requireRol('superadmin'), async (req, res) =>
     });
   } catch (err) {
     console.error('guardias toggle:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cambiar el estado del guardia. Estamos trabajando en ello.' });
   }
 });
 
@@ -795,7 +795,7 @@ router.delete('/guardias/:id', requireRol('superadmin'), async (req, res) => {
     return res.json({ ok: true, message: 'Cuenta de guardia desactivada.' });
   } catch (err) {
     console.error('guardias DELETE:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo eliminar el guardia. Estamos trabajando en ello.' });
   }
 });
 
@@ -832,7 +832,7 @@ router.get('/usuarios-superadmin', requireRol('superadmin'), async (req, res) =>
     return res.json({ ok: true, data });
   } catch (err) {
     console.error('usuarios-superadmin GET:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar la lista de usuarios. Estamos trabajando en ello.' });
   }
 });
 
@@ -859,7 +859,7 @@ router.put('/usuarios/:id/toggle', requireRol('superadmin'), async (req, res) =>
     return res.json({ ok: true, activo: nuevoEstado, message: nuevoEstado ? 'Usuario activado.' : 'Usuario desactivado.' });
   } catch (err) {
     console.error('usuarios toggle:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cambiar el estado del usuario. Estamos trabajando en ello.' });
   }
 });
 
@@ -885,7 +885,7 @@ router.put('/usuarios/:id/rol', requireRol('superadmin'), async (req, res) => {
     return res.json({ ok: true, message: `Rol actualizado a ${rol}.` });
   } catch (err) {
     console.error('usuarios rol:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo actualizar el rol del usuario. Estamos trabajando en ello.' });
   }
 });
 
@@ -1030,7 +1030,7 @@ router.get('/metricas', requireRol('superadmin'), async (req, res) => {
 
   } catch (err) {
     console.error('metricas error global:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno: ' + err.message });
+    return res.status(500).json({ ok: false, message: 'No se pudieron cargar las métricas. Estamos trabajando en ello.' + err.message });
   }
 });
 
@@ -1060,7 +1060,7 @@ router.get('/buscar', requireRol('superadmin'), async (req, res) => {
     return res.json({ ok: true, data: { usuarios: uRes.rows, vehiculos: vRes.rows } });
   } catch (err) {
     console.error('buscar:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo completar la búsqueda. Estamos trabajando en ello.' });
   }
 });
 
@@ -1102,7 +1102,7 @@ router.get('/alertas', requireRol('superadmin'), async (req, res) => {
     return res.json({ ok: true, data: { alertas, sin_salida: sinSalidaR.rows[0].sin_salida } });
   } catch (err) {
     console.error('alertas:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudieron cargar las alertas. Estamos trabajando en ello.' });
   }
 });
 
@@ -1110,7 +1110,7 @@ router.get('/alertas', requireRol('superadmin'), async (req, res) => {
 // Exportar historial por rango de fechas
 router.get('/exportar', requireRol('superadmin'), async (req, res) => {
   const { desde, hasta } = req.query;
-  if (!desde || !hasta) return res.status(400).json({ ok: false, message: 'Parámetros desde y hasta requeridos.' });
+  if (!desde || !hasta) return res.status(400).json({ ok: false, message: 'No se pudo generar la exportación de datos. Estamos trabajando en ello.' });
   try {
     const result = await query(
       `SELECT r.id_registro,
@@ -1138,7 +1138,7 @@ router.get('/exportar', requireRol('superadmin'), async (req, res) => {
     }))});
   } catch (err) {
     console.error('exportar:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo generar la exportación de datos. Estamos trabajando en ello.' });
   }
 });
 
@@ -1222,7 +1222,7 @@ router.get('/auditoria', requireRol('superadmin'), async (req, res) => {
     return res.json({ ok: true, data: todos });
   } catch (err) {
     console.error('auditoria:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar el registro de auditoría. Estamos trabajando en ello.' });
   }
 });
 

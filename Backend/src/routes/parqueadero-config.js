@@ -100,7 +100,7 @@ router.get('/config/centros', async (req, res) => {
     return res.json({ ok: true, data: result.rows });
   } catch (err) {
     console.error('config/centros:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudieron cargar los centros de formación. Estamos trabajando en ello.' });
   }
 });
 
@@ -124,7 +124,7 @@ router.get('/config/centros-admin', async (req, res) => {
     return res.json({ ok: true, data: result.rows });
   } catch (err) {
     console.error('centros-admin GET:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudieron cargar los centros asignados. Estamos trabajando en ello.' });
   }
 });
 
@@ -137,7 +137,7 @@ router.get('/config/regiones-admin', async (req, res) => {
     return res.json({ ok: true, data: result.rows });
   } catch (err) {
     console.error('regiones-admin GET:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudieron cargar las regiones. Estamos trabajando en ello.' });
   }
 });
 
@@ -152,7 +152,7 @@ router.get('/config/:id_centro', async (req, res) => {
     return res.json({ ok: true, data: { id_centro, lados } });
   } catch (err) {
     console.error('config/get:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar la configuración del parqueadero. Estamos trabajando en ello.' });
   }
 });
 
@@ -247,7 +247,7 @@ router.post('/config/:id_centro/lados',
       console.error('config/lados POST:', err);
       return res.status(500).json({
         ok: false,
-        message: `Error interno: ${err.message || err}`,
+        message: 'No se pudo crear el lado del parqueadero. Estamos trabajando en ello.',
       });
     } finally {
       client.release();
@@ -289,7 +289,7 @@ router.put('/config/:id_centro/lados/:id_lado/toggle', async (req, res) => {
     });
   } catch (err) {
     console.error('config/toggle:', err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cambiar el estado del lado del parqueadero. Estamos trabajando en ello.' });
   }
 });
 
@@ -392,7 +392,7 @@ router.put('/config/:id_centro/lados/:id_lado',
     } catch (err) {
       await client.query('ROLLBACK');
       console.error('config/lados PUT:', err);
-      return res.status(500).json({ ok: false, message: `Error interno: ${err.message || err}` });
+      return res.status(500).json({ ok: false, message: 'No se pudo actualizar la configuración del lado. Estamos trabajando en ello.' });
     } finally {
       client.release();
     }
@@ -451,7 +451,7 @@ router.delete('/config/:id_centro/lados/:id_lado', async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('config/delete:', err);
-    return res.status(500).json({ ok: false, message: `Error interno: ${err.message || err}` });
+    return res.status(500).json({ ok: false, message: 'No se pudo eliminar el lado del parqueadero. Estamos trabajando en ello.' });
   } finally {
     client.release();
   }
@@ -519,7 +519,7 @@ router.post('/config/centros-admin',
       });
     } catch (err) {
       console.error('centros-admin POST:', err);
-      return res.status(500).json({ ok: false, message: 'Error interno.' });
+      return res.status(500).json({ ok: false, message: 'No se pudo crear el centro de formación. Estamos trabajando en ello.' });
     }
   }
 );
@@ -578,7 +578,7 @@ router.put('/config/centros-admin/:id_centro',
       return res.json({ ok: true, message: `Centro actualizado correctamente.` });
     } catch (err) {
       console.error('centros-admin PUT:', err);
-      return res.status(500).json({ ok: false, message: 'Error interno.' });
+      return res.status(500).json({ ok: false, message: 'No se pudo actualizar el centro de formación. Estamos trabajando en ello.' });
     }
   }
 );
@@ -671,7 +671,7 @@ router.delete('/config/centros-admin/:id_centro', async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('centros-admin DELETE:', err);
-    return res.status(500).json({ ok: false, message: `Error interno: ${err.message || err}` });
+    return res.status(500).json({ ok: false, message: 'No se pudo eliminar el centro de formación. Estamos trabajando en ello.' });
   } finally {
     client.release();
   }

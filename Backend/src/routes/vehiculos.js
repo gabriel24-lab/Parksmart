@@ -87,7 +87,7 @@ router.post('/admin',
       });
     } catch (err) {
       console.error('vehiculos/admin POST:', err);
-      return res.status(500).json({ ok: false, message: 'Error interno.' });
+      return res.status(500).json({ ok: false, message: 'No se pudo registrar el vehículo. Estamos trabajando en ello.' });
     }
   }
 );
@@ -116,7 +116,7 @@ router.get('/', async (req, res) => {
     return res.json({ ok: true, data: result.rows });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudieron cargar tus vehículos. Estamos trabajando en ello.' });
   }
 });
 
@@ -162,7 +162,7 @@ router.post('/',
     if (totalActivos >= 3) {
       return res.status(400).json({
         ok: false,
-        message: 'Has alcanzado el límite máximo de 3 vehículos registrados. Elimina uno para poder agregar otro.',
+        message: 'No se pudo subir la foto del vehículo. Intenta con otra imagen. Estamos trabajando en ello.',
       });
     }
 
@@ -186,7 +186,7 @@ router.post('/',
 
       if (uploadError) {
         console.error('Error subiendo foto a Supabase Storage:', uploadError);
-        return res.status(500).json({ ok: false, message: 'Error al subir la foto.' });
+        return res.status(500).json({ ok: false, message: 'No se pudo subir la foto del vehículo. Intenta con otra imagen. Estamos trabajando en ello.' });
       }
 
       const { data: urlData } = supabase.storage
@@ -224,7 +224,7 @@ router.post('/',
         await supabase.storage.from('vehiculos').remove([fileName]).catch(() => {});
       }
       console.error(err);
-      return res.status(500).json({ ok: false, message: 'Error interno.' });
+      return res.status(500).json({ ok: false, message: 'No se pudo guardar el vehículo en la base de datos. Estamos trabajando en ello.' });
     }
   }
 );
@@ -253,7 +253,7 @@ router.delete('/:id', async (req, res) => {
     return res.json({ ok: true, message: 'Vehículo eliminado.' });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo eliminar el vehículo. Estamos trabajando en ello.' });
   }
 });
 

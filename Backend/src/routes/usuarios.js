@@ -54,7 +54,7 @@ router.get('/perfil', async (req, res) => {
     return res.json({ ok: true, data: result.rows[0] });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar la información del perfil. Estamos trabajando en ello.' });
   }
 });
 
@@ -99,7 +99,7 @@ router.put('/perfil',
       return res.json({ ok: true, message: 'Perfil actualizado.' });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ ok: false, message: 'Error interno.' });
+      return res.status(500).json({ ok: false, message: 'No se pudo actualizar el perfil. Estamos trabajando en ello.' });
     }
   }
 );
@@ -137,7 +137,7 @@ router.put('/cambiar-password',
       return res.json({ ok: true, message: 'Contraseña actualizada.' });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ ok: false, message: 'Error interno.' });
+      return res.status(500).json({ ok: false, message: 'No se pudo subir la foto de perfil. Estamos trabajando en ello.' });
     }
   }
 );
@@ -161,7 +161,7 @@ router.post('/foto-perfil', uploadMem.single('foto'), async (req, res) => {
 
     if (uploadError) {
       console.error('Error subiendo foto de perfil:', uploadError);
-      return res.status(500).json({ ok: false, message: 'Error al subir la foto.' });
+      return res.status(500).json({ ok: false, message: 'No se pudo guardar la foto de perfil. Estamos trabajando en ello.' });
     }
 
     const { data: urlData } = supabase.storage.from('perfiles').getPublicUrl(fileName);
@@ -185,7 +185,7 @@ router.post('/foto-perfil', uploadMem.single('foto'), async (req, res) => {
     return res.json({ ok: true, foto_url });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cambiar la contraseña. Estamos trabajando en ello.' });
   }
 });
 
@@ -208,7 +208,7 @@ router.delete('/foto-perfil', async (req, res) => {
     return res.json({ ok: true, message: 'Foto eliminada.' });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'Error interno.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo procesar la solicitud. Estamos trabajando en ello.' });
   }
 });
 
