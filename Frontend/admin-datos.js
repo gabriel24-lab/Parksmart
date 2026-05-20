@@ -470,8 +470,12 @@
 
         let vehiculoOpts = '';
         if (u.vehiculos && u.vehiculos.length > 1) {
-             vehiculoOpts = `<select class="inline-select" id="veh-sel-${u.id}" style="max-width:80px; margin-right:4px;">` + 
-                            u.vehiculos.map(v => `<option value="${v.id_vehiculo}">${v.tipo}</option>`).join('') +
+             vehiculoOpts = `<select class="inline-select" id="veh-sel-${u.id}" style="max-width:80px; margin-right:4px;">` +
+                            u.vehiculos.map(v => {
+                              const id = v.placa ? v.placa.toUpperCase() : (v.modelo || '');
+                              const label = id ? `${v.tipo} · ${id}` : v.tipo;
+                              return `<option value="${v.id_vehiculo}">${label}</option>`;
+                            }).join('') +
                             `</select>`;
         } else if (u.vehiculos && u.vehiculos.length === 1) {
              vehiculoOpts = `<input type="hidden" id="veh-sel-${u.id}" value="${u.vehiculos[0].id_vehiculo}">`;
