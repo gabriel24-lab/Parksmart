@@ -409,13 +409,27 @@ router.get('/stats-hoy', requireRol('admin', 'guardia', 'superadmin'), async (re
              = (NOW() AT TIME ZONE 'America/Bogota')::DATE`
       ),
       query(
-        `SELECT EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))::INT AS hora,
-                COUNT(*) AS entradas,
-                SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
-         FROM registros_uso r
-         WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
-             = (NOW() AT TIME ZONE 'America/Bogota')::DATE
-         GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))
+        `WITH ent AS (
+           SELECT EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))::INT AS hora,
+                  COUNT(*) AS entradas
+           FROM registros_uso r
+           WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
+               = (NOW() AT TIME ZONE 'America/Bogota')::DATE
+           GROUP BY 1
+         ),
+         sal AS (
+           SELECT EXTRACT(HOUR FROM (r.fecha_salida AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))::INT AS hora,
+                  COUNT(*) AS salidas
+           FROM registros_uso r
+           WHERE r.fecha_salida IS NOT NULL
+             AND (r.fecha_salida AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
+               = (NOW() AT TIME ZONE 'America/Bogota')::DATE
+           GROUP BY 1
+         )
+         SELECT COALESCE(e.hora, s.hora) AS hora,
+                COALESCE(e.entradas, 0)  AS entradas,
+                COALESCE(s.salidas,  0)  AS salidas
+         FROM ent e FULL OUTER JOIN sal s ON e.hora = s.hora
          ORDER BY hora`
       ),
       query(
@@ -448,13 +462,27 @@ router.get('/stats-lado', requireRol('admin', 'guardia', 'superadmin'), async (r
     // FIX: igual que stats-hoy, calcular "hoy" directo en PostgreSQL
     const [porHora, porTipo, porSemana] = await Promise.all([
       query(
-        `SELECT EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))::INT AS hora,
-                COUNT(*) AS entradas,
-                SUM(CASE WHEN r.fecha_salida IS NOT NULL THEN 1 ELSE 0 END) AS salidas
-         FROM registros_uso r
-         WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
-             = (NOW() AT TIME ZONE 'America/Bogota')::DATE AND r.id_lado = @id_lado
-         GROUP BY EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))
+        `WITH ent AS (
+           SELECT EXTRACT(HOUR FROM (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))::INT AS hora,
+                  COUNT(*) AS entradas
+           FROM registros_uso r
+           WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
+               = (NOW() AT TIME ZONE 'America/Bogota')::DATE AND r.id_lado = @id_lado
+           GROUP BY 1
+         ),
+         sal AS (
+           SELECT EXTRACT(HOUR FROM (r.fecha_salida AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota'))::INT AS hora,
+                  COUNT(*) AS salidas
+           FROM registros_uso r
+           WHERE r.fecha_salida IS NOT NULL
+             AND (r.fecha_salida AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
+               = (NOW() AT TIME ZONE 'America/Bogota')::DATE AND r.id_lado = @id_lado
+           GROUP BY 1
+         )
+         SELECT COALESCE(e.hora, s.hora) AS hora,
+                COALESCE(e.entradas, 0)  AS entradas,
+                COALESCE(s.salidas,  0)  AS salidas
+         FROM ent e FULL OUTER JOIN sal s ON e.hora = s.hora
          ORDER BY hora`,
         { id_lado }
       ),
