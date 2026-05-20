@@ -374,7 +374,7 @@
         // Guardar datos y pasar al paso 2
         datosUsuario = { ...data.data, numero_id: nid };
 
-        document.getElementById('user-name').textContent = enmascararNombre(datosUsuario.nombre_completo);
+        document.getElementById('user-name').textContent = datosUsuario.nombre_completo;
         document.getElementById('user-doc').textContent  = enmascararDocumento(nid);
 
         if (datosUsuario.email) {
