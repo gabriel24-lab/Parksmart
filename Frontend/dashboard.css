@@ -734,7 +734,7 @@ body {
   border: 1.5px solid rgba(255,255,255,0.22);
   background:#1c2b1e;
   font-family:'Inter',sans-serif; 
-  font-size: 13px; 
+  font-size: 16px; /* ≥16px evita zoom automático en iOS Safari */
   color:#fff;
   outline: none; 
   transition: border-color .2s, box-shadow .2s;
@@ -1147,43 +1147,139 @@ body {
 .toast-warning { background:#78350f; color:#fef3c7; border:1px solid #d97706; }
 
 /* ══ RESPONSIVE ══ */
+
+/* ── Desktop grande (≤ 1200px) ── */
+@media (max-width: 1200px) {
+  .main { padding: 36px 28px; }
+}
+
+/* ── Desktop pequeño (≤ 1024px) ── */
 @media (max-width: 1024px) {
   .cards-row { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ── Tablet (≤ 900px) ── */
 @media (max-width: 900px) {
   .profile-form-grid { grid-template-columns: 1fr; }
   .full-width { grid-column: 1; }
+  .cards-row.four { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ── Tablet pequeña / móvil grande (≤ 768px) ── */
 @media (max-width: 768px) {
   .topbar { display: flex; }
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); }
-  .main { margin-left: 0; padding: 72px 14px 24px; }
-  
+
+  /* padding-bottom reserva espacio para bottom nav + safe area */
+  .main {
+    margin-left: 0;
+    padding: 72px 14px calc(72px + env(safe-area-inset-bottom));
+  }
+
   .glass-panel { padding: 18px 14px; margin-bottom: 16px; border-radius: var(--radius-sm); }
   .section-header { margin-bottom: 18px; }
-  
-  .cards-row { grid-template-columns: 1fr; gap: 24px; margin-bottom: 30px; }
+
+  .cards-row { grid-template-columns: 1fr; gap: 14px; margin-bottom: 20px; }
   .form-row  { grid-template-columns: 1fr; gap: 14px; }
-  .qr-layout { flex-direction: column; gap: 28px; }
-  
-  .vehicle-card { flex-direction: column; padding: 24px; gap: 20px; }
-  .vc-thumb, .vc-icon-box { width: 100%; height: 160px; border-radius: var(--radius-sm); }
-  
-  #section-historial .cards-row { grid-template-columns: 1fr; gap: 24px; }
-  #hist-page-btns { flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 24px; }
+  .qr-layout { flex-direction: column; gap: 20px; }
+
+  .vehicle-card { flex-direction: column; padding: 18px; gap: 16px; }
+  .vc-thumb, .vc-icon-box { width: 100%; height: 140px; border-radius: var(--radius-sm); }
+
+  #section-historial .cards-row { grid-template-columns: 1fr; gap: 14px; }
+  #hist-page-btns { flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 18px; }
+
+  /* Tabs de vehículos: ocupan todo el ancho */
+  .vehicle-tabs { gap: 8px; }
+  .vtab { flex: 1; justify-content: center; padding: 10px 12px; }
+
+  /* Tabs de lado del parqueadero */
+  .dash-lado-tabs { gap: 8px; }
+  .dash-lado-tab { width: 100%; justify-content: flex-start; }
 }
 
+/* ── Móvil (≤ 480px) ── */
 @media (max-width: 480px) {
-  .stat-card { flex-direction: row; text-align: left; gap: 12px; padding: 14px 14px; border-radius: var(--radius-sm); }
-  .stat-icon { margin-bottom: 6px; }
-  .qr-box canvas { width: 100% !important; height: auto !important; }
+  .main { padding: 68px 12px calc(72px + env(safe-area-inset-bottom)); }
+
+  .section-header h1 { font-size: 20px !important; }
+  .section-sub { font-size: 12px; }
+
+  /* Stat cards horizontales compactas */
+  .stat-card {
+    flex-direction: row;
+    text-align: left;
+    gap: 12px;
+    padding: 14px 14px;
+    border-radius: var(--radius-sm);
+  }
+  .stat-icon { margin-bottom: 0; font-size: 24px; }
+  .stat-number { font-size: 26px; }
+  .stat-badge { display: none; }
+
+  /* QR: canvas al 100% sin desbordarse */
+  .qr-box { padding: 10px; }
+  .qr-box canvas { width: 100% !important; height: auto !important; max-width: 240px; margin: 0 auto; display: block; }
+
+  /* Tabla con scroll horizontal */
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
-  .history-table { min-width: 480px; }
-  .charts-row { gap: 24px; }
+  .history-table { min-width: 480px; font-size: 12px; }
+  .history-table th, .history-table td { padding: 8px 10px; }
+
+  /* Charts */
+  .charts-row { gap: 16px; }
   .chart-panel { margin-bottom: 0; }
+
+  /* Inputs: asegurar font-size 16px siempre */
+  .form-group input,
+  .form-group select,
+  .form-group textarea { font-size: 16px; padding: 10px 12px; }
+
+  /* Botones con touch target mínimo */
+  .btn-save, .btn-download { min-height: 44px; padding: 10px 18px; font-size: 13px; }
+
+  /* Modal responsive */
+  .modal-box { padding: 24px 18px; }
+  .modal-actions { flex-direction: column; }
+  .btn-cancel, .btn-confirm-delete { width: 100%; justify-content: center; }
+
+  /* Toast en la parte baja, sobre el bottom nav */
+  #toast {
+    bottom: calc(72px + env(safe-area-inset-bottom) + 8px);
+    right: 12px;
+    left: 12px;
+    font-size: 13px;
+  }
+
+  /* Avatar del perfil */
+  .profile-avatar-area { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .avatar-circle { width: 60px; height: 60px; font-size: 20px; }
+
+  /* Botones QR */
+  .qr-btns-row { flex-direction: column; }
+  .qr-btns-row .btn-download,
+  .qr-btns-row .btn-save { width: 100%; justify-content: center; }
+}
+
+/* ── Móvil muy pequeño (≤ 360px) ── */
+@media (max-width: 360px) {
+  .main { padding: 64px 10px calc(70px + env(safe-area-inset-bottom)); }
+  .glass-panel { padding: 14px 12px; }
+  .section-header h1 { font-size: 18px !important; }
+  .stat-number { font-size: 22px; }
+  .stat-icon { font-size: 20px; }
+  .history-table { font-size: 11px; }
+  .history-table th, .history-table td { padding: 6px 8px; }
+  .vtab { padding: 8px 8px; font-size: 12px; }
+}
+
+/* ── Landscape en móvil ── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .topbar { height: 50px; }
+  .main { padding-top: 58px; }
+  .bottom-nav { display: none !important; } /* En landscape no hay espacio para bottom nav */
+  .main { padding-bottom: env(safe-area-inset-bottom) !important; }
 }
 
 /* ══ QR PANEL MEJORADO ══ */
@@ -1495,6 +1591,7 @@ body {
     justify-content: center;
     gap: 4px;
     padding: 8px 4px;
+    min-height: 52px; /* touch target */
     background: none;
     border: none;
     border-radius: 0;
@@ -1544,10 +1641,6 @@ body {
   .bottom-nav-item.logout:hover,
   .bottom-nav-item.logout:active {
     color: rgba(255, 80, 80, 0.9);
-  }
-
-  .main {
-    padding-bottom: calc(68px + env(safe-area-inset-bottom)) !important;
   }
 }
 

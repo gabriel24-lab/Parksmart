@@ -169,7 +169,7 @@ body {
   border: 1px solid rgba(47, 164, 64, 0.12);
   background: rgba(47, 164, 64, 0.05);
   font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
+  font-size: 16px; /* ≥16px evita zoom automático en iOS Safari */
   color: var(--white);
   outline: none;
   transition: border-color .2s, box-shadow .2s;
@@ -231,6 +231,7 @@ body {
 .btn-signin {
   width: 100%;
   padding: 13px;
+  min-height: 48px; /* touch target mínimo recomendado */
   border-radius: var(--radius-sm);
   border: 1px solid rgba(47, 164, 64, 0.4);
   background: var(--brand-color);
@@ -274,26 +275,81 @@ body {
   text-decoration: underline;
 }
 
+/* ── Tablet pequeña / móvil grande (481–767px) ── */
+@media (max-width: 767px) and (min-width: 481px) {
+  .card {
+    max-width: 460px;
+    padding: 32px 28px 28px;
+  }
+}
+
+/* ── Móvil (≤ 480px) ── */
 @media (max-width: 480px) {
   body {
     align-items: flex-start;
-    padding-top: max(24px, env(safe-area-inset-top));
-    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
     overflow-y: auto;
   }
   .card {
-    margin: 16px auto;
-    padding: 28px 20px 24px;
-    width: calc(100% - 28px);
+    margin: 12px auto;
+    padding: 26px 18px 22px;
+    width: calc(100% - 24px);
+    border-radius: var(--radius-md);
   }
   .title { font-size: 20px; }
+  .form-group input {
+    padding: 12px 14px;
+    font-size: 16px; /* mantener 16px para evitar zoom iOS */
+  }
+  .btn-signin {
+    font-size: 15px;
+    min-height: 48px;
+  }
+  /* Ojo de contraseña más fácil de tocar */
+  .eye-icon {
+    right: 10px;
+    padding: 8px;
+  }
 }
 
+/* ── Móvil muy pequeño (≤ 360px — Galaxy A series, etc.) ── */
+@media (max-width: 360px) {
+  .card {
+    padding: 22px 14px 18px;
+    width: calc(100% - 16px);
+  }
+  .logo img { max-width: 120px; }
+  .title { font-size: 18px; }
+  .form-group { margin-bottom: 12px; }
+}
+
+/* ── Landscape / viewport muy bajo ── */
 @media (max-height: 660px) {
-  /* Landscape / small viewport — compress spacing */
-  .card { padding: 20px 20px 18px; }
-  .logo { margin-bottom: 12px; }
-  .logo img { max-width: 110px; }
-  .title { font-size: 18px; margin-bottom: 12px; }
+  .card { padding: 18px 20px 16px; }
+  .logo { margin-bottom: 10px; }
+  .logo img { max-width: 100px; }
+  .title { font-size: 18px; margin-bottom: 10px; }
   .form-group { margin-bottom: 10px; }
+}
+
+/* ── Landscape en móvil (ancho > alto, pantalla pequeña) ── */
+@media (max-height: 500px) and (orientation: landscape) {
+  body { align-items: flex-start; overflow-y: auto; }
+  .card {
+    margin: 8px auto;
+    padding: 14px 20px 12px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 20px;
+    align-items: start;
+    max-width: 600px;
+  }
+  .logo { margin-bottom: 0; grid-row: 1 / 4; align-self: center; }
+  .logo img { max-width: 80px; }
+  .title { font-size: 17px; margin-bottom: 10px; }
+  .form-group { margin-bottom: 8px; }
+  .form-group input { padding: 9px 12px; }
+  .btn-signin { margin-bottom: 10px; min-height: 42px; }
+  .register-text { grid-column: 2; }
 }
