@@ -1510,26 +1510,69 @@ function showSAUserCard(qrId) {
   // ── Vehículos ──
   const vehContent = document.getElementById('uc-vehicle-content');
   if (u.vehiculos && u.vehiculos.length > 0) {
-    const v = u.vehiculos[0];
-    const t = (v.tipo || '').toLowerCase();
-    const vIcon = (t === 'auto' || t === 'carro' || t === 'furgoneta') ? 'bi-car-front-fill'
-                : (t === 'motocicleta' || t === 'moto') ? 'bi-scooter'
-                : 'bi-bicycle';
-    const detail = [v.color, v.descripcion].filter(Boolean).join(' · ');
-    const placa  = v.placa ? v.placa.toUpperCase() : (v.modelo || '');
-    const fotoVeh = v.foto_url
-      ? `<div style="margin-top:6px;border-radius:6px;overflow:hidden;max-height:52px;">
-           <img src="${v.foto_url}" alt="Foto del vehículo"
-             style="width:100%;height:52px;object-fit:cover;"
-             onerror="this.parentElement.style.display='none'">
+    const slides = u.vehiculos.map((v, i) => {
+      const t = (v.tipo || '').toLowerCase();
+      const vIcon = (t === 'auto' || t === 'carro' || t === 'furgoneta') ? 'bi-car-front-fill'
+                  : (t === 'motocicleta' || t === 'moto') ? 'bi-scooter'
+                  : 'bi-bicycle';
+      const detail = [v.color, v.descripcion].filter(Boolean).join(' · ');
+      const placa  = v.placa ? v.placa.toUpperCase() : (v.modelo || '');
+      const foto   = v.foto_url
+        ? `<div class="uc-veh-img-wrap">
+             <img src="${v.foto_url}" alt="Foto del vehículo" class="uc-veh-img" loading="lazy"
+               onerror="this.parentElement.style.display='none'">
+           </div>`
+        : '';
+      return `
+        <div class="uc-veh-slide" data-idx="${i}">
+          <div class="uc-vtag"><i class="bi ${vIcon}"></i> ${v.tipo}${placa ? ' · ' + placa : ''}</div>
+          ${detail ? `<span class="uc-placa">${detail}</span>` : ''}
+          ${foto}
+        </div>`;
+    }).join('');
+
+    const total = u.vehiculos.length;
+    const dots  = total > 1
+      ? `<div class="uc-veh-dots">
+           ${u.vehiculos.map((_, i) => `<span class="uc-veh-dot${i === 0 ? ' active' : ''}" data-dot="${i}"></span>`).join('')}
          </div>`
       : '';
+    const arrows = total > 1
+      ? `<button class="uc-veh-arrow uc-veh-prev" aria-label="Anterior"><i class="bi bi-chevron-left"></i></button>
+         <button class="uc-veh-arrow uc-veh-next" aria-label="Siguiente"><i class="bi bi-chevron-right"></i></button>`
+      : '';
+
     vehContent.innerHTML = `
-      <div class="uc-vtag"><i class="bi ${vIcon}"></i> ${v.tipo}${placa ? ' · ' + placa : ''}</div>
-      ${detail ? `<span class="uc-placa">${detail}</span>` : ''}
-      ${fotoVeh}
-      ${u.vehiculos.length > 1 ? `<div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:6px;">+${u.vehiculos.length - 1} vehículo(s) más</div>` : ''}
-    `;
+      <div class="uc-veh-carousel" data-current="0" data-total="${total}">
+        <div class="uc-veh-track">${slides}</div>
+        ${dots}
+        ${arrows}
+      </div>`;
+
+    if (total > 1) {
+      const carousel = vehContent.querySelector('.uc-veh-carousel');
+      const track    = carousel.querySelector('.uc-veh-track');
+
+      function goToSlide(idx) {
+        const n = parseInt(carousel.dataset.total);
+        idx = ((idx % n) + n) % n;
+        carousel.dataset.current = idx;
+        track.style.transform = `translateX(-${idx * 100}%)`;
+        carousel.querySelectorAll('.uc-veh-dot').forEach((d, i) => {
+          d.classList.toggle('active', i === idx);
+        });
+      }
+
+      carousel.querySelector('.uc-veh-prev').addEventListener('click', () => {
+        goToSlide(parseInt(carousel.dataset.current) - 1);
+      });
+      carousel.querySelector('.uc-veh-next').addEventListener('click', () => {
+        goToSlide(parseInt(carousel.dataset.current) + 1);
+      });
+      carousel.querySelectorAll('.uc-veh-dot').forEach(dot => {
+        dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.dot)));
+      });
+    }
   } else {
     vehContent.innerHTML = '<span style="opacity:.45;font-size:12px;">Sin vehículo</span>';
   }
