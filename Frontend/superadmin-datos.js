@@ -22,8 +22,8 @@ const SA_ROL_LABELS = {
   aprendiz:    'Aprendiz',
   funcionario: 'Funcionario',
   instructor:  'Instructor',
-  admin:       'Guardia',
-  guardia:     'Guardia',
+  admin:       'Operario',
+  guardia:     'Operario',
   superadmin:  'Superadmin',
 };
 const SA_ROL_COLORS = {
@@ -166,7 +166,7 @@ async function cargarStatsGuardias() {
     const data = await res.json();
     if (!data.ok) return;
     const activos = (data.data || []).filter(g => g.activo).length;
-    const el = document.getElementById('stat-guardias');
+    const el = document.getElementById('stat-operarios');
     if (el) el.textContent = activos;
   } catch (e) { console.warn('stats guardias:', e); }
 }
@@ -306,8 +306,8 @@ async function cambiarRol(id, nuevoRol) {
 
 // ══ GUARDIAS ══
 async function cargarGuardias() {
-  const list     = document.getElementById('guardias-list');
-  const dashList = document.getElementById('dash-guardias-list');
+  const list     = document.getElementById('operarios-list');
+  const dashList = document.getElementById('dash-operarios-list');
   try {
     const res  = await apiFetch('/parqueadero/guardias');
     if (!res) return;
@@ -318,7 +318,7 @@ async function cargarGuardias() {
     const inactivos = guardias.filter(g => !g.activo);
     const totalHoy  = guardias.reduce((s,g)=>s+parseInt(g.registros_hoy||0),0);
     const setEl = (id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-    setEl('stat-guardias',activos.length); setEl('g-activos',activos.length);
+    setEl('stat-operarios',activos.length); setEl('g-activos',activos.length);
     setEl('g-inactivos',inactivos.length); setEl('g-registros-hoy',totalHoy);
     if (list) {
       if (!guardias.length) {
@@ -329,7 +329,7 @@ async function cargarGuardias() {
     }
     if (dashList) {
       if (!activos.length) {
-        dashList.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:13px;">Sin guardias activos</div>';
+        dashList.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:13px;">Sin operarios activos</div>';
       } else {
         dashList.innerHTML = activos.slice(0,5).map(g=>'<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,0.06);"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1a3d1f,#2FA440);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;">'+g.nombre_completo.split(' ').map(w=>w[0]).slice(0,2).join('')+'</div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+g.nombre_completo+'</div><div style="font-size:11px;color:rgba(255,255,255,0.4);">'+parseInt(g.registros_hoy||0)+' registros hoy</div></div><span class="event-badge in" style="font-size:10px;">Activo</span></div>').join('');
       }
@@ -360,8 +360,8 @@ async function toggleGuardia(id, btn) {
 
 function eliminarGuardia(id, nombre) {
   openSAModal({
-    icon:'⚠️', title:'Desactivar guardia',
-    desc:'¿Seguro que deseas desactivar la cuenta de <strong>'+nombre+'</strong>? El guardia no podrá iniciar sesión.',
+    icon:'⚠️', title:'Desactivar operario',
+    desc:'¿Seguro que deseas desactivar la cuenta de <strong>'+nombre+'</strong>? El operario no podrá iniciar sesión.',
     btnClass:'danger', btnLabel:'Desactivar',
     onConfirm: async () => {
       try {
@@ -369,7 +369,7 @@ function eliminarGuardia(id, nombre) {
         if (!res) return;
         const data = await res.json();
         if (!data.ok) { showToast(data.message||'Error.','error'); return; }
-        showToast('Guardia desactivado.','info');
+        showToast('Operario desactivado.','info');
         await cargarGuardias();
       } catch { showToast('Error de conexión.','error'); }
     },
@@ -671,7 +671,7 @@ async function cargarMetricas() {
       { label:'Aprendices',   val: parseInt(usuarios.aprendices)   || 0, color:'rgba(33,150,243,0.75)'  },
       { label:'Funcionarios', val: parseInt(usuarios.funcionarios) || 0, color:'rgba(76,175,80,0.75)'   },
       { label:'Instructores', val: parseInt(usuarios.instructores) || 0, color:'rgba(156,39,176,0.75)'  },
-      { label:'Guardias/Admin', val: parseInt(usuarios.guardias)   || 0, color:'rgba(255,152,0,0.75)'   },
+      { label:'Operarios', val: parseInt(usuarios.guardias)   || 0, color:'rgba(255,152,0,0.75)'   },
     ];
     _mkBarChart('chartAnalRoles',
       rolesDef.map(r=>r.label),
@@ -1472,8 +1472,8 @@ function showSAUserCard(qrId) {
   // ── Rol ──
   const rolLabels = {
     aprendiz:'Aprendiz', funcionario:'Funcionario',
-    instructor:'Instructor', admin:'Administrador',
-    guardia:'Guardia', superadmin:'Super Admin',
+    instructor:'Instructor', admin:'Operario',
+    guardia:'Operario', superadmin:'Super Admin',
   };
   const rolIcons = {
     aprendiz:'bi-mortarboard-fill', funcionario:'bi-briefcase-fill',

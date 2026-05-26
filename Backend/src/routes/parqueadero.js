@@ -717,7 +717,7 @@ router.post('/admin-salida', requireRol('admin', 'guardia', 'superadmin'), async
     if (err.message?.includes('activa'))
       return res.status(404).json({ ok: false, message: err.message });
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'No se pudo cargar la lista de guardias. Estamos trabajando en ello.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar la lista de operarios. Estamos trabajando en ello.' });
   } finally {
     client.release();
   }
@@ -745,7 +745,7 @@ router.get('/guardias', requireRol('superadmin'), async (req, res) => {
     return res.json({ ok: true, data: result.rows });
   } catch (err) {
     console.error('guardias GET:', err);
-    return res.status(500).json({ ok: false, message: 'No se pudo cargar la lista de guardias. Estamos trabajando en ello.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cargar la lista de operarios. Estamos trabajando en ello.' });
   }
 });
 
@@ -774,7 +774,7 @@ router.put('/guardias/:id/toggle', requireRol('superadmin'), async (req, res) =>
     });
   } catch (err) {
     console.error('guardias toggle:', err);
-    return res.status(500).json({ ok: false, message: 'No se pudo cambiar el estado del guardia. Estamos trabajando en ello.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo cambiar el estado del operario. Estamos trabajando en ello.' });
   }
 });
 
@@ -792,10 +792,10 @@ router.delete('/guardias/:id', requireRol('superadmin'), async (req, res) => {
       return res.status(404).json({ ok: false, message: 'Guardia no encontrado.' });
 
     await query(`UPDATE usuarios SET activo = false WHERE id_usuario = @id`, { id });
-    return res.json({ ok: true, message: 'Cuenta de guardia desactivada.' });
+    return res.json({ ok: true, message: 'Cuenta de operario desactivada.' });
   } catch (err) {
     console.error('guardias DELETE:', err);
-    return res.status(500).json({ ok: false, message: 'No se pudo eliminar el guardia. Estamos trabajando en ello.' });
+    return res.status(500).json({ ok: false, message: 'No se pudo eliminar el operario. Estamos trabajando en ello.' });
   }
 });
 

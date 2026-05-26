@@ -10,7 +10,7 @@
     let deleteIndex = -1;
     let userProfile = null;
 
-    const ROL_LABELS = { aprendiz: 'Aprendiz', funcionario: 'Funcionario', instructor: 'Instructor', admin: 'Admin' };
+    const ROL_LABELS = { aprendiz: 'Aprendiz', funcionario: 'Funcionario', instructor: 'Instructor', admin: 'Operario' };
     const ROL_COLORS = { aprendiz: '#1565c0', funcionario: '#2e7d32', instructor: '#6a1b9a', admin: '#2FA440' };
     const TIPO_ICONS = { bicicleta: 'bi-bicycle', carro: 'bi-car-front-fill', moto: 'bi-scooter'};
     const TIPO_LABELS = { bicicleta: 'Bicicleta', carro: 'Carro', moto: 'Moto'};
@@ -740,7 +740,7 @@
       const text = document.getElementById('p-rol-badge-text');
       if (!dot || !text) return;
       const colores = { aprendiz: '#1565c0', funcionario: '#2e7d32', instructor: '#6a1b9a', admin: '#2FA440' };
-      const labels  = { aprendiz: 'Aprendiz', funcionario: 'Funcionario', instructor: 'Instructor', admin: 'Administrador' };
+      const labels  = { aprendiz: 'Aprendiz', funcionario: 'Funcionario', instructor: 'Instructor', admin: 'Operario' };
       const color = colores[rol] || '#555';
       dot.style.background  = color;
       text.style.color      = '#e6edf3';
@@ -1128,6 +1128,19 @@
       document.getElementById('overlay').classList.remove('show');
       if (name === 'vehiculo')  applyRolToVehicleSection();
       if (name === 'historial') { histPage = 1; loadHistorial(); }
+      if (name === 'mi-qr')    syncQRSec();
+    }
+
+    function syncQRSec() {
+      // Copia el QR del canvas principal al canvas de la sección Mi QR
+      const src = document.getElementById('qrCanvas');
+      const dst = document.getElementById('qrCanvasSec');
+      if (!src || !dst) return;
+      dst.width = src.width; dst.height = src.height;
+      dst.getContext('2d').drawImage(src, 0, 0);
+      const idLabel = document.getElementById('qr-id-label');
+      const idLabelSec = document.getElementById('qr-id-label-sec');
+      if (idLabel && idLabelSec) idLabelSec.textContent = idLabel.textContent;
     }
 
     function toggleSidebar() {

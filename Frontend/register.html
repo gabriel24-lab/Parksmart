@@ -233,7 +233,7 @@
       if (typeof Auth !== 'undefined' && Auth.isLogged()) {
         const u = Auth.getUser();
         window.location.href = (u?.rol === 'superadmin') ? 'superadmin.html'
-          : (u?.rol === 'admin' || u?.rol === 'guardia') ? 'admin.html'
+          : (u?.rol === 'admin' || u?.rol === 'guardia') ? 'operario.html'
           : 'dashboard.html';
       }
     });

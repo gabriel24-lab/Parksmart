@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://parksmart-ggt8.onrender.com">  <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
   <!-- CSS propio (crítico, bloqueante intencionalmente) -->
-  <link rel="stylesheet" href="/Frontend/admin.css"/>
+  <link rel="stylesheet" href="/Frontend/operario.css"/>
   <style>
     /* Fix Chart.js: contenedor de altura fija para evitar conflicto con max-height del canvas */
     .chart-canvas-wrap {
@@ -63,7 +63,7 @@
       <img src="/Frontend/img/logo-icon-cropped.webp" alt="Logo" class="nav-logo-img">
       <span>Parksmart - Admin</span>
     </div>
-    <div class="sidebar-role-badge">Administrador</div>
+    <div class="sidebar-role-badge">Operario</div>
 
     <nav class="sidebar-nav">
       <button class="nav-item active" onclick="showSection('dashboard', this)">
@@ -699,7 +699,7 @@
               <option value="aprendiz">Aprendiz</option>
               <option value="funcionario">Funcionario</option>
               <option value="instructor">Instructor</option>
-              <option value="admin">Administrador</option>
+              <option value="admin">Operario</option>
             </select>
           </div>
           <!-- Contraseña temporal automática -->
@@ -851,8 +851,8 @@
             <input type="file" id="admin-foto-input" accept="image/*" hidden onchange="subirFotoAdmin(this)">
           </div>
           <div>
-            <div class="profile-name" id="admin-display-name">Administrador</div>
-            <div class="profile-role"><i class="bi bi-shield-lock-fill" style="color:#ffd54f;font-size:12px"></i> Rol: Administrador · SENA</div>
+            <div class="profile-name" id="admin-display-name">Operario</div>
+            <div class="profile-role"><i class="bi bi-shield-lock-fill" style="color:#ffd54f;font-size:12px"></i> Rol: Operario · SENA</div>
             <button id="btn-quitar-foto-admin" onclick="quitarFotoAdmin()" style="display:none;margin-top:6px;font-size:12px;background:rgba(239,83,80,0.15);border:1px solid rgba(239,83,80,0.3);color:#ef9a9a;border-radius:8px;padding:4px 10px;cursor:pointer;">
               <i class="bi bi-trash3"></i> Quitar foto
             </button>
@@ -1443,9 +1443,9 @@
     </button>
   </nav>
 
-  <script src="/Frontend/admin-cupos.js"></script>
-  <script src="/Frontend/admin-datos.js"></script>
-  <script src="/Frontend/admin-scanner.js"></script>
+  <script src="/Frontend/operario-cupos.js"></script>
+  <script src="/Frontend/operario-datos.js"></script>
+  <script src="/Frontend/operario-scanner.js"></script>
   <script src="/Frontend/bg-animation.js"></script>
   <script src="/Frontend/custom-select.js"></script>
 </body>

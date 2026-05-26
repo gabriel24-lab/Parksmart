@@ -148,7 +148,7 @@ async function processQRResult(rawText) {
     _scanDentro    = dentro;
 
     const content    = document.getElementById('scan-result-content');
-    const ROL_LABELS = { aprendiz:'Aprendiz', funcionario:'Funcionario', instructor:'Instructor', admin:'Administrador' };
+    const ROL_LABELS = { aprendiz:'Aprendiz', funcionario:'Funcionario', instructor:'Instructor', admin:'Operario' };
     const initials   = usuario.nombre_completo.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
     const idMask     = '*'.repeat(Math.max(0, String(usuario.numero_id).length - 4)) + String(usuario.numero_id).slice(-4);
 
@@ -628,7 +628,7 @@ async function adminSalida(id_usuario) {
     const parts = nombre.trim().split(' ').filter(Boolean);
     const initials = parts.length >= 2 ? (parts[0][0]+parts[1][0]).toUpperCase() : (parts[0]?parts[0][0].toUpperCase():'A');
     document.getElementById('admin-avatar').textContent = initials;
-    document.getElementById('admin-display-name').textContent = nombre || 'Administrador';
+    document.getElementById('admin-display-name').textContent = nombre || 'Operario';
   }
 
   function filterCentrosReg()   { fillCentroSelect('reg-region', 'reg-centro'); }

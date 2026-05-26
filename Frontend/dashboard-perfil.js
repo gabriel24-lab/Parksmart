@@ -433,7 +433,7 @@
       const text = document.getElementById('p-rol-badge-text');
       if (!dot || !text) return;
       const colores = { aprendiz: '#1565c0', funcionario: '#2e7d32', instructor: '#6a1b9a', admin: '#2FA440' };
-      const labels  = { aprendiz: 'Aprendiz', funcionario: 'Funcionario', instructor: 'Instructor', admin: 'Administrador' };
+      const labels  = { aprendiz: 'Aprendiz', funcionario: 'Funcionario', instructor: 'Instructor', admin: 'Operario' };
       const color = colores[rol] || '#555';
       dot.style.background  = color;
       text.style.color      = '#e6edf3';

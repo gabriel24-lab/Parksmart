@@ -82,7 +82,7 @@ router.post('/admin',
       );
       return res.status(201).json({
         ok:          true,
-        message:     'Vehículo registrado por administrador.',
+        message:     'Vehículo registrado por operario.',
         id_vehiculo: result.rows[0].id_vehiculo,
       });
     } catch (err) {

@@ -60,6 +60,9 @@
       <button class="nav-item" onclick="showSection('historial',this)">
         <i class="bi bi-clock-history"></i><span>Historial</span>
       </button>
+      <button class="nav-item" onclick="showSection('mi-qr',this)">
+        <i class="bi bi-qr-code"></i><span>Mi QR</span>
+      </button>
       <button class="nav-item logout" onclick="handleLogout()">
         <i class="bi bi-box-arrow-left"></i><span>Cerrar sesión</span>
       </button>
@@ -95,6 +98,35 @@
         <button onclick="showSection('vehiculo',null)" style="background:var(--brand-color);border:none;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
           <i class="bi bi-plus-circle"></i> Registrar vehículo
         </button>
+      </div>
+
+      <!-- ── QR PERSONAL (primero) ── -->
+      <div class="glass-panel qr-panel" style="margin-bottom:22px;">
+        <div class="panel-title"><i class="bi bi-qr-code"></i> Mi Código QR Personal
+          <button onclick="showSection('mi-qr',this)" style="margin-left:auto;background:rgba(47,164,64,0.15);border:1px solid rgba(47,164,64,0.35);color:var(--brand-color);padding:5px 13px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+            <i class="bi bi-arrows-fullscreen"></i> Ver sección
+          </button>
+        </div>
+        <div class="qr-layout">
+          <div class="qr-box-wrap">
+            <div class="qr-box" id="qr-box-click" onclick="openQRFullscreen()" title="Toca para ampliar">
+              <canvas id="qrCanvas"></canvas>
+              <div class="qr-box-hint"><i class="bi bi-fullscreen"></i> Toca para ampliar</div>
+            </div>
+          </div>
+          <div class="qr-info">
+            <p>Este código QR es tu identificación personal en el parqueadero. Preséntalo al ingresar o salir.</p>
+            <div class="qr-tip"><i class="bi bi-lightbulb-fill"></i> Sube el brillo de pantalla al máximo para facilitar
+              el escaneo.</div>
+            <div class="qr-id"><i class="bi bi-fingerprint"></i> ID: <strong id="qr-id-label">—</strong></div>
+            <div class="qr-btns-row">
+              <button class="btn-download" onclick="openQRFullscreen()"><i class="bi bi-fullscreen"></i> Pantalla
+                completa</button>
+              <button class="btn-download btn-dl-sec" onclick="downloadQR()"><i class="bi bi-download"></i>
+                Descargar</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ── LADO A ── -->
@@ -169,30 +201,6 @@
           <div class="progress-bar-fill" id="bar-fill-b" style="width:0%"><span id="bar-pct-b">0%</span></div>
         </div>
         <div class="progress-labels"><span>0</span><span>10</span><span>20</span></div>
-      </div>
-
-      <div class="glass-panel qr-panel">
-        <div class="panel-title"><i class="bi bi-qr-code"></i> Mi Código QR Personal</div>
-        <div class="qr-layout">
-          <div class="qr-box-wrap">
-            <div class="qr-box" id="qr-box-click" onclick="openQRFullscreen()" title="Toca para ampliar">
-              <canvas id="qrCanvas"></canvas>
-              <div class="qr-box-hint"><i class="bi bi-fullscreen"></i> Toca para ampliar</div>
-            </div>
-          </div>
-          <div class="qr-info">
-            <p>Este código QR es tu identificación personal en el parqueadero. Preséntalo al ingresar o salir.</p>
-            <div class="qr-tip"><i class="bi bi-lightbulb-fill"></i> Sube el brillo de pantalla al máximo para facilitar
-              el escaneo.</div>
-            <div class="qr-id"><i class="bi bi-fingerprint"></i> ID: <strong id="qr-id-label">—</strong></div>
-            <div class="qr-btns-row">
-              <button class="btn-download" onclick="openQRFullscreen()"><i class="bi bi-fullscreen"></i> Pantalla
-                completa</button>
-              <button class="btn-download btn-dl-sec" onclick="downloadQR()"><i class="bi bi-download"></i>
-                Descargar</button>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="glass-panel">
@@ -683,6 +691,58 @@
       </div>
     </section>
 
+    <!-- ─── MI CÓDIGO QR ─── -->
+    <section id="section-mi-qr" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Mi <span class="name-highlight">Código QR</span></h1>
+          <p class="section-sub">Tu identificación personal para ingresar al parqueadero</p>
+        </div>
+      </div>
+
+      <div class="glass-panel qr-panel">
+        <div class="panel-title"><i class="bi bi-qr-code"></i> Código QR Personal</div>
+        <div class="qr-layout">
+          <div class="qr-box-wrap">
+            <div class="qr-box" id="qr-box-click-sec" onclick="openQRFullscreen()" title="Toca para ampliar">
+              <canvas id="qrCanvasSec"></canvas>
+              <div class="qr-box-hint"><i class="bi bi-fullscreen"></i> Toca para ampliar</div>
+            </div>
+          </div>
+          <div class="qr-info">
+            <p>Este código QR es tu identificación personal en el parqueadero. Preséntalo al ingresar o salir.</p>
+            <div class="qr-tip"><i class="bi bi-lightbulb-fill"></i> Sube el brillo de pantalla al máximo para facilitar el escaneo.</div>
+            <div class="qr-id"><i class="bi bi-fingerprint"></i> ID: <strong id="qr-id-label-sec">—</strong></div>
+            <div class="qr-btns-row">
+              <button class="btn-download" onclick="openQRFullscreen()"><i class="bi bi-fullscreen"></i> Pantalla completa</button>
+              <button class="btn-download btn-dl-sec" onclick="downloadQR()"><i class="bi bi-download"></i> Descargar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-panel" style="margin-top:20px;">
+        <div class="panel-title"><i class="bi bi-info-circle-fill"></i> ¿Cómo usar tu QR?</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:8px;">
+          <div style="background:rgba(47,164,64,0.07);border:1px solid rgba(47,164,64,0.2);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;">
+            <span style="font-size:24px;">📲</span>
+            <strong style="color:var(--brand-color);font-size:14px;">Muéstralo al entrar</strong>
+            <span style="font-size:13px;opacity:.75;">Presenta tu QR al operario o al escáner al momento de ingresar al parqueadero.</span>
+          </div>
+          <div style="background:rgba(47,164,64,0.07);border:1px solid rgba(47,164,64,0.2);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;">
+            <span style="font-size:24px;">🔆</span>
+            <strong style="color:var(--brand-color);font-size:14px;">Brillo al máximo</strong>
+            <span style="font-size:13px;opacity:.75;">Aumenta el brillo de tu pantalla para facilitar el escaneo, especialmente en exteriores.</span>
+          </div>
+          <div style="background:rgba(47,164,64,0.07);border:1px solid rgba(47,164,64,0.2);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;">
+            <span style="font-size:24px;">🔒</span>
+            <strong style="color:var(--brand-color);font-size:14px;">Es personal</strong>
+            <span style="font-size:13px;opacity:.75;">No compartas tu QR con otras personas. Cada usuario tiene un código único e intransferible.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
@@ -692,6 +752,10 @@
     <button class="nav-item bottom-nav-item active" onclick="showSection('dashboard', this)">
       <i class="bi bi-grid-1x2-fill"></i>
       <span>Inicio</span>
+    </button>
+    <button class="nav-item bottom-nav-item" onclick="showSection('mi-qr', this)">
+      <i class="bi bi-qr-code"></i>
+      <span>Mi QR</span>
     </button>
     <button class="nav-item bottom-nav-item" onclick="showSection('vehiculo', this)">
       <i class="bi bi-car-front-fill"></i>
@@ -718,7 +782,7 @@
         <canvas id="qrCanvasFS"></canvas>
       </div>
       <div class="qr-fs-id" id="qr-fs-id"></div>
-      <p class="qr-fs-tip"><i class="bi bi-lightbulb-fill"></i> Muestra este código al administrador del parqueadero</p>
+      <p class="qr-fs-tip"><i class="bi bi-lightbulb-fill"></i> Muestra este código al operario del parqueadero</p>
     </div>
   </div>
 

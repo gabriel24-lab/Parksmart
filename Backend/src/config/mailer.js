@@ -78,7 +78,7 @@ async function enviarBienvenidaAdmin(destino, nombre, numero_id, rol, urlLogin) 
           <div style="padding:36px;">
             <p style="margin:0 0 8px;font-size:20px;font-weight:700;color:#fff;">¡Hola, ${nombre}! 👋</p>
             <p style="margin:0 0 28px;font-size:14px;color:#8b949e;line-height:1.6;">
-              Tu cuenta en <strong style="color:#2FA440;">Parksmart</strong> ha sido creada exitosamente por un administrador.
+              Tu cuenta en <strong style="color:#2FA440;">Parksmart</strong> ha sido creada exitosamente por un operario.
             </p>
             <div style="display:inline-block;background:rgba(230,25,45,0.15);border:1px solid rgba(230,25,45,0.4);border-radius:20px;padding:5px 14px;margin-bottom:28px;">
               <span style="font-size:12px;color:#ff6b7a;font-weight:600;">● ${rolCapitalizado}</span>

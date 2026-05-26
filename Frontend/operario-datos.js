@@ -821,7 +821,7 @@
     document.getElementById('uc-user-name').textContent = u.nombre;
 
     // ── Rol ──
-    const rolLabels = { aprendiz:'Aprendiz', funcionario:'Funcionario', instructor:'Instructor', admin:'Administrador' };
+    const rolLabels = { aprendiz:'Aprendiz', funcionario:'Funcionario', instructor:'Instructor', admin:'Operario' };
     const rolIcons  = { aprendiz:'bi-mortarboard-fill', funcionario:'bi-briefcase-fill', instructor:'bi-book-fill', admin:'bi-shield-fill' };
     const rol = u.rol || 'aprendiz';
     document.getElementById('uc-role-badge').innerHTML = `<i class="bi ${rolIcons[rol] || 'bi-person-fill'}"></i> ${rolLabels[rol] || rol}`;
