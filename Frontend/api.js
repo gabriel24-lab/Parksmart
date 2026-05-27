@@ -1,4 +1,3 @@
-
 const API = 'https://parksmart-ggt8.onrender.com/api';
 
 // ── Tokens ────────────────────────────────────────────────────────────
@@ -25,7 +24,11 @@ async function apiFetch(endpoint, options = {}) {
 
   let res = await fetch(`${API}${endpoint}`, { ...options, headers });
 
-  if (res.status === 401) {
+  // Solo intentar refresh si había un token activo al momento de la petición.
+  // Si no había token (ej: durante el login), el 401 es un error legítimo de
+  // credenciales y no debe interceptarse — de lo contrario se muestra
+  // "Sesión expirada" en lugar del mensaje real del servidor.
+  if (res.status === 401 && token) {
     const refreshed = await tryRefresh();
     if (refreshed) {
       headers['Authorization'] = `Bearer ${Auth.getToken()}`;
