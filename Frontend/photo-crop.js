@@ -282,7 +282,7 @@
   }
 
   /* ─── Adjuntar eventos ───────────────────────────────────── */
-  function attachEvents(ov, src) {
+  function attachEvents(ov) {
     var stage = document.getElementById('pc-stage');
     var sl    = document.getElementById('pc-z');
     var btnOk = document.getElementById('pc-ok');
@@ -302,7 +302,6 @@
     function close() {
       ov.style.animation = 'pc-fi .13s ease reverse';
       setTimeout(function() { ov.remove(); }, 120);
-      URL.revokeObjectURL(src); // Bug fix: liberar ObjectURL al cancelar
       /* Limpiar listeners globales */
       window.removeEventListener('mousemove', onMM);
       window.removeEventListener('mouseup',   onMU);
@@ -310,22 +309,22 @@
 
     btnCan.addEventListener('click', close);
     btnX.addEventListener('click',   close);
-    ov.addEventListener('click', function(e) { if (e.target===ov) close(); });
+    // Delay del backdrop: el selector de archivos al cerrarse dispara un click
+    // que cae sobre el overlay recién abierto y lo cierra de inmediato.
+    // Esperamos 400ms antes de activar el cierre por clic en el fondo.
+    setTimeout(function() {
+      ov.addEventListener('click', function(e) { if (e.target === ov) close(); });
+    }, 400);
 
     btnOk.addEventListener('click', function() {
       btnOk.setAttribute('disabled','');
       btnOk.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
       exportCrop().then(function(blob) {
         if (blob && S.onConfirm) return S.onConfirm(blob);
-      }).then(function(result) {
-        // Bug fix: onConfirm puede retornar undefined si apiFetch falla (res=undefined).
-        // En ese caso NO cerrar el modal — el handler ya mostró (o silenció) el error.
-        // Solo cerramos si onConfirm resolvió sin lanzar excepción Y no fue undefined.
-        URL.revokeObjectURL(src); // Bug fix: liberar ObjectURL en happy path también
+      }).then(function() {
         close();
       }).catch(function(err) {
         console.error('[PhotoCrop]', err);
-        URL.revokeObjectURL(src);
         btnOk.removeAttribute('disabled');
         btnOk.innerHTML = '<i class="bi bi-check2"></i> Guardar foto';
       });
@@ -342,7 +341,7 @@
 
     var ov = buildModal();
     drawShade();
-    attachEvents(ov, src);
+    attachEvents(ov);
 
     initImage(src).catch(function(err) {
       console.error('[PhotoCrop] initImage falló:', err);
