@@ -997,27 +997,33 @@
     // ════════ FOTO DE PERFIL ════════
     async function subirFotoPerfil(input) {
       if (!input.files[0]) return;
-      const formData = new FormData();
-      formData.append('foto', input.files[0]);
-      try {
-        const res  = await apiFetch('/usuarios/foto-perfil', { method: 'POST', body: formData });
-        if (!res) return;
-        const data = await res.json();
-        if (!data.ok) { showToast(data.message || 'Error al subir foto', 'error'); return; }
-        const imgEl  = document.getElementById('profile-avatar-img');
-        const initEl = document.getElementById('profile-avatar-initials');
-        const btnQui = document.getElementById('btn-quitar-foto');
-        imgEl.src          = data.foto_url + '?t=' + Date.now();
-        imgEl.style.display = 'block';
-        if (initEl) initEl.style.display = 'none';
-        if (btnQui) btnQui.style.display = 'inline-block';
-        const wrap = document.querySelector('.avatar-photo-wrap');
-        if (wrap) wrap.classList.remove('no-foto');
-        const tbAv = document.getElementById('topbar-av');
-        if (tbAv) { tbAv.style.backgroundImage = `url(${data.foto_url})`; tbAv.style.backgroundSize = 'cover'; tbAv.textContent = ''; }
-        showToast('Foto de perfil actualizada ✓');
-      } catch { showToast('No se pudo subir la foto', 'error'); }
+      const file = input.files[0];
       input.value = '';
+
+      PhotoCrop.open(file, {
+        onConfirm: async (blob) => {
+          const formData = new FormData();
+          formData.append('foto', blob, 'perfil.jpg');
+          try {
+            const res  = await apiFetch('/usuarios/foto-perfil', { method: 'POST', body: formData });
+            if (!res) return;
+            const data = await res.json();
+            if (!data.ok) { showToast(data.message || 'Error al subir foto', 'error'); return; }
+            const imgEl  = document.getElementById('profile-avatar-img');
+            const initEl = document.getElementById('profile-avatar-initials');
+            const btnQui = document.getElementById('btn-quitar-foto');
+            imgEl.src          = data.foto_url + '?t=' + Date.now();
+            imgEl.style.display = 'block';
+            if (initEl) initEl.style.display = 'none';
+            if (btnQui) btnQui.style.display = 'inline-block';
+            const wrap = document.querySelector('.avatar-photo-wrap');
+            if (wrap) wrap.classList.remove('no-foto');
+            const tbAv = document.getElementById('topbar-av');
+            if (tbAv) { tbAv.style.backgroundImage = `url(${data.foto_url})`; tbAv.style.backgroundSize = 'cover'; tbAv.textContent = ''; }
+            showToast('Foto de perfil actualizada ✓');
+          } catch { showToast('No se pudo subir la foto', 'error'); }
+        }
+      });
     }
 
     async function quitarFotoPerfil() {

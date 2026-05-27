@@ -309,9 +309,8 @@
 
     btnCan.addEventListener('click', close);
     btnX.addEventListener('click',   close);
-    // Delay del backdrop: el selector de archivos al cerrarse dispara un click
-    // que cae sobre el overlay recién abierto y lo cierra de inmediato.
-    // Esperamos 400ms antes de activar el cierre por clic en el fondo.
+    // Retardo: el clic que cierra el selector de archivos puede propagarse
+    // al overlay recien abierto y cerrarlo inmediatamente.
     setTimeout(function() {
       ov.addEventListener('click', function(e) { if (e.target === ov) close(); });
     }, 400);
