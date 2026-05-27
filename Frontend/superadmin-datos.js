@@ -110,22 +110,29 @@ async function savePerfilSA() {
 
 async function subirFotoPerfilSA(input) {
   if (!input.files[0]) return;
-  const fd = new FormData();
-  fd.append('foto', input.files[0]);
-  try {
-    const res  = await apiFetch('/usuarios/foto-perfil', { method:'POST', body: fd });
-    if (!res) return;
-    const data = await res.json();
-    if (!data.ok) { showToast(data.message || 'Error al subir foto', 'error'); return; }
-    const img = document.getElementById('profile-avatar-img');
-    if (img) { img.src = data.foto_url + '?t=' + Date.now(); img.style.display = 'block'; }
-    const ini = document.getElementById('profile-avatar-initials');
-    if (ini) ini.style.display = 'none';
-    const av = document.getElementById('topbar-av');
-    if (av) { av.style.backgroundImage = 'url('+data.foto_url+')'; av.style.backgroundSize = 'cover'; av.textContent = ''; }
-    showToast('Foto actualizada');
-  } catch { showToast('No se pudo subir la foto', 'error'); }
-  input.value = '';
+  const file = input.files[0];
+  input.value = '';   // limpiar input antes del crop
+
+  // Abrir editor de recorte estilo Facebook
+  PhotoCrop.open(file, {
+    onConfirm: async (blob) => {
+      const fd = new FormData();
+      fd.append('foto', blob, 'perfil.jpg');
+      try {
+        const res  = await apiFetch('/usuarios/foto-perfil', { method:'POST', body: fd });
+        if (!res) return;
+        const data = await res.json();
+        if (!data.ok) { showToast(data.message || 'Error al subir foto', 'error'); return; }
+        const img = document.getElementById('profile-avatar-img');
+        if (img) { img.src = data.foto_url + '?t=' + Date.now(); img.style.display = 'block'; }
+        const ini = document.getElementById('profile-avatar-initials');
+        if (ini) ini.style.display = 'none';
+        const av = document.getElementById('topbar-av');
+        if (av) { av.style.backgroundImage = 'url('+data.foto_url+')'; av.style.backgroundSize = 'cover'; av.textContent = ''; }
+        showToast('Foto actualizada');
+      } catch { showToast('No se pudo subir la foto', 'error'); }
+    }
+  });
 }
 
 async function changePasswordSA() {

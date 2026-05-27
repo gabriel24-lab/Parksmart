@@ -652,24 +652,31 @@ async function adminSalida(id_usuario) {
   // ════════ FOTO DE PERFIL ADMIN ════════
   async function subirFotoAdmin(input) {
     if (!input.files[0]) return;
-    const formData = new FormData();
-    formData.append('foto', input.files[0]);
-    try {
-      const res = await apiFetch('/usuarios/foto-perfil', { method: 'POST', body: formData });
-      if (!res) return;
-      const data = await res.json();
-      if (!data.ok) { showToast(data.message || 'Error al subir foto', 'error'); return; }
-      const imgEl  = document.getElementById('admin-avatar-img');
-      const initEl = document.getElementById('admin-avatar-initials');
-      const btnQui = document.getElementById('btn-quitar-foto-admin');
-      if (imgEl) { imgEl.src = data.foto_url + '?t=' + Date.now(); imgEl.style.display = 'block'; }
-      if (initEl) initEl.style.display = 'none';
-      if (btnQui) btnQui.style.display = 'inline-block';
-      const tbAv = document.querySelector('.topbar-avatar');
-      if (tbAv) { tbAv.style.backgroundImage = `url(${data.foto_url})`; tbAv.style.backgroundSize = 'cover'; tbAv.textContent = ''; }
-      showToast('Foto de perfil actualizada ✓', 'success');
-    } catch { showToast('No se pudo subir la foto', 'error'); }
-    input.value = '';
+    const file = input.files[0];
+    input.value = '';   // limpiar input antes del crop
+
+    // Abrir editor de recorte estilo Facebook
+    PhotoCrop.open(file, {
+      onConfirm: async (blob) => {
+        const formData = new FormData();
+        formData.append('foto', blob, 'perfil.jpg');
+        try {
+          const res = await apiFetch('/usuarios/foto-perfil', { method: 'POST', body: formData });
+          if (!res) return;
+          const data = await res.json();
+          if (!data.ok) { showToast(data.message || 'Error al subir foto', 'error'); return; }
+          const imgEl  = document.getElementById('admin-avatar-img');
+          const initEl = document.getElementById('admin-avatar-initials');
+          const btnQui = document.getElementById('btn-quitar-foto-admin');
+          if (imgEl) { imgEl.src = data.foto_url + '?t=' + Date.now(); imgEl.style.display = 'block'; }
+          if (initEl) initEl.style.display = 'none';
+          if (btnQui) btnQui.style.display = 'inline-block';
+          const tbAv = document.querySelector('.topbar-avatar');
+          if (tbAv) { tbAv.style.backgroundImage = `url(${data.foto_url})`; tbAv.style.backgroundSize = 'cover'; tbAv.textContent = ''; }
+          showToast('Foto de perfil actualizada ✓', 'success');
+        } catch { showToast('No se pudo subir la foto', 'error'); }
+      }
+    });
   }
 
   async function quitarFotoAdmin() {
