@@ -133,6 +133,7 @@ body {
   backdrop-filter: blur(20px);
   border-right: 1px solid rgba(47,164,64,.18);
   z-index: 100;
+  overflow: hidden;
   display: flex; 
   flex-direction: column;
   padding: 28px 16px 24px;
@@ -165,8 +166,11 @@ body {
   gap: 6px; 
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
+  scrollbar-width: none; /* Firefox */
 }
+.sidebar-nav::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
 .nav-item {
   display: flex; 

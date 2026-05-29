@@ -62,8 +62,9 @@ router.get('/perfil', async (req, res) => {
 router.put('/perfil',
   [
     body('nombre_completo').trim().notEmpty().withMessage('Nombre requerido.'),
-    body('tipo_id').isIn(['TI', 'CC']).withMessage('tipo_id inválido.'),
-    body('numero_id').trim().notEmpty(),
+    // tipo_id y numero_id son opcionales para superadmin (no los tiene en su formulario)
+    body('tipo_id').optional({ nullable: true, checkFalsy: true }).isIn(['TI', 'CC']).withMessage('tipo_id inválido.'),
+    body('numero_id').optional({ nullable: true, checkFalsy: true }).trim(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -75,26 +76,30 @@ router.put('/perfil',
     // Aceptarlo aquí permitiría que cualquier usuario se auto-asigne admin.
 
     try {
-      const dup = await query(
-        `SELECT id_usuario FROM usuarios WHERE numero_id = @nid AND id_usuario <> @uid`,
-        { nid: numero_id, uid: req.user.id_usuario }
-      );
-      if (dup.rows.length)
-        return res.status(409).json({ ok: false, message: 'Ese número de identificación ya está en uso.' });
+      // Solo verificar duplicado de numero_id si viene en el body
+      if (numero_id) {
+        const dup = await query(
+          `SELECT id_usuario FROM usuarios WHERE numero_id = @nid AND id_usuario <> @uid`,
+          { nid: numero_id, uid: req.user.id_usuario }
+        );
+        if (dup.rows.length)
+          return res.status(409).json({ ok: false, message: 'Ese número de identificación ya está en uso.' });
+      }
+
+      // Construir SET dinámico: solo actualizar campos que vienen en el body
+      const setClauses = ['nombre_completo = @nombre', 'email = @email'];
+      const params = {
+        nombre: nombre_completo,
+        email:  email || null,
+        uid:    req.user.id_usuario,
+      };
+      if (tipo_id)   { setClauses.push('tipo_id = @tipo_id');   params.tipo_id = tipo_id; }
+      if (numero_id) { setClauses.push('numero_id = @nid');     params.nid = numero_id; }
+      if (id_centro !== undefined) { setClauses.push('id_centro = @centro'); params.centro = id_centro || null; }
 
       await query(
-        `UPDATE usuarios
-         SET nombre_completo = @nombre, tipo_id = @tipo_id, numero_id = @nid,
-             id_centro = @centro, email = @email
-         WHERE id_usuario = @uid`,
-        {
-          nombre:  nombre_completo,
-          tipo_id,
-          nid:     numero_id,
-          centro:  id_centro || null,
-          email:   email     || null,
-          uid:     req.user.id_usuario,
-        }
+        `UPDATE usuarios SET ${setClauses.join(', ')} WHERE id_usuario = @uid`,
+        params
       );
       return res.json({ ok: true, message: 'Perfil actualizado.' });
     } catch (err) {
@@ -137,7 +142,7 @@ router.put('/cambiar-password',
       return res.json({ ok: true, message: 'Contraseña actualizada.' });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ ok: false, message: 'No se pudo subir la foto de perfil. Estamos trabajando en ello.' });
+      return res.status(500).json({ ok: false, message: 'No se pudo actualizar la contraseña. Estamos trabajando en ello.' });
     }
   }
 );

@@ -1153,13 +1153,16 @@ router.get('/auditoria', requireRol('superadmin'), async (req, res) => {
     const params = { desde: fechaDesde, hasta: fechaHasta };
 
     // Entradas y salidas del parqueadero
+    // Cada registro de BD representa un viaje completo (entrada + opcional salida).
+    // Se emiten DOS eventos por registro completado: uno de entrada y uno de salida,
+    // cada uno con su propia fecha. Así ambos aparecen en el log.
     let registros = [];
     if (!tipo || tipo === 'entrada' || tipo === 'salida') {
       const r = await query(
         `SELECT
           r.id_registro::text AS id,
-          r.fecha_entrada AS fecha,
-          CASE WHEN r.fecha_salida IS NOT NULL THEN 'salida' ELSE 'entrada' END AS tipo_accion,
+          r.fecha_entrada,
+          r.fecha_salida,
           u.nombre_completo AS actor,
           u.numero_id AS actor_doc,
           u.rol AS actor_rol,
@@ -1172,14 +1175,40 @@ router.get('/auditoria', requireRol('superadmin'), async (req, res) => {
         JOIN lados l ON l.id_lado = r.id_lado
         WHERE (r.fecha_entrada AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
               BETWEEN @desde::DATE AND @hasta::DATE
+           OR (r.fecha_salida IS NOT NULL
+               AND (r.fecha_salida AT TIME ZONE 'UTC' AT TIME ZONE 'America/Bogota')::DATE
+               BETWEEN @desde::DATE AND @hasta::DATE)
         ORDER BY r.fecha_entrada DESC
         LIMIT 500`, params);
-      // Si filtra por tipo: solo entrada (sin salida registrada) o salida
-      registros = r.rows.filter(row => {
-        if (tipo === 'entrada') return row.tipo_accion === 'entrada';
-        if (tipo === 'salida')  return row.tipo_accion === 'salida';
-        return true;
-      }).map(row => ({ ...row, fecha: row.fecha }));
+
+      for (const row of r.rows) {
+        // Evento entrada: siempre, salvo que el filtro sea solo 'salida'
+        if (!tipo || tipo === 'entrada') {
+          registros.push({
+            id:          row.id + '_ent',
+            fecha:       row.fecha_entrada,
+            tipo_accion: 'entrada',
+            actor:       row.actor,
+            actor_doc:   row.actor_doc,
+            actor_rol:   row.actor_rol,
+            afectado:    row.afectado,
+            detalle:     row.detalle,
+          });
+        }
+        // Evento salida: solo si el registro ya tiene salida
+        if (row.fecha_salida && (!tipo || tipo === 'salida')) {
+          registros.push({
+            id:          row.id + '_sal',
+            fecha:       row.fecha_salida,
+            tipo_accion: 'salida',
+            actor:       row.actor,
+            actor_doc:   row.actor_doc,
+            actor_rol:   row.actor_rol,
+            afectado:    row.afectado,
+            detalle:     row.detalle,
+          });
+        }
+      }
     }
 
     // Registros de nuevas cuentas

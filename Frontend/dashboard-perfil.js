@@ -81,9 +81,22 @@
       const tipo = document.getElementById('hist-tipo')?.value;
       const estado = document.getElementById('hist-estado')?.value;
 
+      // Convertir fecha ISO UTC a fecha local Colombia (YYYY-MM-DD) para comparar
+      // correctamente sin desfase de zona horaria
+      function toColombiaDate(isoStr) {
+        if (!isoStr) return null;
+        return new Date(isoStr).toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }); // "YYYY-MM-DD"
+      }
+
       let filtrados = [...histTodosLosRegistros];
-      if (ini) filtrados = filtrados.filter(r => new Date(r.fecha_entrada) >= new Date(ini));
-      if (fin) filtrados = filtrados.filter(r => new Date(r.fecha_entrada) <= new Date(fin + 'T23:59:59'));
+      if (ini) filtrados = filtrados.filter(r => {
+        const fechaLocal = toColombiaDate(r.fecha_entrada);
+        return fechaLocal && fechaLocal >= ini;
+      });
+      if (fin) filtrados = filtrados.filter(r => {
+        const fechaLocal = toColombiaDate(r.fecha_entrada);
+        return fechaLocal && fechaLocal <= fin;
+      });
       // Normalizar tipos: BD devuelve 'Auto','Motocicleta','Bicicleta','Furgoneta'
       const tipoGroups = {
         'auto':       ['auto','carro','furgoneta','automóvil'],

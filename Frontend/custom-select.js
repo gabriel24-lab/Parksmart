@@ -97,6 +97,15 @@
       transform: translateY(0);
       pointer-events: auto;
     }
+    /* Dropdown abre hacia arriba cuando no hay espacio abajo */
+    .cs-dropdown.drop-up {
+      top: auto;
+      bottom: calc(100% + 5px);
+      transform: translateY(6px);
+    }
+    .cs-dropdown.drop-up.open {
+      transform: translateY(0);
+    }
     /* Scrollbar del dropdown */
     .cs-dropdown::-webkit-scrollbar { width: 4px; }
     .cs-dropdown::-webkit-scrollbar-track { background: transparent; }
@@ -276,6 +285,17 @@
         if (t !== trigger) t.click();
       });
       trigger.classList.add('open');
+
+      /* Detectar si hay espacio suficiente debajo; si no, abrir hacia arriba */
+      dropdown.classList.remove('drop-up');
+      const triggerRect = trigger.getBoundingClientRect();
+      const dropdownHeight = Math.min(260, dropdown.scrollHeight || 200);
+      const spaceBelow = window.innerHeight - triggerRect.bottom;
+      const spaceAbove = triggerRect.top;
+      if (spaceBelow < dropdownHeight + 10 && spaceAbove > spaceBelow) {
+        dropdown.classList.add('drop-up');
+      }
+
       dropdown.classList.add('open');
       trigger.setAttribute('aria-expanded', 'true');
     }
