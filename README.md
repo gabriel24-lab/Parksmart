@@ -65,4 +65,4 @@ Desplegado en **Vercel** (frontend) y **Render** (backend).
 
 ---
 
-*Proyecto académico — SENA · 2025*
+*Proyecto académico — SENA · 2026*
