@@ -12,7 +12,7 @@
  */
 
 (function () {
-  'use strict';
+  "use strict";
 
   /* ── Estilos inyectados una sola vez ─────────────────────────────── */
   const CSS = `
@@ -179,9 +179,9 @@
   `;
 
   function injectStyles() {
-    if (document.getElementById('cs-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'cs-styles';
+    if (document.getElementById("cs-styles")) return;
+    const style = document.createElement("style");
+    style.id = "cs-styles";
     style.textContent = CSS;
     document.head.appendChild(style);
   }
@@ -198,53 +198,58 @@
 
     /* Ocultar el select nativo pero mantenerlo en DOM para que
        getElementById / .value / onChange sigan funcionando */
-    nativeSelect.style.display = 'none';
+    nativeSelect.style.display = "none";
 
-    const wrapper = document.createElement('div');
-    wrapper.className = 'cs-wrapper';
+    const wrapper = document.createElement("div");
+    wrapper.className = "cs-wrapper";
     nativeSelect.parentNode.insertBefore(wrapper, nativeSelect.nextSibling);
 
     /* Trigger (cabecera visible) */
-    const trigger = document.createElement('div');
-    trigger.className = 'cs-trigger';
-    trigger.setAttribute('tabindex', '0');
-    trigger.setAttribute('role', 'combobox');
-    trigger.setAttribute('aria-haspopup', 'listbox');
-    trigger.setAttribute('aria-expanded', 'false');
+    const trigger = document.createElement("div");
+    trigger.className = "cs-trigger";
+    trigger.setAttribute("tabindex", "0");
+    trigger.setAttribute("role", "combobox");
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
 
-    const label = document.createElement('span');
-    label.className = 'cs-label';
+    const label = document.createElement("span");
+    label.className = "cs-label";
 
-    const arrow = document.createElement('span');
-    arrow.className = 'cs-arrow';
+    const arrow = document.createElement("span");
+    arrow.className = "cs-arrow";
     arrow.innerHTML = ARROW_SVG;
 
     trigger.appendChild(label);
     trigger.appendChild(arrow);
 
     /* Dropdown */
-    const dropdown = document.createElement('div');
-    dropdown.className = 'cs-dropdown';
-    dropdown.setAttribute('role', 'listbox');
+    const dropdown = document.createElement("div");
+    dropdown.className = "cs-dropdown";
+    dropdown.setAttribute("role", "listbox");
 
     wrapper.appendChild(trigger);
     wrapper.appendChild(dropdown);
 
     /* Poblar opciones */
     function populateOptions() {
-      dropdown.innerHTML = '';
+      dropdown.innerHTML = "";
       Array.from(nativeSelect.options).forEach((opt, i) => {
-        const item = document.createElement('div');
-        item.className = 'cs-option';
-        item.setAttribute('role', 'option');
+        const item = document.createElement("div");
+        item.className = "cs-option";
+        item.setAttribute("role", "option");
         item.dataset.value = opt.value;
         item.dataset.index = i;
         item.textContent = opt.text;
-        if (opt.disabled || (!opt.value && i === 0 && opt.text.toLowerCase().includes('selecciona'))) {
-          item.classList.add('disabled');
+        if (
+          opt.disabled ||
+          (!opt.value &&
+            i === 0 &&
+            opt.text.toLowerCase().includes("selecciona"))
+        ) {
+          item.classList.add("disabled");
         }
-        if (opt.selected) item.classList.add('selected');
-        item.addEventListener('mousedown', (e) => {
+        if (opt.selected) item.classList.add("selected");
+        item.addEventListener("mousedown", (e) => {
           e.preventDefault();
           selectOption(opt.value, opt.text, item);
         });
@@ -257,10 +262,10 @@
       const sel = nativeSelect.options[nativeSelect.selectedIndex];
       if (sel && sel.value) {
         label.textContent = sel.text;
-        label.classList.remove('placeholder');
+        label.classList.remove("placeholder");
       } else {
-        label.textContent = sel ? sel.text : '';
-        label.classList.add('placeholder');
+        label.textContent = sel ? sel.text : "";
+        label.classList.add("placeholder");
       }
     }
 
@@ -269,10 +274,12 @@
       nativeSelect.value = value;
 
       /* Disparar evento change para que el código existente lo detecte */
-      nativeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      nativeSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
-      dropdown.querySelectorAll('.cs-option').forEach(el => el.classList.remove('selected'));
-      if (item) item.classList.add('selected');
+      dropdown
+        .querySelectorAll(".cs-option")
+        .forEach((el) => el.classList.remove("selected"));
+      if (item) item.classList.add("selected");
 
       updateLabel();
       close();
@@ -281,48 +288,51 @@
     /* Abrir / cerrar */
     function open() {
       /* Cerrar cualquier otro dropdown abierto */
-      document.querySelectorAll('.cs-trigger.open').forEach(t => {
+      document.querySelectorAll(".cs-trigger.open").forEach((t) => {
         if (t !== trigger) t.click();
       });
-      trigger.classList.add('open');
+      trigger.classList.add("open");
 
       /* Detectar si hay espacio suficiente debajo; si no, abrir hacia arriba */
-      dropdown.classList.remove('drop-up');
+      dropdown.classList.remove("drop-up");
       const triggerRect = trigger.getBoundingClientRect();
       const dropdownHeight = Math.min(260, dropdown.scrollHeight || 200);
       const spaceBelow = window.innerHeight - triggerRect.bottom;
       const spaceAbove = triggerRect.top;
       if (spaceBelow < dropdownHeight + 10 && spaceAbove > spaceBelow) {
-        dropdown.classList.add('drop-up');
+        dropdown.classList.add("drop-up");
       }
 
-      dropdown.classList.add('open');
-      trigger.setAttribute('aria-expanded', 'true');
+      dropdown.classList.add("open");
+      trigger.setAttribute("aria-expanded", "true");
     }
 
     function close() {
-      trigger.classList.remove('open');
-      dropdown.classList.remove('open');
-      trigger.setAttribute('aria-expanded', 'false');
+      trigger.classList.remove("open");
+      dropdown.classList.remove("open");
+      trigger.setAttribute("aria-expanded", "false");
     }
 
     function toggle() {
-      trigger.classList.contains('open') ? close() : open();
+      trigger.classList.contains("open") ? close() : open();
     }
 
-    trigger.addEventListener('click', toggle);
-    trigger.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-      if (e.key === 'Escape') close();
+    trigger.addEventListener("click", toggle);
+    trigger.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggle();
+      }
+      if (e.key === "Escape") close();
     });
 
     /* Cerrar al hacer click fuera */
-    document.addEventListener('click', (e) => {
+    document.addEventListener("click", (e) => {
       if (!wrapper.contains(e.target)) close();
     });
 
     /* Sincronizar si el select nativo cambia por JS */
-    nativeSelect.addEventListener('change', () => {
+    nativeSelect.addEventListener("change", () => {
       updateLabel();
       populateOptions();
     });
@@ -342,36 +352,36 @@
 
   /* ── Selectores a procesar ────────────────────────────────────────── */
   const INCLUDE_SELECTORS = [
-    '.form-group select',
-    '.filter-wrap select',
-    '.sa-rol-select',
-    '.scan-action-row select',
-    '.inline-select',
-    '#pk-centro-select',
-    '#pk-f-modo',
-    '#pk-f-habilitado',
-    '#reg-rol',
-    '#reg-tipo-id',
-    '#reg-region',
-    '#reg-centro',
-    '#anal-periodo',
-    '#aud-filtro-tipo',
-    '#filter-rol',
-    '#filter-estado',
-    'select[onchange]',
+    ".form-group select",
+    ".filter-wrap select",
+    ".sa-rol-select",
+    ".scan-action-row select",
+    ".inline-select",
+    "#pk-centro-select",
+    "#pk-f-modo",
+    "#pk-f-habilitado",
+    "#reg-rol",
+    "#reg-tipo-id",
+    "#reg-region",
+    "#reg-centro",
+    "#anal-periodo",
+    "#aud-filtro-tipo",
+    "#filter-rol",
+    "#filter-estado",
+    "select[onchange]",
   ];
 
   /* Selectores a excluir (inputs de file, hidden, etc.) */
-  const EXCLUDE = ['[type="hidden"]', '[data-no-custom]'];
+  const EXCLUDE = ['[type="hidden"]', "[data-no-custom]"];
 
   function shouldSkip(el) {
-    return EXCLUDE.some(sel => el.matches(sel)) || el._csInit;
+    return EXCLUDE.some((sel) => el.matches(sel)) || el._csInit;
   }
 
   function initAll() {
     const seen = new Set();
-    INCLUDE_SELECTORS.forEach(sel => {
-      document.querySelectorAll(sel).forEach(el => {
+    INCLUDE_SELECTORS.forEach((sel) => {
+      document.querySelectorAll(sel).forEach((el) => {
         if (!seen.has(el) && !shouldSkip(el)) {
           seen.add(el);
           buildCustomSelect(el);
@@ -384,14 +394,18 @@
      (como los que genera renderSAUsersTable) ────────────────────────── */
   function watchDynamic() {
     const mo = new MutationObserver((mutations) => {
-      mutations.forEach(m => {
-        m.addedNodes.forEach(node => {
+      mutations.forEach((m) => {
+        m.addedNodes.forEach((node) => {
           if (node.nodeType !== 1) return;
-          const selects = node.tagName === 'SELECT'
-            ? [node]
-            : Array.from(node.querySelectorAll('select'));
-          selects.forEach(el => {
-            if (!shouldSkip(el) && INCLUDE_SELECTORS.some(sel => el.matches(sel))) {
+          const selects =
+            node.tagName === "SELECT"
+              ? [node]
+              : Array.from(node.querySelectorAll("select"));
+          selects.forEach((el) => {
+            if (
+              !shouldSkip(el) &&
+              INCLUDE_SELECTORS.some((sel) => el.matches(sel))
+            ) {
               buildCustomSelect(el);
             }
           });
@@ -408,10 +422,9 @@
     watchDynamic();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
   } else {
     init();
   }
-
 })();

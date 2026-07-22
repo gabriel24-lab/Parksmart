@@ -1,33 +1,42 @@
 // src/routes/auth.js
-const router  = require('express').Router();
-const bcrypt  = require('bcryptjs');
-const jwt     = require('jsonwebtoken');
-const { randomInt } = require('crypto');
-const { v4: uuidv4 } = require('uuid');
-const { body, validationResult } = require('express-validator');
-const { query } = require('../config/db');
-const { authMiddleware, requireRol } = require('../middlewares/auth');
-const { enviarCodigoRecuperacion, enviarBienvenidaAdmin, enviarBienvenidaAprendiz } = require('../config/mailer');
+const router = require("express").Router();
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { randomInt } = require("crypto");
+const { v4: uuidv4 } = require("uuid");
+const { body, validationResult } = require("express-validator");
+const { query } = require("../config/db");
+const { authMiddleware, requireRol } = require("../middlewares/auth");
+const {
+  enviarCodigoRecuperacion,
+  enviarBienvenidaAdmin,
+  enviarBienvenidaAprendiz,
+} = require("../config/mailer");
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function generateQR(numeroId) {
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const short = uuidv4().split('-')[0].toUpperCase();
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const short = uuidv4().split("-")[0].toUpperCase();
   return `USR-${date}-${numeroId.slice(-4)}-${short}`;
 }
 
 function signTokens(payload) {
-  const access = jwt.sign(payload, process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '8h' });
-  const refresh = jwt.sign(payload, process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' });
+  const access = jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "8h",
+  });
+  const refresh = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
+  });
   return { access, refresh };
 }
 
 function maskEmail(email) {
   if (!email) return null;
-  const [user, domain] = email.split('@');
-  const masked = user[0] + '*'.repeat(Math.max(1, user.length - 2)) + (user.length > 1 ? user.slice(-1) : '');
+  const [user, domain] = email.split("@");
+  const masked =
+    user[0] +
+    "*".repeat(Math.max(1, user.length - 2)) +
+    (user.length > 1 ? user.slice(-1) : "");
   return `${masked}@${domain}`;
 }
 
@@ -37,151 +46,242 @@ function generarCodigo() {
 }
 
 // ── GET /api/auth/verificar/:numero_id ───────────────────────────────
-router.get('/verificar/:numero_id', async (req, res) => {
+router.get("/verificar/:numero_id", async (req, res) => {
   const nid = req.params.numero_id?.trim();
-  if (!nid) return res.status(400).json({ ok: false, message: 'Número de documento requerido.' });
+  if (!nid)
+    return res
+      .status(400)
+      .json({ ok: false, message: "Número de documento requerido." });
 
   try {
     const cuentaExistente = await query(
-      'SELECT id_usuario FROM usuarios WHERE numero_id = @nid',
-      { nid }
+      "SELECT id_usuario FROM usuarios WHERE numero_id = @nid",
+      { nid },
     );
     if (cuentaExistente.rows.length > 0) {
-      return res.status(409).json({ ok: false, message: 'Este número de documento ya tiene una cuenta registrada.' });
+      return res
+        .status(409)
+        .json({
+          ok: false,
+          message: "Este número de documento ya tiene una cuenta registrada.",
+        });
     }
 
     const resultado = await query(
       'SELECT "Nombre", "Apellidos", "Correo Electrónico", "Tipo de documento", "Estado" FROM "Personas" WHERE "Numero de Documento" = @nid',
-      { nid }
+      { nid },
     );
 
     if (!resultado.rows.length) {
-      return res.status(404).json({ ok: false, message: 'Este número de documento no está registrado en la base de datos del SENA.' });
+      return res
+        .status(404)
+        .json({
+          ok: false,
+          message:
+            "Este número de documento no está registrado en la base de datos del SENA.",
+        });
     }
 
     const p = resultado.rows[0];
-    const estadosValidos = ['EN FORMACION', 'INDUCCION'];
-    const estado = (p['Estado'] || '').toString().trim().toUpperCase();
+    const estadosValidos = ["EN FORMACION", "INDUCCION"];
+    const estado = (p["Estado"] || "").toString().trim().toUpperCase();
     if (!estadosValidos.includes(estado)) {
-      return res.status(403).json({ ok: false, message: 'Tu estado en el SENA no permite crear una cuenta en este momento.' });
+      return res
+        .status(403)
+        .json({
+          ok: false,
+          message:
+            "Tu estado en el SENA no permite crear una cuenta en este momento.",
+        });
     }
 
     return res.json({
       ok: true,
-      message: 'Persona verificada correctamente.',
+      message: "Persona verificada correctamente.",
       data: {
-        nombre_completo: (p['Nombre'] + ' ' + p['Apellidos']).trim(),
-        email:           p['Correo Electrónico'] || null,
-        tipo_id:         p['Tipo de documento']  || null,
+        nombre_completo: (p["Nombre"] + " " + p["Apellidos"]).trim(),
+        email: p["Correo Electrónico"] || null,
+        tipo_id: p["Tipo de documento"] || null,
       },
     });
   } catch (err) {
-    console.error('Error en verificar:', err);
-    return res.status(500).json({ ok: false, message: 'No se pudo verificar el número de documento. Estamos trabajando en ello.' });
+    console.error("Error en verificar:", err);
+    return res
+      .status(500)
+      .json({
+        ok: false,
+        message:
+          "No se pudo verificar el número de documento. Estamos trabajando en ello.",
+      });
   }
 });
 
 // ── POST /api/auth/register ───────────────────────────────────────────
 // Registro público: solo aprendices verificados en la tabla Personas.
-router.post('/register',
+router.post(
+  "/register",
   [
-    body('numero_id').trim().notEmpty().withMessage('Número de identificación requerido.'),
-    body('password').isLength({ min: 8 }).withMessage('La contraseña debe tener al menos 8 caracteres.'),
+    body("numero_id")
+      .trim()
+      .notEmpty()
+      .withMessage("Número de identificación requerido."),
+    body("password")
+      .isLength({ min: 8 })
+      .withMessage("La contraseña debe tener al menos 8 caracteres."),
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    if (!errors.isEmpty())
+      return res.status(400).json({ ok: false, errors: errors.array() });
 
     const { numero_id, password } = req.body;
 
     try {
       const dup = await query(
-        'SELECT id_usuario FROM usuarios WHERE numero_id = @nid',
-        { nid: numero_id }
+        "SELECT id_usuario FROM usuarios WHERE numero_id = @nid",
+        { nid: numero_id },
       );
       if (dup.rows.length > 0) {
-        return res.status(409).json({ ok: false, message: 'Ese número de identificación ya está registrado.' });
+        return res
+          .status(409)
+          .json({
+            ok: false,
+            message: "Ese número de identificación ya está registrado.",
+          });
       }
 
       const persona = await query(
         'SELECT "Nombre", "Apellidos", "Correo Electrónico", "Tipo de documento", "Estado" FROM "Personas" WHERE "Numero de Documento" = @nid',
-        { nid: numero_id }
+        { nid: numero_id },
       );
       if (!persona.rows.length) {
-        return res.status(403).json({ ok: false, message: 'Este número de documento no está registrado en la base de datos del SENA.' });
+        return res
+          .status(403)
+          .json({
+            ok: false,
+            message:
+              "Este número de documento no está registrado en la base de datos del SENA.",
+          });
       }
 
       const p = persona.rows[0];
-      const estadosValidos = ['EN FORMACION', 'INDUCCION'];
-      const estado = (p['Estado'] || '').toString().trim().toUpperCase();
+      const estadosValidos = ["EN FORMACION", "INDUCCION"];
+      const estado = (p["Estado"] || "").toString().trim().toUpperCase();
       if (!estadosValidos.includes(estado)) {
-        return res.status(403).json({ ok: false, message: 'Tu estado en el SENA no permite crear una cuenta en este momento.' });
+        return res
+          .status(403)
+          .json({
+            ok: false,
+            message:
+              "Tu estado en el SENA no permite crear una cuenta en este momento.",
+          });
       }
 
-      const nombre_completo = (p['Nombre'] + ' ' + p['Apellidos']).trim();
-      const email           = p['Correo Electrónico'] || null;
-      const tipo_id         = p['Tipo de documento']  || null;
-      const hash            = await bcrypt.hash(password, 10);
-      const qr              = generateQR(numero_id);
+      const nombre_completo = (p["Nombre"] + " " + p["Apellidos"]).trim();
+      const email = p["Correo Electrónico"] || null;
+      const tipo_id = p["Tipo de documento"] || null;
+      const hash = await bcrypt.hash(password, 10);
+      const qr = generateQR(numero_id);
 
       await query(
         "INSERT INTO usuarios (nombre_completo, numero_id, password_hash, qr_code, activo, email, rol, tipo_id) VALUES (@nombre, @nid, @hash, @qr, true, @email, 'aprendiz', @tipo_id)",
-        { nombre: nombre_completo, nid: numero_id, hash, qr, email, tipo_id }
+        { nombre: nombre_completo, nid: numero_id, hash, qr, email, tipo_id },
       );
 
       // Enviar correo de bienvenida si el aprendiz tiene correo en la BD del SENA
       if (email) {
-        const urlLogin = process.env.FRONTEND_URL || 'https://parksmart.vercel.app';
-        enviarBienvenidaAprendiz(email, nombre_completo, urlLogin)
-          .catch(err => console.error('[mailer] Error enviando bienvenida aprendiz:', err));
+        const urlLogin =
+          process.env.FRONTEND_URL || "https://parksmart.vercel.app";
+        enviarBienvenidaAprendiz(email, nombre_completo, urlLogin).catch(
+          (err) =>
+            console.error("[mailer] Error enviando bienvenida aprendiz:", err),
+        );
       }
 
-      return res.status(201).json({ ok: true, message: 'Usuario registrado correctamente.' });
+      return res
+        .status(201)
+        .json({ ok: true, message: "Usuario registrado correctamente." });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ ok: false, message: 'No se pudo completar el registro. Por favor intenta de nuevo. Estamos trabajando en ello.' });
+      return res
+        .status(500)
+        .json({
+          ok: false,
+          message:
+            "No se pudo completar el registro. Por favor intenta de nuevo. Estamos trabajando en ello.",
+        });
     }
-  }
+  },
 );
 
 // ── POST /api/auth/admin-register ────────────────────────────────────
 // Registro manual por admin: sin validar contra tabla Personas.
 // Permite registrar instructores, funcionarios y cualquier rol.
-router.post('/admin-register',
+router.post(
+  "/admin-register",
   authMiddleware,
-  requireRol('admin', 'guardia', 'superadmin'),
+  requireRol("admin", "guardia", "superadmin"),
   [
-    body('nombre_completo').trim().notEmpty().withMessage('Nombre requerido.'),
-    body('numero_id').trim().notEmpty().withMessage('Número de identificación requerido.'),
+    body("nombre_completo").trim().notEmpty().withMessage("Nombre requerido."),
+    body("numero_id")
+      .trim()
+      .notEmpty()
+      .withMessage("Número de identificación requerido."),
     // password es opcional: si no se envía, se usa el numero_id como contraseña temporal
-    body('password').optional({ nullable: true, checkFalsy: true })
-      .isLength({ min: 8 }).withMessage('La contraseña debe tener al menos 8 caracteres.'),
-    body('rol').isIn(['aprendiz', 'funcionario', 'instructor', 'admin', 'guardia', 'superadmin']).withMessage('Rol inválido.'),
+    body("password")
+      .optional({ nullable: true, checkFalsy: true })
+      .isLength({ min: 8 })
+      .withMessage("La contraseña debe tener al menos 8 caracteres."),
+    body("rol")
+      .isIn([
+        "aprendiz",
+        "funcionario",
+        "instructor",
+        "admin",
+        "guardia",
+        "superadmin",
+      ])
+      .withMessage("Rol inválido."),
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    if (!errors.isEmpty())
+      return res.status(400).json({ ok: false, errors: errors.array() });
 
-    const { nombre_completo, numero_id, rol, tipo_id, email, id_centro } = req.body;
+    const { nombre_completo, numero_id, rol, tipo_id, email, id_centro } =
+      req.body;
 
     // Cada rol solo puede crear usuarios con roles iguales o inferiores al suyo
     const rolesPermitidos = {
-      guardia:    ['aprendiz'],
-      admin:      ['aprendiz', 'funcionario', 'instructor', 'guardia'],
-      superadmin: ['aprendiz', 'funcionario', 'instructor', 'admin', 'guardia', 'superadmin'],
+      guardia: ["aprendiz"],
+      admin: ["aprendiz", "funcionario", "instructor", "guardia"],
+      superadmin: [
+        "aprendiz",
+        "funcionario",
+        "instructor",
+        "admin",
+        "guardia",
+        "superadmin",
+      ],
     };
     const permitidos = rolesPermitidos[req.user.rol] || [];
     if (!permitidos.includes(rol)) {
-      return res.status(403).json({ ok: false, message: `Tu rol no puede crear usuarios con el rol "${rol}".` });
+      return res
+        .status(403)
+        .json({
+          ok: false,
+          message: `Tu rol no puede crear usuarios con el rol "${rol}".`,
+        });
     }
     // Si no se envía password, la contraseña temporal es el número de identificación
-    const password = (req.body.password && req.body.password.trim()) || numero_id;
+    const password =
+      (req.body.password && req.body.password.trim()) || numero_id;
 
     try {
       // ── 1. Verificar numero_id duplicado en usuarios ──────────────────
       const dupNid = await query(
-        'SELECT id_usuario, nombre_completo FROM usuarios WHERE numero_id = @nid',
-        { nid: numero_id }
+        "SELECT id_usuario, nombre_completo FROM usuarios WHERE numero_id = @nid",
+        { nid: numero_id },
       );
       if (dupNid.rows.length > 0) {
         const otro = dupNid.rows[0].nombre_completo;
@@ -194,11 +294,12 @@ router.post('/admin-register',
       // ── 2. Verificar numero_id duplicado en tabla Personas ────────────
       const dupPersona = await query(
         'SELECT "Nombre", "Apellidos" FROM "Personas" WHERE "Numero de Documento" = @nid',
-        { nid: numero_id }
+        { nid: numero_id },
       );
       if (dupPersona.rows.length > 0) {
         const p = dupPersona.rows[0];
-        const nombrePersona = `${p['Nombre'] || ''} ${p['Apellidos'] || ''}`.trim();
+        const nombrePersona =
+          `${p["Nombre"] || ""} ${p["Apellidos"] || ""}`.trim();
         return res.status(409).json({
           ok: false,
           message: `El número de identificación ${numero_id} ya existe en la base de datos del SENA y corresponde a: ${nombrePersona}.`,
@@ -208,8 +309,8 @@ router.post('/admin-register',
       // ── 3. Verificar email duplicado ──────────────────────────────────
       if (email) {
         const dupEmail = await query(
-          'SELECT id_usuario, nombre_completo FROM usuarios WHERE LOWER(email) = LOWER(@email)',
-          { email }
+          "SELECT id_usuario, nombre_completo FROM usuarios WHERE LOWER(email) = LOWER(@email)",
+          { email },
         );
         if (dupEmail.rows.length > 0) {
           const otro = dupEmail.rows[0].nombre_completo;
@@ -221,217 +322,319 @@ router.post('/admin-register',
       }
 
       const hash = await bcrypt.hash(password, 10);
-      const qr   = generateQR(numero_id);
+      const qr = generateQR(numero_id);
 
       const insResult = await query(
-        'INSERT INTO usuarios (nombre_completo, numero_id, password_hash, qr_code, activo, email, rol, tipo_id, id_centro) VALUES (@nombre, @nid, @hash, @qr, true, @email, @rol, @tipo_id, @centro) RETURNING id_usuario',
+        "INSERT INTO usuarios (nombre_completo, numero_id, password_hash, qr_code, activo, email, rol, tipo_id, id_centro) VALUES (@nombre, @nid, @hash, @qr, true, @email, @rol, @tipo_id, @centro) RETURNING id_usuario",
         {
-          nombre:  nombre_completo,
-          nid:     numero_id,
+          nombre: nombre_completo,
+          nid: numero_id,
           hash,
           qr,
-          email:   email    || null,
+          email: email || null,
           rol,
-          tipo_id: tipo_id  || null,
-          centro:  id_centro ? parseInt(id_centro) : null,
-        }
+          tipo_id: tipo_id || null,
+          centro: id_centro ? parseInt(id_centro) : null,
+        },
       );
 
       const id_usuario = insResult.rows[0]?.id_usuario;
 
       // Enviar correo de bienvenida si el usuario tiene email registrado
       if (email) {
-        const urlLogin = process.env.FRONTEND_URL || 'https://parksmart.vercel.app';
-        enviarBienvenidaAdmin(email, nombre_completo, numero_id, rol, urlLogin)
-          .catch(err => console.error('[mailer] Error enviando bienvenida:', err));
+        const urlLogin =
+          process.env.FRONTEND_URL || "https://parksmart.vercel.app";
+        enviarBienvenidaAdmin(
+          email,
+          nombre_completo,
+          numero_id,
+          rol,
+          urlLogin,
+        ).catch((err) =>
+          console.error("[mailer] Error enviando bienvenida:", err),
+        );
       }
 
-      return res.status(201).json({ ok: true, message: 'Usuario registrado correctamente.', id_usuario });
+      return res
+        .status(201)
+        .json({
+          ok: true,
+          message: "Usuario registrado correctamente.",
+          id_usuario,
+        });
     } catch (err) {
-      console.error('Error en admin-register:', err);
+      console.error("Error en admin-register:", err);
 
       // Capturar errores de constraint de la base de datos (PostgreSQL unique violation)
-      if (err.code === '23505') {
-        const detail = (err.detail || err.message || '').toLowerCase();
-        if (detail.includes('email')) {
-          return res.status(409).json({ ok: false, message: `El correo electrónico "${email}" ya está registrado en el sistema por otro usuario.` });
+      if (err.code === "23505") {
+        const detail = (err.detail || err.message || "").toLowerCase();
+        if (detail.includes("email")) {
+          return res
+            .status(409)
+            .json({
+              ok: false,
+              message: `El correo electrónico "${email}" ya está registrado en el sistema por otro usuario.`,
+            });
         }
-        if (detail.includes('numero_id')) {
-          return res.status(409).json({ ok: false, message: `El número de identificación ${numero_id} ya está registrado en el sistema.` });
+        if (detail.includes("numero_id")) {
+          return res
+            .status(409)
+            .json({
+              ok: false,
+              message: `El número de identificación ${numero_id} ya está registrado en el sistema.`,
+            });
         }
-        if (detail.includes('qr_code')) {
-          return res.status(409).json({ ok: false, message: 'Error al generar código QR único. Intenta de nuevo.' });
+        if (detail.includes("qr_code")) {
+          return res
+            .status(409)
+            .json({
+              ok: false,
+              message: "Error al generar código QR único. Intenta de nuevo.",
+            });
         }
-        return res.status(409).json({ ok: false, message: 'Un dato único ya existe en el sistema. Verifica los campos e intenta de nuevo.' });
+        return res
+          .status(409)
+          .json({
+            ok: false,
+            message:
+              "Un dato único ya existe en el sistema. Verifica los campos e intenta de nuevo.",
+          });
       }
 
-      return res.status(500).json({ ok: false, message: 'No se pudo iniciar sesión en este momento. Por favor intenta de nuevo. Estamos trabajando en ello.' });
+      return res
+        .status(500)
+        .json({
+          ok: false,
+          message:
+            "No se pudo iniciar sesión en este momento. Por favor intenta de nuevo. Estamos trabajando en ello.",
+        });
     }
-  }
+  },
 );
 
 // ── POST /api/auth/login ──────────────────────────────────────────────
-router.post('/login',
+router.post(
+  "/login",
   [
-    body('numero_id').trim().notEmpty().withMessage('Número de identificación requerido.'),
-    body('password').notEmpty().withMessage('Contraseña requerida.'),
+    body("numero_id")
+      .trim()
+      .notEmpty()
+      .withMessage("Número de identificación requerido."),
+    body("password").notEmpty().withMessage("Contraseña requerida."),
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    if (!errors.isEmpty())
+      return res.status(400).json({ ok: false, errors: errors.array() });
 
     const { numero_id, password } = req.body;
 
     try {
       const result = await query(
-        'SELECT id_usuario, nombre_completo, email, password_hash, rol, qr_code, id_centro, activo FROM usuarios WHERE numero_id = @nid',
-        { nid: numero_id }
+        "SELECT id_usuario, nombre_completo, email, password_hash, rol, qr_code, id_centro, activo FROM usuarios WHERE numero_id = @nid",
+        { nid: numero_id },
       );
 
       const user = result.rows[0];
-      if (!user) return res.status(401).json({ ok: false, message: 'Credenciales incorrectas.' });
-      if (!user.activo) return res.status(403).json({ ok: false, message: 'Cuenta desactivada.' });
+      if (!user)
+        return res
+          .status(401)
+          .json({ ok: false, message: "Credenciales incorrectas." });
+      if (!user.activo)
+        return res
+          .status(403)
+          .json({ ok: false, message: "Cuenta desactivada." });
 
       const valid = await bcrypt.compare(password, user.password_hash);
-      if (!valid) return res.status(401).json({ ok: false, message: 'Credenciales incorrectas.' });
+      if (!valid)
+        return res
+          .status(401)
+          .json({ ok: false, message: "Credenciales incorrectas." });
 
-      const payload = { id_usuario: user.id_usuario, rol: user.rol, email: user.email };
+      const payload = {
+        id_usuario: user.id_usuario,
+        rol: user.rol,
+        email: user.email,
+      };
       const { access, refresh } = signTokens(payload);
 
       const exp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       await query(
-        'INSERT INTO tokens_sesion (id_usuario, refresh_token, expira_en) VALUES (@uid, @token, @exp)',
-        { uid: user.id_usuario, token: refresh, exp }
+        "INSERT INTO tokens_sesion (id_usuario, refresh_token, expira_en) VALUES (@uid, @token, @exp)",
+        { uid: user.id_usuario, token: refresh, exp },
       );
 
       return res.json({
         ok: true,
-        access_token:  access,
+        access_token: access,
         refresh_token: refresh,
         user: {
-          id_usuario:      user.id_usuario,
+          id_usuario: user.id_usuario,
           nombre_completo: user.nombre_completo,
-          email:           user.email,
-          rol:             user.rol,
-          qr_code:         user.qr_code,
-          id_centro:       user.id_centro,
+          email: user.email,
+          rol: user.rol,
+          qr_code: user.qr_code,
+          id_centro: user.id_centro,
         },
       });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ ok: false, message: 'No se pudo completar el registro del administrador. Estamos trabajando en ello.' });
+      return res
+        .status(500)
+        .json({
+          ok: false,
+          message:
+            "No se pudo completar el registro del administrador. Estamos trabajando en ello.",
+        });
     }
-  }
+  },
 );
 
 // ── POST /api/auth/refresh ────────────────────────────────────────────
-router.post('/refresh', async (req, res) => {
+router.post("/refresh", async (req, res) => {
   const { refresh_token } = req.body;
-  if (!refresh_token) return res.status(400).json({ ok: false, message: 'refresh_token requerido.' });
+  if (!refresh_token)
+    return res
+      .status(400)
+      .json({ ok: false, message: "refresh_token requerido." });
 
   try {
     const decoded = jwt.verify(refresh_token, process.env.JWT_REFRESH_SECRET);
     const row = await query(
-      'SELECT id_token FROM tokens_sesion WHERE refresh_token = @token AND activo = true AND expira_en > NOW()',
-      { token: refresh_token }
+      "SELECT id_token FROM tokens_sesion WHERE refresh_token = @token AND activo = true AND expira_en > NOW()",
+      { token: refresh_token },
     );
-    if (!row.rows.length) return res.status(401).json({ ok: false, message: 'Refresh token inválido.' });
+    if (!row.rows.length)
+      return res
+        .status(401)
+        .json({ ok: false, message: "Refresh token inválido." });
 
-    const payload = { id_usuario: decoded.id_usuario, rol: decoded.rol, email: decoded.email };
+    const payload = {
+      id_usuario: decoded.id_usuario,
+      rol: decoded.rol,
+      email: decoded.email,
+    };
     const { access, refresh } = signTokens(payload);
 
     // Rotar el refresh token: invalidar el anterior e insertar uno nuevo
     await query(
-      'UPDATE tokens_sesion SET activo = false WHERE refresh_token = @token',
-      { token: refresh_token }
+      "UPDATE tokens_sesion SET activo = false WHERE refresh_token = @token",
+      { token: refresh_token },
     );
     const exp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await query(
-      'INSERT INTO tokens_sesion (id_usuario, refresh_token, expira_en) VALUES (@uid, @token, @exp)',
-      { uid: decoded.id_usuario, token: refresh, exp }
+      "INSERT INTO tokens_sesion (id_usuario, refresh_token, expira_en) VALUES (@uid, @token, @exp)",
+      { uid: decoded.id_usuario, token: refresh, exp },
     );
 
     return res.json({ ok: true, access_token: access, refresh_token: refresh });
   } catch {
-    return res.status(401).json({ ok: false, message: 'Refresh token expirado.' });
+    return res
+      .status(401)
+      .json({ ok: false, message: "Refresh token expirado." });
   }
 });
 
 // ── POST /api/auth/logout ─────────────────────────────────────────────
-router.post('/logout', authMiddleware, async (req, res) => {
+router.post("/logout", authMiddleware, async (req, res) => {
   const { refresh_token } = req.body;
   if (refresh_token) {
     await query(
-      'UPDATE tokens_sesion SET activo = false WHERE refresh_token = @token',
-      { token: refresh_token }
+      "UPDATE tokens_sesion SET activo = false WHERE refresh_token = @token",
+      { token: refresh_token },
     ).catch(() => {});
   }
-  return res.json({ ok: true, message: 'Sesión cerrada.' });
+  return res.json({ ok: true, message: "Sesión cerrada." });
 });
 
 // ── POST /api/auth/recuperar/solicitar ───────────────────────────────
-router.post('/recuperar/solicitar', async (req, res) => {
+router.post("/recuperar/solicitar", async (req, res) => {
   const { numero_id } = req.body;
-  if (!numero_id) return res.status(400).json({ ok: false, message: 'Número de documento requerido.' });
+  if (!numero_id)
+    return res
+      .status(400)
+      .json({ ok: false, message: "Número de documento requerido." });
 
   try {
     const result = await query(
-      'SELECT id_usuario, nombre_completo, email FROM usuarios WHERE numero_id = @nid AND activo = true',
-      { nid: numero_id.trim() }
+      "SELECT id_usuario, nombre_completo, email FROM usuarios WHERE numero_id = @nid AND activo = true",
+      { nid: numero_id.trim() },
     );
     if (!result.rows.length) {
-      return res.status(404).json({ ok: false, message: 'No existe una cuenta con ese número de documento.' });
+      return res
+        .status(404)
+        .json({
+          ok: false,
+          message: "No existe una cuenta con ese número de documento.",
+        });
     }
 
     const user = result.rows[0];
     return res.json({
-      ok:           true,
-      id_usuario:   user.id_usuario,
-      nombre:       user.nombre_completo,
-      tiene_email:  !!user.email,
+      ok: true,
+      id_usuario: user.id_usuario,
+      nombre: user.nombre_completo,
+      tiene_email: !!user.email,
       email_masked: maskEmail(user.email),
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'No se pudo solicitar la recuperación de contraseña. Estamos trabajando en ello.' });
+    return res
+      .status(500)
+      .json({
+        ok: false,
+        message:
+          "No se pudo solicitar la recuperación de contraseña. Estamos trabajando en ello.",
+      });
   }
 });
 
 // ── POST /api/auth/recuperar/enviar-codigo ───────────────────────────
-router.post('/recuperar/enviar-codigo', async (req, res) => {
+router.post("/recuperar/enviar-codigo", async (req, res) => {
   const { id_usuario, email_alternativo } = req.body;
-  if (!id_usuario) return res.status(400).json({ ok: false, message: 'id_usuario requerido.' });
+  if (!id_usuario)
+    return res
+      .status(400)
+      .json({ ok: false, message: "id_usuario requerido." });
 
   try {
     const result = await query(
-      'SELECT id_usuario, nombre_completo, email FROM usuarios WHERE id_usuario = @uid AND activo = true',
-      { uid: id_usuario }
+      "SELECT id_usuario, nombre_completo, email FROM usuarios WHERE id_usuario = @uid AND activo = true",
+      { uid: id_usuario },
     );
-    if (!result.rows.length) return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+    if (!result.rows.length)
+      return res
+        .status(404)
+        .json({ ok: false, message: "Usuario no encontrado." });
 
-    const user         = result.rows[0];
+    const user = result.rows[0];
     const emailDestino = email_alternativo?.trim() || user.email;
 
     if (!emailDestino) {
-      return res.status(400).json({ ok: false, message: 'No hay correo registrado. Por favor ingresa uno.' });
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          message: "No hay correo registrado. Por favor ingresa uno.",
+        });
     }
 
     await query(
-      'UPDATE codigos_recuperacion SET usado = true WHERE id_usuario = @uid AND usado = false',
-      { uid: id_usuario }
+      "UPDATE codigos_recuperacion SET usado = true WHERE id_usuario = @uid AND usado = false",
+      { uid: id_usuario },
     );
 
     const codigo = generarCodigo();
     const expira = new Date(Date.now() + 15 * 60 * 1000);
 
     await query(
-      'INSERT INTO codigos_recuperacion (id_usuario, codigo, email_destino, expira_en) VALUES (@uid, @codigo, @email, @expira)',
-      { uid: id_usuario, codigo, email: emailDestino, expira }
+      "INSERT INTO codigos_recuperacion (id_usuario, codigo, email_destino, expira_en) VALUES (@uid, @codigo, @email, @expira)",
+      { uid: id_usuario, codigo, email: emailDestino, expira },
     );
 
     // Timeout de 20s para el envío del correo — evita que el servidor quede colgado
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout al enviar correo')), 20000)
+      setTimeout(() => reject(new Error("Timeout al enviar correo")), 20000),
     );
 
     try {
@@ -439,69 +642,111 @@ router.post('/recuperar/enviar-codigo', async (req, res) => {
         enviarCodigoRecuperacion(emailDestino, codigo, user.nombre_completo),
         timeoutPromise,
       ]);
-      return res.json({ ok: true, message: 'Código enviado correctamente.', email_masked: maskEmail(emailDestino) });
+      return res.json({
+        ok: true,
+        message: "Código enviado correctamente.",
+        email_masked: maskEmail(emailDestino),
+      });
     } catch (mailErr) {
-      console.error('[mailer] Error enviando código:', mailErr.message);
+      console.error("[mailer] Error enviando código:", mailErr.message);
       // El código está guardado aunque el correo falle — informar al usuario con 503
       return res.status(503).json({
         ok: false,
-        message: 'No se pudo enviar el correo. Verifica que el correo sea correcto e intenta de nuevo.',
+        message:
+          "No se pudo enviar el correo. Verifica que el correo sea correcto e intenta de nuevo.",
         email_masked: maskEmail(emailDestino),
       });
     }
   } catch (err) {
-    console.error('Error enviando código:', err);
-    return res.status(500).json({ ok: false, message: 'No se pudo enviar el correo de recuperación. Verifica tu dirección de email e intenta de nuevo. Estamos trabajando en ello.' });
+    console.error("Error enviando código:", err);
+    return res
+      .status(500)
+      .json({
+        ok: false,
+        message:
+          "No se pudo enviar el correo de recuperación. Verifica tu dirección de email e intenta de nuevo. Estamos trabajando en ello.",
+      });
   }
 });
 
 // ── POST /api/auth/recuperar/verificar-codigo ────────────────────────
-router.post('/recuperar/verificar-codigo', async (req, res) => {
+router.post("/recuperar/verificar-codigo", async (req, res) => {
   const { id_usuario, codigo } = req.body;
-  if (!id_usuario || !codigo) return res.status(400).json({ ok: false, message: 'Datos incompletos.' });
+  if (!id_usuario || !codigo)
+    return res.status(400).json({ ok: false, message: "Datos incompletos." });
 
   try {
     const result = await query(
-      'SELECT id FROM codigos_recuperacion WHERE id_usuario = @uid AND codigo = @codigo AND usado = false AND expira_en > NOW() ORDER BY creado_en DESC LIMIT 1',
-      { uid: id_usuario, codigo: codigo.trim() }
+      "SELECT id FROM codigos_recuperacion WHERE id_usuario = @uid AND codigo = @codigo AND usado = false AND expira_en > NOW() ORDER BY creado_en DESC LIMIT 1",
+      { uid: id_usuario, codigo: codigo.trim() },
     );
     if (!result.rows.length) {
-      return res.status(400).json({ ok: false, message: 'Código incorrecto o expirado.' });
+      return res
+        .status(400)
+        .json({ ok: false, message: "Código incorrecto o expirado." });
     }
-    return res.json({ ok: true, message: 'Código válido.' });
+    return res.json({ ok: true, message: "Código válido." });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'No se pudo verificar el código de recuperación. Estamos trabajando en ello.' });
+    return res
+      .status(500)
+      .json({
+        ok: false,
+        message:
+          "No se pudo verificar el código de recuperación. Estamos trabajando en ello.",
+      });
   }
 });
 
 // ── POST /api/auth/recuperar/nueva-password ──────────────────────────
-router.post('/recuperar/nueva-password', async (req, res) => {
+router.post("/recuperar/nueva-password", async (req, res) => {
   const { id_usuario, codigo, nueva_password } = req.body;
   if (!id_usuario || !codigo || !nueva_password) {
-    return res.status(400).json({ ok: false, message: 'Datos incompletos.' });
+    return res.status(400).json({ ok: false, message: "Datos incompletos." });
   }
   if (nueva_password.length < 8) {
-    return res.status(400).json({ ok: false, message: 'La contraseña debe tener al menos 8 caracteres.' });
+    return res
+      .status(400)
+      .json({
+        ok: false,
+        message: "La contraseña debe tener al menos 8 caracteres.",
+      });
   }
 
   try {
     const result = await query(
-      'SELECT id FROM codigos_recuperacion WHERE id_usuario = @uid AND codigo = @codigo AND usado = false AND expira_en > NOW() ORDER BY creado_en DESC LIMIT 1',
-      { uid: id_usuario, codigo: codigo.trim() }
+      "SELECT id FROM codigos_recuperacion WHERE id_usuario = @uid AND codigo = @codigo AND usado = false AND expira_en > NOW() ORDER BY creado_en DESC LIMIT 1",
+      { uid: id_usuario, codigo: codigo.trim() },
     );
     if (!result.rows.length) {
-      return res.status(400).json({ ok: false, message: 'Código incorrecto o expirado.' });
+      return res
+        .status(400)
+        .json({ ok: false, message: "Código incorrecto o expirado." });
     }
 
     const hash = await bcrypt.hash(nueva_password, 10);
-    await query('UPDATE usuarios SET password_hash = @hash WHERE id_usuario = @uid', { hash, uid: id_usuario });
-    await query('UPDATE codigos_recuperacion SET usado = true WHERE id_usuario = @uid AND codigo = @codigo', { uid: id_usuario, codigo: codigo.trim() });
+    await query(
+      "UPDATE usuarios SET password_hash = @hash WHERE id_usuario = @uid",
+      { hash, uid: id_usuario },
+    );
+    await query(
+      "UPDATE codigos_recuperacion SET usado = true WHERE id_usuario = @uid AND codigo = @codigo",
+      { uid: id_usuario, codigo: codigo.trim() },
+    );
 
-    return res.json({ ok: true, message: 'Contraseña actualizada correctamente.' });
+    return res.json({
+      ok: true,
+      message: "Contraseña actualizada correctamente.",
+    });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'No se pudo actualizar la contraseña. Por favor intenta de nuevo. Estamos trabajando en ello.' });
+    return res
+      .status(500)
+      .json({
+        ok: false,
+        message:
+          "No se pudo actualizar la contraseña. Por favor intenta de nuevo. Estamos trabajando en ello.",
+      });
   }
 });
 

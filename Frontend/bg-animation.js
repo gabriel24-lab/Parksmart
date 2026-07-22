@@ -1,22 +1,28 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const containers = document.querySelectorAll('.background');
+  const containers = document.querySelectorAll(".background");
   if (!containers.length) return;
 
-  containers.forEach(container => {
-    const canvas = document.createElement('canvas');
-    canvas.id = 'bg-animation-canvas';
+  containers.forEach((container) => {
+    const canvas = document.createElement("canvas");
+    canvas.id = "bg-animation-canvas";
     Object.assign(canvas.style, {
-      position: 'absolute', top: '0', left: '0',
-      width: '100%', height: '100%',
-      pointerEvents: 'none', zIndex: '0'
+      position: "absolute",
+      top: "0",
+      left: "0",
+      width: "100%",
+      height: "100%",
+      pointerEvents: "none",
+      zIndex: "0",
     });
     container.appendChild(canvas);
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const BRAND = "47,164,64";
     const MAX_DIST = 130;
     const MOUSE_DIST = 160;
-    let width, height, particles = [];
+    let width,
+      height,
+      particles = [];
 
     // Usa window.innerWidth para evitar reflow forzado
     const resize = () => {
@@ -47,21 +53,37 @@ document.addEventListener("DOMContentLoaded", () => {
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = this.brand ? `rgba(${BRAND},.7)` : 'rgba(255,255,255,.5)';
+        ctx.fillStyle = this.brand
+          ? `rgba(${BRAND},.7)`
+          : "rgba(255,255,255,.5)";
         ctx.fill();
       }
     }
 
     let mouse = { x: null, y: null };
-    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
-    window.addEventListener('mouseout', () => { mouse.x = null; mouse.y = null; });
+    window.addEventListener(
+      "mousemove",
+      (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      },
+      { passive: true },
+    );
+    window.addEventListener("mouseout", () => {
+      mouse.x = null;
+      mouse.y = null;
+    });
 
     // Debounce resize para no disparar reflow repetido
     let resizeTimer;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(resize, 150);
-    }, { passive: true });
+    window.addEventListener(
+      "resize",
+      () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(resize, 150);
+      },
+      { passive: true },
+    );
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
@@ -78,9 +100,10 @@ document.addEventListener("DOMContentLoaded", () => {
           if (d < MAX_DIST) {
             const op = 1 - d / MAX_DIST;
             ctx.beginPath();
-            ctx.strokeStyle = (particles[i].brand || particles[j].brand)
-              ? `rgba(${BRAND},${op * 0.4})`
-              : `rgba(255,255,255,${op * 0.2})`;
+            ctx.strokeStyle =
+              particles[i].brand || particles[j].brand
+                ? `rgba(${BRAND},${op * 0.4})`
+                : `rgba(255,255,255,${op * 0.2})`;
             ctx.lineWidth = 0.6;
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);

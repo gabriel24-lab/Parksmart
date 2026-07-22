@@ -1,455 +1,626 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <link rel="preload" href="/Frontend/fonts/space-grotesk-v22-latin-600.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/Frontend/fonts/dm-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Registro - Parksmart</title>
-  <link rel="icon" href="/Frontend/img/logo-icon-cropped.webp" type="image/webp">
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="preconnect" href="https://parksmart-ggt8.onrender.com">
-  <link rel="stylesheet" href="login.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
-  <script src="api.js" defer></script>
-  <style>
-    /* ── Indicador de pasos ── */
-    .steps-indicator {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      margin-bottom: 24px;
-    }
-    .step-dot {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.05);
-      color: #999;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all .3s;
-    }
-    .step-dot.active {
-      border-color: var(--brand-color);
-      background: rgba(47,164,64,0.15);
-      color: var(--brand-color);
-    }
-    .step-dot.done {
-      border-color: var(--brand-color);
-      background: var(--brand-color);
-      color: #fff;
-    }
-    .step-line {
-      width: 36px;
-      height: 2px;
-      background: rgba(255,255,255,0.1);
-      transition: background .3s;
-    }
-    .step-line.done {
-      background: var(--brand-color);
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="preload"
+      href="/Frontend/fonts/space-grotesk-v22-latin-600.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/Frontend/fonts/dm-sans-v17-latin-regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Registro - Parksmart</title>
+    <link
+      rel="icon"
+      href="/Frontend/img/logo-icon-cropped.webp"
+      type="image/webp"
+    />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="preconnect" href="https://parksmart-ggt8.onrender.com" />
+    <link rel="stylesheet" href="login.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      media="print"
+      onload="this.media = 'all'"
+    />
+    <noscript
+      ><link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    /></noscript>
+    <script src="api.js" defer></script>
+    <style>
+      /* ── Indicador de pasos ── */
+      .steps-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        margin-bottom: 24px;
+      }
+      .step-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.05);
+        color: #999;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+      }
+      .step-dot.active {
+        border-color: var(--brand-color);
+        background: rgba(47, 164, 64, 0.15);
+        color: var(--brand-color);
+      }
+      .step-dot.done {
+        border-color: var(--brand-color);
+        background: var(--brand-color);
+        color: #fff;
+      }
+      .step-line {
+        width: 36px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.1);
+        transition: background 0.3s;
+      }
+      .step-line.done {
+        background: var(--brand-color);
+      }
 
-    /* ── Info del usuario verificado ── */
-    .user-info-box {
-      background: rgba(47,164,64,0.08);
-      border: 1px solid rgba(47,164,64,0.2);
-      border-radius: var(--radius-sm);
-      padding: 14px 16px;
-      margin-bottom: 20px;
-    }
-    .user-info-box .user-name {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 15px;
-      font-weight: 600;
-      color: #fff;
-      margin-bottom: 4px;
-    }
-    .user-info-box .user-detail {
-      font-size: 13px;
-      color: #999;
-    }
-    .user-info-box .user-detail span {
-      color: #ccc;
-    }
+      /* ── Info del usuario verificado ── */
+      .user-info-box {
+        background: rgba(47, 164, 64, 0.08);
+        border: 1px solid rgba(47, 164, 64, 0.2);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        margin-bottom: 20px;
+      }
+      .user-info-box .user-name {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 4px;
+      }
+      .user-info-box .user-detail {
+        font-size: 13px;
+        color: #999;
+      }
+      .user-info-box .user-detail span {
+        color: #ccc;
+      }
 
-    /* ── Requisitos de contraseña ── */
-    .pass-requirements {
-      margin-top: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .req-item {
-      font-size: 12px;
-      color: #666;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: color .2s;
-    }
-    .req-item i { font-size: 11px; }
-    .req-item.ok { color: var(--brand-color); }
-    .req-item.fail { color: #ff6b6b; }
+      /* ── Requisitos de contraseña ── */
+      .pass-requirements {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .req-item {
+        font-size: 12px;
+        color: #666;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: color 0.2s;
+      }
+      .req-item i {
+        font-size: 11px;
+      }
+      .req-item.ok {
+        color: var(--brand-color);
+      }
+      .req-item.fail {
+        color: #ff6b6b;
+      }
 
-    /* ── Pantalla de éxito ── */
-    .success-icon {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: rgba(47,164,64,0.15);
-      border: 2px solid var(--brand-color);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 20px;
-      font-size: 28px;
-      color: var(--brand-color);
-    }
+      /* ── Pantalla de éxito ── */
+      .success-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(47, 164, 64, 0.15);
+        border: 2px solid var(--brand-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 28px;
+        color: var(--brand-color);
+      }
 
-    /* Ocultar pasos */
-    .step-panel { display: none; }
-    .step-panel.active { display: block; }
+      /* Ocultar pasos */
+      .step-panel {
+        display: none;
+      }
+      .step-panel.active {
+        display: block;
+      }
 
-    /* Subtitle */
-    .subtitle {
-      font-size: 13px;
-      color: #888;
-      margin-top: -14px;
-      margin-bottom: 20px;
-    }
+      /* Subtitle */
+      .subtitle {
+        font-size: 13px;
+        color: #888;
+        margin-top: -14px;
+        margin-bottom: 20px;
+      }
 
-    /* Back link */
-    .back-link {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      color: #666;
-      text-decoration: none;
-      margin-top: 4px;
-      justify-content: center;
-      transition: color .2s;
-    }
-    .back-link:hover { color: #ccc; }
-  </style>
-</head>
-<body>
-  <div class="background"></div>
+      /* Back link */
+      .back-link {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #666;
+        text-decoration: none;
+        margin-top: 4px;
+        justify-content: center;
+        transition: color 0.2s;
+      }
+      .back-link:hover {
+        color: #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="background"></div>
 
-  <div class="card">
-    <div class="logo">
-      <img src="/Frontend/img/logotipo-full-cropped.webp" alt="Parksmart Logo" width="160" height="40" fetchpriority="high"/>
-    </div>
-
-    <!-- Indicador de pasos (se oculta en paso 3 éxito) -->
-    <div class="steps-indicator" id="steps-indicator">
-      <div class="step-dot active" id="dot-1">1</div>
-      <div class="step-line" id="line-1"></div>
-      <div class="step-dot" id="dot-2">2</div>
-      <div class="step-line" id="line-2"></div>
-      <div class="step-dot" id="dot-3">3</div>
-    </div>
-
-    <!-- ── PASO 1: Verificar documento ── -->
-    <div class="step-panel active" id="panel-1">
-      <h1 class="title">Crear cuenta</h1>
-      <p class="subtitle">Ingresa tu número de documento para verificar que estás en el SENA.</p>
-
-      <div class="form-group">
-        <label for="numero_id">Número de documento</label>
-        <input type="text" id="numero_id" placeholder="Ej: 1234567890" autocomplete="username" inputmode="numeric"/>
+    <div class="card">
+      <div class="logo">
+        <img
+          src="/Frontend/img/logotipo-full-cropped.webp"
+          alt="Parksmart Logo"
+          width="160"
+          height="40"
+          fetchpriority="high"
+        />
       </div>
 
-      <p id="err-1" style="display:none;color:#ff8080;font-size:13px;margin-top:-8px;margin-bottom:12px;"></p>
-
-      <button class="btn-signin" id="btn-1" onclick="paso1()">Continuar</button>
-      <a href="login.html" class="back-link"><i class="bi bi-arrow-left"></i> Volver al inicio de sesión</a>
-    </div>
-
-    <!-- ── PASO 2: Crear contraseña ── -->
-    <div class="step-panel" id="panel-2">
-      <h1 class="title">Crea tu contraseña</h1>
-
-      <div class="user-info-box" id="user-info-box">
-        <div class="user-name" id="user-name">—</div>
-        <div class="user-detail">Documento: <span id="user-doc">—</span></div>
-        <div class="user-detail" id="user-email-row" style="display:none">Correo: <span id="user-email">—</span></div>
+      <!-- Indicador de pasos (se oculta en paso 3 éxito) -->
+      <div class="steps-indicator" id="steps-indicator">
+        <div class="step-dot active" id="dot-1">1</div>
+        <div class="step-line" id="line-1"></div>
+        <div class="step-dot" id="dot-2">2</div>
+        <div class="step-line" id="line-2"></div>
+        <div class="step-dot" id="dot-3">3</div>
       </div>
 
-      <div class="form-group">
-        <label for="nueva-pass">Contraseña</label>
-        <div class="password-wrapper">
-          <input type="password" id="nueva-pass" placeholder="Mínimo 8 caracteres" autocomplete="new-password" oninput="checkPass()"/>
-          <span class="eye-icon" onclick="togglePass('nueva-pass','eye-nueva')">
-            <i id="eye-nueva" class="bi bi-eye"></i>
-          </span>
+      <!-- ── PASO 1: Verificar documento ── -->
+      <div class="step-panel active" id="panel-1">
+        <h1 class="title">Crear cuenta</h1>
+        <p class="subtitle">
+          Ingresa tu número de documento para verificar que estás en el SENA.
+        </p>
+
+        <div class="form-group">
+          <label for="numero_id">Número de documento</label>
+          <input
+            type="text"
+            id="numero_id"
+            placeholder="Ej: 1234567890"
+            autocomplete="username"
+            inputmode="numeric"
+          />
         </div>
-        <div class="pass-requirements">
-          <div class="req-item" id="req-len"><i class="bi bi-circle"></i> Mínimo 8 caracteres</div>
-          <div class="req-item" id="req-num"><i class="bi bi-circle"></i> Al menos un número</div>
-        </div>
+
+        <p
+          id="err-1"
+          style="
+            display: none;
+            color: #ff8080;
+            font-size: 13px;
+            margin-top: -8px;
+            margin-bottom: 12px;
+          "
+        ></p>
+
+        <button class="btn-signin" id="btn-1" onclick="paso1()">
+          Continuar
+        </button>
+        <a href="login.html" class="back-link"
+          ><i class="bi bi-arrow-left"></i> Volver al inicio de sesión</a
+        >
       </div>
 
-      <div class="form-group">
-        <label for="confirmar-pass">Confirmar contraseña</label>
-        <div class="password-wrapper">
-          <input type="password" id="confirmar-pass" placeholder="Repite la contraseña" autocomplete="new-password" oninput="checkPass()"/>
-          <span class="eye-icon" onclick="togglePass('confirmar-pass','eye-conf')">
-            <i id="eye-conf" class="bi bi-eye"></i>
-          </span>
+      <!-- ── PASO 2: Crear contraseña ── -->
+      <div class="step-panel" id="panel-2">
+        <h1 class="title">Crea tu contraseña</h1>
+
+        <div class="user-info-box" id="user-info-box">
+          <div class="user-name" id="user-name">—</div>
+          <div class="user-detail">Documento: <span id="user-doc">—</span></div>
+          <div class="user-detail" id="user-email-row" style="display: none">
+            Correo: <span id="user-email">—</span>
+          </div>
         </div>
+
+        <div class="form-group">
+          <label for="nueva-pass">Contraseña</label>
+          <div class="password-wrapper">
+            <input
+              type="password"
+              id="nueva-pass"
+              placeholder="Mínimo 8 caracteres"
+              autocomplete="new-password"
+              oninput="checkPass()"
+            />
+            <span
+              class="eye-icon"
+              onclick="togglePass('nueva-pass', 'eye-nueva')"
+            >
+              <i id="eye-nueva" class="bi bi-eye"></i>
+            </span>
+          </div>
+          <div class="pass-requirements">
+            <div class="req-item" id="req-len">
+              <i class="bi bi-circle"></i> Mínimo 8 caracteres
+            </div>
+            <div class="req-item" id="req-num">
+              <i class="bi bi-circle"></i> Al menos un número
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmar-pass">Confirmar contraseña</label>
+          <div class="password-wrapper">
+            <input
+              type="password"
+              id="confirmar-pass"
+              placeholder="Repite la contraseña"
+              autocomplete="new-password"
+              oninput="checkPass()"
+            />
+            <span
+              class="eye-icon"
+              onclick="togglePass('confirmar-pass', 'eye-conf')"
+            >
+              <i id="eye-conf" class="bi bi-eye"></i>
+            </span>
+          </div>
+        </div>
+
+        <p
+          id="err-2"
+          style="
+            display: none;
+            color: #ff8080;
+            font-size: 13px;
+            margin-top: -8px;
+            margin-bottom: 12px;
+          "
+        ></p>
+
+        <button class="btn-signin" id="btn-2" onclick="paso2()">
+          Registrarme
+        </button>
+        <a
+          href="#"
+          class="back-link"
+          onclick="
+            volverA1();
+            return false;
+          "
+          ><i class="bi bi-arrow-left"></i> Cambiar documento</a
+        >
       </div>
 
-      <p id="err-2" style="display:none;color:#ff8080;font-size:13px;margin-top:-8px;margin-bottom:12px;"></p>
-
-      <button class="btn-signin" id="btn-2" onclick="paso2()">Registrarme</button>
-      <a href="#" class="back-link" onclick="volverA1(); return false;"><i class="bi bi-arrow-left"></i> Cambiar documento</a>
+      <!-- ── PASO 3: Éxito ── -->
+      <div class="step-panel" id="panel-3">
+        <div class="success-icon"><i class="bi bi-check-lg"></i></div>
+        <h1 class="title" style="text-align: center">¡Listo!</h1>
+        <p
+          style="
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            margin-top: -12px;
+            margin-bottom: 24px;
+          "
+        >
+          Tu cuenta fue creada correctamente. Ya puedes iniciar sesión.
+        </p>
+        <button
+          class="btn-signin"
+          onclick="window.location.href = 'login.html'"
+        >
+          Ir al inicio de sesión
+        </button>
+      </div>
     </div>
 
-    <!-- ── PASO 3: Éxito ── -->
-    <div class="step-panel" id="panel-3">
-      <div class="success-icon"><i class="bi bi-check-lg"></i></div>
-      <h1 class="title" style="text-align:center;">¡Listo!</h1>
-      <p style="text-align:center;color:#999;font-size:14px;margin-top:-12px;margin-bottom:24px;">
-        Tu cuenta fue creada correctamente. Ya puedes iniciar sesión.
-      </p>
-      <button class="btn-signin" onclick="window.location.href='login.html'">Ir al inicio de sesión</button>
-    </div>
-  </div>
+    <script src="bg-animation.js" defer></script>
 
-  <script src="bg-animation.js" defer></script>
-
-  <script>
-    // Redirigir si ya está logueado
-    window.addEventListener('DOMContentLoaded', () => {
-      if (typeof Auth !== 'undefined' && Auth.isLogged()) {
-        const u = Auth.getUser();
-        window.location.href = (u?.rol === 'superadmin') ? 'superadmin.html'
-          : (u?.rol === 'admin' || u?.rol === 'guardia') ? 'operario.html'
-          : 'dashboard.html';
-      }
-    });
-
-    // ── Estado compartido ──────────────────────────────────────────────
-    let datosUsuario = null; // { nombre_completo, email, tipo_id, numero_id }
-    let enviando = false;
-
-    // ── Helpers UI ────────────────────────────────────────────────────
-    function mostrarError(id, msg) {
-      const el = document.getElementById(id);
-      el.textContent = msg;
-      el.style.display = 'block';
-    }
-    function ocultarError(id) {
-      document.getElementById(id).style.display = 'none';
-    }
-
-    function irAPaso(n) {
-      document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
-      document.getElementById(`panel-${n}`).classList.add('active');
-
-      // Actualizar indicador
-      for (let i = 1; i <= 3; i++) {
-        const dot = document.getElementById(`dot-${i}`);
-        dot.classList.remove('active', 'done');
-        if (i < n) { dot.classList.add('done'); dot.innerHTML = '<i class="bi bi-check"></i>'; }
-        else if (i === n) { dot.classList.add('active'); dot.textContent = i; }
-        else { dot.textContent = i; }
-      }
-      for (let i = 1; i <= 2; i++) {
-        const line = document.getElementById(`line-${i}`);
-        line.classList.toggle('done', i < n);
-      }
-
-      // Ocultar indicador en éxito
-      document.getElementById('steps-indicator').style.display = n === 3 ? 'none' : 'flex';
-    }
-
-    function volverA1() {
-      ocultarError('err-1');
-      irAPaso(1);
-      document.getElementById('nueva-pass').value = '';
-      document.getElementById('confirmar-pass').value = '';
-      resetRequisitos();
-    }
-
-    function togglePass(inputId, iconId) {
-      const input = document.getElementById(inputId);
-      const icon  = document.getElementById(iconId);
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.replace('bi-eye', 'bi-eye-slash');
-      } else {
-        input.type = 'password';
-        icon.classList.replace('bi-eye-slash', 'bi-eye');
-      }
-    }
-
-    // ── Validación de contraseña en tiempo real ───────────────────────
-    function checkPass() {
-      const pass  = document.getElementById('nueva-pass').value;
-      const conf  = document.getElementById('confirmar-pass').value;
-
-      setReq('req-len', pass.length >= 8);
-      setReq('req-num', /\d/.test(pass));
-
-      if (conf && pass !== conf) {
-        mostrarError('err-2', 'Las contraseñas no coinciden.');
-      } else {
-        ocultarError('err-2');
-      }
-    }
-
-    function setReq(id, ok) {
-      const el = document.getElementById(id);
-      el.classList.toggle('ok', ok);
-      el.classList.toggle('fail', !ok && el.classList.contains('fail') || (!ok && document.getElementById('nueva-pass').value.length > 0));
-      const icon = el.querySelector('i');
-      icon.className = ok ? 'bi bi-check-circle-fill' : 'bi bi-circle';
-    }
-
-    function resetRequisitos() {
-      ['req-len','req-num'].forEach(id => {
-        const el = document.getElementById(id);
-        el.classList.remove('ok','fail');
-        el.querySelector('i').className = 'bi bi-circle';
+    <script>
+      // Redirigir si ya está logueado
+      window.addEventListener("DOMContentLoaded", () => {
+        if (typeof Auth !== "undefined" && Auth.isLogged()) {
+          const u = Auth.getUser();
+          window.location.href =
+            u?.rol === "superadmin"
+              ? "superadmin.html"
+              : u?.rol === "admin" || u?.rol === "guardia"
+                ? "operario.html"
+                : "dashboard.html";
+        }
       });
-    }
 
-    // ── Funciones de enmascaramiento ─────────────────────────────────
-    function enmascararEmail(email) {
-      if (!email) return '';
-      const [usuario, dominio] = email.split('@');
-      const visible = usuario.slice(0, 2);
-      const oculto  = '*'.repeat(Math.max(2, usuario.length - 2));
-      return `${visible}${oculto}@${dominio}`;
-    }
+      // ── Estado compartido ──────────────────────────────────────────────
+      let datosUsuario = null; // { nombre_completo, email, tipo_id, numero_id }
+      let enviando = false;
 
-    function enmascararDocumento(doc) {
-      if (!doc) return '';
-      const s = doc.toString();
-      return s.slice(0, 2) + '*'.repeat(Math.max(2, s.length - 4)) + s.slice(-2);
-    }
-
-    function enmascararNombre(nombre) {
-      if (!nombre) return '';
-      return nombre.split(' ').map(palabra =>
-        palabra.length <= 1 ? palabra : palabra[0] + '*'.repeat(palabra.length - 1)
-      ).join(' ');
-    }
-
-    // ── PASO 1: Verificar documento ───────────────────────────────────
-    async function paso1() {
-      if (enviando) return;
-      const nid = document.getElementById('numero_id').value.trim();
-      ocultarError('err-1');
-
-      if (!nid) {
-        mostrarError('err-1', 'Ingresa tu número de documento.');
-        return;
+      // ── Helpers UI ────────────────────────────────────────────────────
+      function mostrarError(id, msg) {
+        const el = document.getElementById(id);
+        el.textContent = msg;
+        el.style.display = "block";
+      }
+      function ocultarError(id) {
+        document.getElementById(id).style.display = "none";
       }
 
-      const btn = document.getElementById('btn-1');
-      btn.disabled = true;
-      btn.textContent = 'Verificando...';
-      enviando = true;
+      function irAPaso(n) {
+        document
+          .querySelectorAll(".step-panel")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById(`panel-${n}`).classList.add("active");
 
-      try {
-        const res = await fetch(`https://parksmart-ggt8.onrender.com/api/auth/verificar/${encodeURIComponent(nid)}`);
-        const data = await res.json();
-
-        if (!data.ok) {
-          mostrarError('err-1', data.message || 'No se pudo verificar el documento.');
-          return;
+        // Actualizar indicador
+        for (let i = 1; i <= 3; i++) {
+          const dot = document.getElementById(`dot-${i}`);
+          dot.classList.remove("active", "done");
+          if (i < n) {
+            dot.classList.add("done");
+            dot.innerHTML = '<i class="bi bi-check"></i>';
+          } else if (i === n) {
+            dot.classList.add("active");
+            dot.textContent = i;
+          } else {
+            dot.textContent = i;
+          }
+        }
+        for (let i = 1; i <= 2; i++) {
+          const line = document.getElementById(`line-${i}`);
+          line.classList.toggle("done", i < n);
         }
 
-        // Guardar datos y pasar al paso 2
-        datosUsuario = { ...data.data, numero_id: nid };
+        // Ocultar indicador en éxito
+        document.getElementById("steps-indicator").style.display =
+          n === 3 ? "none" : "flex";
+      }
 
-        document.getElementById('user-name').textContent = datosUsuario.nombre_completo;
-        document.getElementById('user-doc').textContent  = enmascararDocumento(nid);
+      function volverA1() {
+        ocultarError("err-1");
+        irAPaso(1);
+        document.getElementById("nueva-pass").value = "";
+        document.getElementById("confirmar-pass").value = "";
+        resetRequisitos();
+      }
 
-        if (datosUsuario.email) {
-          document.getElementById('user-email').textContent = enmascararEmail(datosUsuario.email);
-          document.getElementById('user-email-row').style.display = 'block';
+      function togglePass(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (input.type === "password") {
+          input.type = "text";
+          icon.classList.replace("bi-eye", "bi-eye-slash");
+        } else {
+          input.type = "password";
+          icon.classList.replace("bi-eye-slash", "bi-eye");
         }
-
-        irAPaso(2);
-        document.getElementById('nueva-pass').focus();
-
-      } catch {
-        mostrarError('err-1', 'No se pudo conectar al servidor. Intenta de nuevo.');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Continuar';
-        enviando = false;
-      }
-    }
-
-    // ── PASO 2: Registrar ─────────────────────────────────────────────
-    async function paso2() {
-      if (enviando) return;
-      const pass = document.getElementById('nueva-pass').value;
-      const conf = document.getElementById('confirmar-pass').value;
-      ocultarError('err-2');
-
-      if (pass.length < 8) {
-        mostrarError('err-2', 'La contraseña debe tener al menos 8 caracteres.');
-        return;
-      }
-      if (!/\d/.test(pass)) {
-        mostrarError('err-2', 'La contraseña debe contener al menos un número.');
-        return;
-      }
-      if (pass !== conf) {
-        mostrarError('err-2', 'Las contraseñas no coinciden.');
-        return;
       }
 
-      const btn = document.getElementById('btn-2');
-      btn.disabled = true;
-      btn.textContent = 'Registrando...';
-      enviando = true;
+      // ── Validación de contraseña en tiempo real ───────────────────────
+      function checkPass() {
+        const pass = document.getElementById("nueva-pass").value;
+        const conf = document.getElementById("confirmar-pass").value;
 
-      try {
-        const res = await fetch('https://parksmart-ggt8.onrender.com/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ numero_id: datosUsuario.numero_id, password: pass }),
+        setReq("req-len", pass.length >= 8);
+        setReq("req-num", /\d/.test(pass));
+
+        if (conf && pass !== conf) {
+          mostrarError("err-2", "Las contraseñas no coinciden.");
+        } else {
+          ocultarError("err-2");
+        }
+      }
+
+      function setReq(id, ok) {
+        const el = document.getElementById(id);
+        el.classList.toggle("ok", ok);
+        el.classList.toggle(
+          "fail",
+          (!ok && el.classList.contains("fail")) ||
+            (!ok && document.getElementById("nueva-pass").value.length > 0),
+        );
+        const icon = el.querySelector("i");
+        icon.className = ok ? "bi bi-check-circle-fill" : "bi bi-circle";
+      }
+
+      function resetRequisitos() {
+        ["req-len", "req-num"].forEach((id) => {
+          const el = document.getElementById(id);
+          el.classList.remove("ok", "fail");
+          el.querySelector("i").className = "bi bi-circle";
         });
-        const data = await res.json();
+      }
 
-        if (!data.ok) {
-          mostrarError('err-2', data.message || 'No se pudo completar el registro.');
+      // ── Funciones de enmascaramiento ─────────────────────────────────
+      function enmascararEmail(email) {
+        if (!email) return "";
+        const [usuario, dominio] = email.split("@");
+        const visible = usuario.slice(0, 2);
+        const oculto = "*".repeat(Math.max(2, usuario.length - 2));
+        return `${visible}${oculto}@${dominio}`;
+      }
+
+      function enmascararDocumento(doc) {
+        if (!doc) return "";
+        const s = doc.toString();
+        return (
+          s.slice(0, 2) + "*".repeat(Math.max(2, s.length - 4)) + s.slice(-2)
+        );
+      }
+
+      function enmascararNombre(nombre) {
+        if (!nombre) return "";
+        return nombre
+          .split(" ")
+          .map((palabra) =>
+            palabra.length <= 1
+              ? palabra
+              : palabra[0] + "*".repeat(palabra.length - 1),
+          )
+          .join(" ");
+      }
+
+      // ── PASO 1: Verificar documento ───────────────────────────────────
+      async function paso1() {
+        if (enviando) return;
+        const nid = document.getElementById("numero_id").value.trim();
+        ocultarError("err-1");
+
+        if (!nid) {
+          mostrarError("err-1", "Ingresa tu número de documento.");
           return;
         }
 
-        irAPaso(3);
+        const btn = document.getElementById("btn-1");
+        btn.disabled = true;
+        btn.textContent = "Verificando...";
+        enviando = true;
 
-      } catch {
-        mostrarError('err-2', 'No se pudo conectar al servidor. Intenta de nuevo.');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Registrarme';
-        enviando = false;
+        try {
+          const res = await fetch(
+            `https://parksmart-ggt8.onrender.com/api/auth/verificar/${encodeURIComponent(nid)}`,
+          );
+          const data = await res.json();
+
+          if (!data.ok) {
+            mostrarError(
+              "err-1",
+              data.message || "No se pudo verificar el documento.",
+            );
+            return;
+          }
+
+          // Guardar datos y pasar al paso 2
+          datosUsuario = { ...data.data, numero_id: nid };
+
+          document.getElementById("user-name").textContent =
+            datosUsuario.nombre_completo;
+          document.getElementById("user-doc").textContent =
+            enmascararDocumento(nid);
+
+          if (datosUsuario.email) {
+            document.getElementById("user-email").textContent = enmascararEmail(
+              datosUsuario.email,
+            );
+            document.getElementById("user-email-row").style.display = "block";
+          }
+
+          irAPaso(2);
+          document.getElementById("nueva-pass").focus();
+        } catch {
+          mostrarError(
+            "err-1",
+            "No se pudo conectar al servidor. Intenta de nuevo.",
+          );
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Continuar";
+          enviando = false;
+        }
       }
-    }
 
-    // Enter en cualquier campo
-    document.addEventListener('keydown', e => {
-      if (e.key !== 'Enter') return;
-      const panel = document.querySelector('.step-panel.active')?.id;
-      if (panel === 'panel-1') paso1();
-      else if (panel === 'panel-2') paso2();
-    });
-  </script>
-</body>
+      // ── PASO 2: Registrar ─────────────────────────────────────────────
+      async function paso2() {
+        if (enviando) return;
+        const pass = document.getElementById("nueva-pass").value;
+        const conf = document.getElementById("confirmar-pass").value;
+        ocultarError("err-2");
+
+        if (pass.length < 8) {
+          mostrarError(
+            "err-2",
+            "La contraseña debe tener al menos 8 caracteres.",
+          );
+          return;
+        }
+        if (!/\d/.test(pass)) {
+          mostrarError(
+            "err-2",
+            "La contraseña debe contener al menos un número.",
+          );
+          return;
+        }
+        if (pass !== conf) {
+          mostrarError("err-2", "Las contraseñas no coinciden.");
+          return;
+        }
+
+        const btn = document.getElementById("btn-2");
+        btn.disabled = true;
+        btn.textContent = "Registrando...";
+        enviando = true;
+
+        try {
+          const res = await fetch(
+            "https://parksmart-ggt8.onrender.com/api/auth/register",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                numero_id: datosUsuario.numero_id,
+                password: pass,
+              }),
+            },
+          );
+          const data = await res.json();
+
+          if (!data.ok) {
+            mostrarError(
+              "err-2",
+              data.message || "No se pudo completar el registro.",
+            );
+            return;
+          }
+
+          irAPaso(3);
+        } catch {
+          mostrarError(
+            "err-2",
+            "No se pudo conectar al servidor. Intenta de nuevo.",
+          );
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Registrarme";
+          enviando = false;
+        }
+      }
+
+      // Enter en cualquier campo
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        const panel = document.querySelector(".step-panel.active")?.id;
+        if (panel === "panel-1") paso1();
+        else if (panel === "panel-2") paso2();
+      });
+    </script>
+  </body>
 </html>

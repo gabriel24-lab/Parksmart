@@ -1,26 +1,32 @@
 // src/routes/vehiculos.js
-const router = require('express').Router();
-const multer = require('multer');
-const { body, validationResult } = require('express-validator');
-const { createClient } = require('@supabase/supabase-js');
-const { query } = require('../config/db');
-const { authMiddleware, requireRol } = require('../middlewares/auth');
+const router = require("express").Router();
+const multer = require("multer");
+const { body, validationResult } = require("express-validator");
+const { createClient } = require("@supabase/supabase-js");
+const { query } = require("../config/db");
+const { authMiddleware, requireRol } = require("../middlewares/auth");
 
 // ── Validación de magic bytes ─────────────────────────────────────────
 // Verifica que el buffer sea realmente una imagen válida (JPEG, PNG o WEBP)
 // independientemente del mimetype declarado por el cliente.
 function validarMagicBytes(buffer) {
   if (!buffer || buffer.length < 12) {
-    const err = new Error('Archivo inválido o demasiado pequeño.');
+    const err = new Error("Archivo inválido o demasiado pequeño.");
     err.status = 400;
     throw err;
   }
-  const isJpeg = buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
-  const isPng  = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47;
-  const isWebp = buffer.slice(8, 12).toString('ascii') === 'WEBP';
+  const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  const isPng =
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47;
+  const isWebp = buffer.slice(8, 12).toString("ascii") === "WEBP";
 
   if (!isJpeg && !isPng && !isWebp) {
-    const err = new Error('El archivo no es una imagen JPG, PNG o WEBP válida.');
+    const err = new Error(
+      "El archivo no es una imagen JPG, PNG o WEBP válida.",
+    );
     err.status = 400;
     throw err;
   }
@@ -29,7 +35,7 @@ function validarMagicBytes(buffer) {
 // ── Supabase Storage client ───────────────────────────────────────────
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
+  process.env.SUPABASE_SERVICE_KEY,
 );
 
 // ── Multer en memoria (no guarda en disco) ────────────────────────────
@@ -37,9 +43,9 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
     if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error('Solo imágenes JPG, PNG o WEBP.'));
+    else cb(new Error("Solo imágenes JPG, PNG o WEBP."));
   },
 });
 
@@ -47,24 +53,38 @@ router.use(authMiddleware);
 
 // ── POST /api/vehiculos/admin ─────────────────────────────────────────
 // Solo admins. Registra un vehículo para otro usuario (sin foto).
-router.post('/admin',
-  requireRol('admin', 'guardia', 'superadmin'),
+router.post(
+  "/admin",
+  requireRol("admin", "guardia", "superadmin"),
   [
-    body('id_usuario').isInt({ min: 1 }).withMessage('id_usuario requerido.'),
-    body('id_tipo').isInt({ min: 1, max: 4 }).withMessage('Tipo de vehículo inválido.'),
-    body('color').trim().notEmpty().withMessage('Color requerido.'),
+    body("id_usuario").isInt({ min: 1 }).withMessage("id_usuario requerido."),
+    body("id_tipo")
+      .isInt({ min: 1, max: 4 })
+      .withMessage("Tipo de vehículo inválido."),
+    body("color").trim().notEmpty().withMessage("Color requerido."),
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ ok: false, errors: errors.array() });
+    if (!errors.isEmpty())
+      return res.status(400).json({ ok: false, errors: errors.array() });
 
     const { id_usuario, id_tipo, placa, modelo, color, descripcion } = req.body;
     const tipoNum = parseInt(id_tipo);
 
     if (tipoNum !== 1 && !placa?.trim())
-      return res.status(400).json({ ok: false, message: 'La placa es obligatoria para este tipo de vehículo.' });
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          message: "La placa es obligatoria para este tipo de vehículo.",
+        });
     if (tipoNum === 1 && !modelo?.trim())
-      return res.status(400).json({ ok: false, message: 'El modelo es obligatorio para bicicletas.' });
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          message: "El modelo es obligatorio para bicicletas.",
+        });
 
     try {
       const result = await query(
@@ -72,37 +92,48 @@ router.post('/admin',
          VALUES (@uid, @tipo, @placa, @modelo, @color, @desc)
          RETURNING id_vehiculo`,
         {
-          uid:    parseInt(id_usuario),
-          tipo:   tipoNum,
-          placa:  placa?.trim()       || null,
-          modelo: modelo?.trim()      || null,
-          color:  color.trim(),
-          desc:   descripcion?.trim() || null,
-        }
+          uid: parseInt(id_usuario),
+          tipo: tipoNum,
+          placa: placa?.trim() || null,
+          modelo: modelo?.trim() || null,
+          color: color.trim(),
+          desc: descripcion?.trim() || null,
+        },
       );
       return res.status(201).json({
-        ok:          true,
-        message:     'Vehículo registrado por operario.',
+        ok: true,
+        message: "Vehículo registrado por operario.",
         id_vehiculo: result.rows[0].id_vehiculo,
       });
     } catch (err) {
-      console.error('vehiculos/admin POST:', err);
-      return res.status(500).json({ ok: false, message: 'No se pudo registrar el vehículo. Estamos trabajando en ello.' });
+      console.error("vehiculos/admin POST:", err);
+      return res
+        .status(500)
+        .json({
+          ok: false,
+          message:
+            "No se pudo registrar el vehículo. Estamos trabajando en ello.",
+        });
     }
-  }
+  },
 );
 // 1=Bicicleta, 2=Motocicleta, 3=Auto, 4=Furgoneta
 const TIPOS_POR_ROL = {
-  aprendiz:    [1],
+  aprendiz: [1],
   funcionario: [1, 2, 3, 4],
-  instructor:  [1, 2, 3, 4],
-  admin:       [1, 2, 3, 4],
-  superadmin:  [1, 2, 3, 4],
+  instructor: [1, 2, 3, 4],
+  admin: [1, 2, 3, 4],
+  superadmin: [1, 2, 3, 4],
 };
-const TIPO_NOMBRES = { 1: 'Bicicleta', 2: 'Motocicleta', 3: 'Auto', 4: 'Furgoneta' };
+const TIPO_NOMBRES = {
+  1: "Bicicleta",
+  2: "Motocicleta",
+  3: "Auto",
+  4: "Furgoneta",
+};
 
 // ── GET /api/vehiculos ────────────────────────────────────────────────
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const result = await query(
       `SELECT v.id_vehiculo, tv.nombre AS tipo, v.placa, v.modelo,
@@ -111,21 +142,30 @@ router.get('/', async (req, res) => {
        JOIN tipos_vehiculo tv ON tv.id_tipo = v.id_tipo
        WHERE v.id_usuario = @uid AND v.activo = true
        ORDER BY v.fecha_registro DESC`,
-      { uid: req.user.id_usuario }
+      { uid: req.user.id_usuario },
     );
     return res.json({ ok: true, data: result.rows });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'No se pudieron cargar tus vehículos. Estamos trabajando en ello.' });
+    return res
+      .status(500)
+      .json({
+        ok: false,
+        message:
+          "No se pudieron cargar tus vehículos. Estamos trabajando en ello.",
+      });
   }
 });
 
 // ── POST /api/vehiculos ───────────────────────────────────────────────
-router.post('/',
-  upload.single('foto'),
+router.post(
+  "/",
+  upload.single("foto"),
   [
-    body('id_tipo').isInt({ min: 1, max: 4 }).withMessage('Tipo de vehículo inválido.'),
-    body('color').trim().notEmpty().withMessage('Color requerido.'),
+    body("id_tipo")
+      .isInt({ min: 1, max: 4 })
+      .withMessage("Tipo de vehículo inválido."),
+    body("color").trim().notEmpty().withMessage("Color requerido."),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -135,10 +175,12 @@ router.post('/',
 
     const { id_tipo, placa, modelo, color, descripcion } = req.body;
     const tipoNum = parseInt(id_tipo);
-    const rol     = req.user.rol;
+    const rol = req.user.rol;
 
     if (!TIPOS_POR_ROL[rol]?.includes(tipoNum)) {
-      const permitidos = TIPOS_POR_ROL[rol].map(t => TIPO_NOMBRES[t]).join(', ');
+      const permitidos = TIPOS_POR_ROL[rol]
+        .map((t) => TIPO_NOMBRES[t])
+        .join(", ");
       return res.status(403).json({
         ok: false,
         message: `Tu rol (${rol}) solo permite registrar: ${permitidos}.`,
@@ -146,23 +188,34 @@ router.post('/',
     }
 
     if (tipoNum !== 1 && !placa?.trim()) {
-      return res.status(400).json({ ok: false, message: 'La placa es obligatoria para este tipo de vehículo.' });
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          message: "La placa es obligatoria para este tipo de vehículo.",
+        });
     }
 
     if (tipoNum === 1 && !modelo?.trim()) {
-      return res.status(400).json({ ok: false, message: 'El modelo es obligatorio para bicicletas.' });
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          message: "El modelo es obligatorio para bicicletas.",
+        });
     }
 
     // ── Validar límite de 3 vehículos por usuario ─────────────────────
     const countResult = await query(
       `SELECT COUNT(*) AS total FROM vehiculos WHERE id_usuario = @uid AND activo = true`,
-      { uid: req.user.id_usuario }
+      { uid: req.user.id_usuario },
     );
     const totalActivos = parseInt(countResult.rows[0].total, 10);
     if (totalActivos >= 3) {
       return res.status(400).json({
         ok: false,
-        message: 'No se pudo subir la foto del vehículo. Intenta con otra imagen. Estamos trabajando en ello.',
+        message:
+          "No se pudo subir la foto del vehículo. Intenta con otra imagen. Estamos trabajando en ello.",
       });
     }
 
@@ -172,25 +225,33 @@ router.post('/',
       try {
         validarMagicBytes(req.file.buffer);
       } catch (validationErr) {
-        return res.status(400).json({ ok: false, message: validationErr.message });
+        return res
+          .status(400)
+          .json({ ok: false, message: validationErr.message });
       }
-      const ext      = req.file.mimetype.split('/')[1].replace('jpeg', 'jpg');
+      const ext = req.file.mimetype.split("/")[1].replace("jpeg", "jpg");
       const fileName = `${Date.now()}-${req.user.id_usuario}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('vehiculos')
+        .from("vehiculos")
         .upload(fileName, req.file.buffer, {
           contentType: req.file.mimetype,
           upsert: false,
         });
 
       if (uploadError) {
-        console.error('Error subiendo foto a Supabase Storage:', uploadError);
-        return res.status(500).json({ ok: false, message: 'No se pudo subir la foto del vehículo. Intenta con otra imagen. Estamos trabajando en ello.' });
+        console.error("Error subiendo foto a Supabase Storage:", uploadError);
+        return res
+          .status(500)
+          .json({
+            ok: false,
+            message:
+              "No se pudo subir la foto del vehículo. Intenta con otra imagen. Estamos trabajando en ello.",
+          });
       }
 
       const { data: urlData } = supabase.storage
-        .from('vehiculos')
+        .from("vehiculos")
         .getPublicUrl(fileName);
 
       foto_url = urlData.publicUrl;
@@ -202,58 +263,79 @@ router.post('/',
          VALUES (@uid, @tipo, @placa, @modelo, @color, @desc, @foto)
          RETURNING id_vehiculo`,
         {
-          uid:    req.user.id_usuario,
-          tipo:   tipoNum,
-          placa:  placa?.trim()       || null,
-          modelo: modelo?.trim()      || null,
-          color:  color.trim(),
-          desc:   descripcion?.trim() || null,
-          foto:   foto_url,
-        }
+          uid: req.user.id_usuario,
+          tipo: tipoNum,
+          placa: placa?.trim() || null,
+          modelo: modelo?.trim() || null,
+          color: color.trim(),
+          desc: descripcion?.trim() || null,
+          foto: foto_url,
+        },
       );
       return res.status(201).json({
-        ok:          true,
-        message:     'Vehículo registrado.',
+        ok: true,
+        message: "Vehículo registrado.",
         id_vehiculo: result.rows[0].id_vehiculo,
         foto_url,
       });
     } catch (err) {
       // Si falló la BD, borrar la foto que subimos
       if (foto_url) {
-        const fileName = foto_url.split('/').pop();
-        await supabase.storage.from('vehiculos').remove([fileName]).catch(() => {});
+        const fileName = foto_url.split("/").pop();
+        await supabase.storage
+          .from("vehiculos")
+          .remove([fileName])
+          .catch(() => {});
       }
       console.error(err);
-      return res.status(500).json({ ok: false, message: 'No se pudo guardar el vehículo en la base de datos. Estamos trabajando en ello.' });
+      return res
+        .status(500)
+        .json({
+          ok: false,
+          message:
+            "No se pudo guardar el vehículo en la base de datos. Estamos trabajando en ello.",
+        });
     }
-  }
+  },
 );
 
 // ── DELETE /api/vehiculos/:id ─────────────────────────────────────────
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", async (req, res) => {
   const id = parseInt(req.params.id);
   try {
     const check = await query(
       `SELECT id_vehiculo, foto_url FROM vehiculos
        WHERE id_vehiculo = @id AND id_usuario = @uid AND activo = true`,
-      { id, uid: req.user.id_usuario }
+      { id, uid: req.user.id_usuario },
     );
     if (!check.rows.length)
-      return res.status(404).json({ ok: false, message: 'Vehículo no encontrado.' });
+      return res
+        .status(404)
+        .json({ ok: false, message: "Vehículo no encontrado." });
 
-    await query(`UPDATE vehiculos SET activo = false WHERE id_vehiculo = @id`, { id });
+    await query(`UPDATE vehiculos SET activo = false WHERE id_vehiculo = @id`, {
+      id,
+    });
 
     // Borrar foto de Supabase Storage si existe
     const foto = check.rows[0].foto_url;
     if (foto) {
-      const fileName = foto.split('/').pop();
-      await supabase.storage.from('vehiculos').remove([fileName]).catch(() => {});
+      const fileName = foto.split("/").pop();
+      await supabase.storage
+        .from("vehiculos")
+        .remove([fileName])
+        .catch(() => {});
     }
 
-    return res.json({ ok: true, message: 'Vehículo eliminado.' });
+    return res.json({ ok: true, message: "Vehículo eliminado." });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ ok: false, message: 'No se pudo eliminar el vehículo. Estamos trabajando en ello.' });
+    return res
+      .status(500)
+      .json({
+        ok: false,
+        message: "No se pudo eliminar el vehículo. Estamos trabajando en ello.",
+      });
   }
 });
 

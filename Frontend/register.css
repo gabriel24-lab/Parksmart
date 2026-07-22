@@ -1,41 +1,42 @@
 /* ── Fuentes locales (sin dependencia de Google Fonts) ── */
 @font-face {
-  font-family: 'Space Grotesk';
-  src: url('/Frontend/fonts/space-grotesk-v22-latin-regular.woff2') format('woff2');
+  font-family: "Space Grotesk";
+  src: url("/Frontend/fonts/space-grotesk-v22-latin-regular.woff2")
+    format("woff2");
   font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Space Grotesk';
-  src: url('/Frontend/fonts/space-grotesk-v22-latin-500.woff2') format('woff2');
+  font-family: "Space Grotesk";
+  src: url("/Frontend/fonts/space-grotesk-v22-latin-500.woff2") format("woff2");
   font-weight: 500;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Space Grotesk';
-  src: url('/Frontend/fonts/space-grotesk-v22-latin-600.woff2') format('woff2');
+  font-family: "Space Grotesk";
+  src: url("/Frontend/fonts/space-grotesk-v22-latin-600.woff2") format("woff2");
   font-weight: 600;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'DM Sans';
-  src: url('/Frontend/fonts/dm-sans-v17-latin-regular.woff2') format('woff2');
+  font-family: "DM Sans";
+  src: url("/Frontend/fonts/dm-sans-v17-latin-regular.woff2") format("woff2");
   font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'DM Sans';
-  src: url('/Frontend/fonts/dm-sans-v17-latin-500.woff2') format('woff2');
+  font-family: "DM Sans";
+  src: url("/Frontend/fonts/dm-sans-v17-latin-500.woff2") format("woff2");
   font-weight: 500;
   font-display: swap;
 }
 
 :root {
-  --brand-color: #2FA440;
+  --brand-color: #2fa440;
   --brand-hover: #238033;
   --bg-dark: #0b0b0c;
   --text-muted: #999;
@@ -54,7 +55,7 @@
 }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -68,8 +69,9 @@ body {
   position: fixed;
   inset: 0;
   background-color: var(--bg-dark);
-  background-image: linear-gradient(to right, rgba(11, 11, 12, .95), rgba(11, 11, 12, .6)),
-    url('/Frontend/img/fondo-del-login.webp');
+  background-image:
+    linear-gradient(to right, rgba(11, 11, 12, 0.95), rgba(11, 11, 12, 0.6)),
+    url("/Frontend/img/fondo-del-login.webp");
   background-size: cover;
   background-position: center;
   z-index: 0;
@@ -78,35 +80,37 @@ body {
 .card {
   position: relative;
   z-index: 1;
-  background: rgba(11, 11, 12, .88);
+  background: rgba(11, 11, 12, 0.88);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, .1);
-  border-top: 1px solid rgba(255, 255, 255, .22);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: var(--radius-lg);
   padding: 36px 34px 30px;
   width: calc(100% - 32px);
   max-width: 420px;
   box-shadow:
-    0 24px 64px rgba(0, 0, 0, .65),
-    0 0 0 1px rgba(47, 164, 64, .08),
-    inset 0 1px 0 rgba(255, 255, 255, .06);
-  animation: slideUp .55s cubic-bezier(.22, .61, .36, 1) both;
+    0 24px 64px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(47, 164, 64, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: slideUp 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 /* Línea de acento rojo en el tope */
 .card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 20px;
   right: 20px;
   height: 1px;
-  background: linear-gradient(90deg,
-      transparent,
-      rgba(47, 164, 64, .6) 35%,
-      rgba(47, 164, 64, .6) 65%,
-      transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(47, 164, 64, 0.6) 35%,
+    rgba(47, 164, 64, 0.6) 65%,
+    transparent
+  );
   pointer-events: none;
 }
 
@@ -138,11 +142,11 @@ body {
   object-fit: contain;
   display: block;
   mix-blend-mode: lighten;
-  filter: drop-shadow(0 0 6px rgba(47, 164, 64, .35));
+  filter: drop-shadow(0 0 6px rgba(47, 164, 64, 0.35));
 }
 
 .title {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 24px;
   font-weight: 700;
   color: var(--white);
@@ -185,13 +189,15 @@ body {
   width: 100%;
   padding: 11px 15px 11px 38px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, .12);
-  background: rgba(255, 255, 255, .05);
-  font-family: 'DM Sans', sans-serif;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  font-family: "DM Sans", sans-serif;
   font-size: 16px; /* ≥16px evita zoom automático en iOS Safari */
   color: var(--white);
   outline: none;
-  transition: border-color .2s, box-shadow .2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .input-wrapper input::placeholder {
@@ -199,9 +205,11 @@ body {
 }
 
 .input-wrapper input:focus {
-  border-color: rgba(47, 164, 64, .5);
+  border-color: rgba(47, 164, 64, 0.5);
   border-bottom-color: var(--brand-color);
-  box-shadow: 0 0 0 3px rgba(47, 164, 64, .12), inset 0 -1px 0 var(--brand-color);
+  box-shadow:
+    0 0 0 3px rgba(47, 164, 64, 0.12),
+    inset 0 -1px 0 var(--brand-color);
 }
 
 .password-wrapper input {
@@ -227,25 +235,30 @@ body {
   padding: 13px;
   min-height: 48px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(47, 164, 64, .4);
+  border: 1px solid rgba(47, 164, 64, 0.4);
   background: var(--brand-color);
   color: var(--white);
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background .2s, transform .15s, box-shadow .2s;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, .25);
+  transition:
+    background 0.2s,
+    transform 0.15s,
+    box-shadow 0.2s;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
   margin-top: 6px;
   margin-bottom: 16px;
-  letter-spacing: .3px;
+  letter-spacing: 0.3px;
 }
 
 .btn-register:hover {
   background: var(--brand-hover);
   transform: translateY(-1px);
-  border-color: rgba(47, 164, 64, .7);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, .35), 0 0 20px rgba(47, 164, 64, .2);
+  border-color: rgba(47, 164, 64, 0.7);
+  box-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.35),
+    0 0 20px rgba(47, 164, 64, 0.2);
 }
 
 .btn-register:active {
@@ -262,11 +275,11 @@ body {
   font-weight: 600;
   color: var(--white);
   text-decoration: none;
-  transition: opacity .2s;
+  transition: opacity 0.2s;
 }
 
 .login-text a:hover {
-  opacity: .8;
+  opacity: 0.8;
   text-decoration: underline;
 }
 
@@ -282,7 +295,8 @@ body {
 @media (max-width: 480px) {
   body {
     align-items: flex-start;
-    padding: max(16px, env(safe-area-inset-top)) 0 max(16px, env(safe-area-inset-bottom));
+    padding: max(16px, env(safe-area-inset-top)) 0
+      max(16px, env(safe-area-inset-bottom));
   }
 
   .card {
@@ -333,24 +347,53 @@ body {
     padding: 18px 12px 16px;
     width: calc(100% - 12px);
   }
-  .title { font-size: 17px; }
-  .form-group { margin-bottom: 8px; }
-  .input-wrapper input { padding: 9px 10px 9px 32px; }
-  .input-icon { left: 10px; font-size: 14px; }
+  .title {
+    font-size: 17px;
+  }
+  .form-group {
+    margin-bottom: 8px;
+  }
+  .input-wrapper input {
+    padding: 9px 10px 9px 32px;
+  }
+  .input-icon {
+    left: 10px;
+    font-size: 14px;
+  }
 }
 
 /* ── Landscape en móvil ── */
 @media (max-height: 600px) and (orientation: landscape) {
-  body { align-items: flex-start; overflow-y: auto; }
+  body {
+    align-items: flex-start;
+    overflow-y: auto;
+  }
   .card {
     margin: 8px auto;
     padding: 14px 20px 12px;
   }
-  .logo { margin-bottom: 8px; }
-  .logo img { max-width: 90px; }
-  .title { font-size: 17px; margin-bottom: 2px; }
-  .subtitle { margin-bottom: 10px; }
-  .form-group { margin-bottom: 7px; }
-  .input-wrapper input { padding: 8px 12px 8px 34px; }
-  .btn-register { margin-top: 4px; margin-bottom: 10px; min-height: 40px; }
+  .logo {
+    margin-bottom: 8px;
+  }
+  .logo img {
+    max-width: 90px;
+  }
+  .title {
+    font-size: 17px;
+    margin-bottom: 2px;
+  }
+  .subtitle {
+    margin-bottom: 10px;
+  }
+  .form-group {
+    margin-bottom: 7px;
+  }
+  .input-wrapper input {
+    padding: 8px 12px 8px 34px;
+  }
+  .btn-register {
+    margin-top: 4px;
+    margin-bottom: 10px;
+    min-height: 40px;
+  }
 }

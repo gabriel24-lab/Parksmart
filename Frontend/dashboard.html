@@ -1,809 +1,1528 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Preload fuentes críticas para renderizado inmediato -->
+    <link
+      rel="preload"
+      href="/Frontend/fonts/space-grotesk-v22-latin-600.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/Frontend/fonts/dm-sans-v17-latin-regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inicio - Parksmart</title>
+    <link
+      rel="icon"
+      href="/Frontend/img/logo-icon-cropped.webp"
+      type="image/x-icon"
+    />
+    <link rel="stylesheet" href="dashboard.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://parksmart-ggt8.onrender.com" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <script src="api.js"></script>
+    <script>
+      // URL del backend en Render — se sincroniza con api.js
+      window.BACKEND_URL =
+        typeof API !== "undefined"
+          ? API.replace(/\/api$/, "")
+          : "https://parksmart-ggt8.onrender.com";
+    </script>
+    <style>
+      .avatar-photo-wrap {
+        position: relative;
+        cursor: pointer;
+        display: inline-block;
+        border-radius: 50%;
+      }
+      .avatar-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s;
+        font-size: 18px;
+        color: #fff;
+      }
+      .avatar-photo-wrap:hover .avatar-overlay {
+        opacity: 1;
+      }
+    </style>
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <!-- Preload fuentes críticas para renderizado inmediato -->
-  <link rel="preload" href="/Frontend/fonts/space-grotesk-v22-latin-600.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/Frontend/fonts/dm-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inicio - Parksmart</title>
-  <link rel="icon" href="/Frontend/img/logo-icon-cropped.webp" type="image/x-icon">
-  <link rel="stylesheet" href="dashboard.css" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap"
-    rel="stylesheet" />
-  <link rel="preconnect" href="https://parksmart-ggt8.onrender.com">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script src="api.js"></script>
-  <script>
-    // URL del backend en Render — se sincroniza con api.js
-    window.BACKEND_URL = typeof API !== "undefined"
-      ? API.replace(/\/api$/, "")
-      : "https://parksmart-ggt8.onrender.com";
-  </script>
-  <style>
-    .avatar-photo-wrap { position: relative; cursor: pointer; display: inline-block; border-radius: 50%; }
-    .avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .2s; font-size: 18px; color: #fff; }
-    .avatar-photo-wrap:hover .avatar-overlay { opacity: 1; }
-  </style>
-</head>
+  <body>
+    <div class="background"></div>
 
-<body>
-
-  <div class="background">
-
-
-
-  </div>
-
-  <!-- ═══ SIDEBAR ═══ -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <img src="/Frontend/img/logo-icon-cropped.webp" alt="Logo" class="nav-logo-img">
-      <span>Parksmart</span>
-    </div>
-    <nav class="sidebar-nav">
-      <button class="nav-item active" onclick="showSection('dashboard',this)">
-        <i class="bi bi-grid-1x2-fill"></i><span>Inicio</span>
-      </button>
-      <button class="nav-item" onclick="showSection('perfil',this)">
-        <i class="bi bi-person-circle"></i><span>Perfil</span>
-      </button>
-      <button class="nav-item" onclick="showSection('seguridad',this)">
-        <i class="bi bi-shield-lock-fill"></i><span>Seguridad</span>
-      </button>
-      <button class="nav-item" onclick="showSection('vehiculo',this)">
-        <i class="bi bi-car-front-fill"></i><span>Mi Vehículo</span>
-      </button>
-      <button class="nav-item" onclick="showSection('historial',this)">
-        <i class="bi bi-clock-history"></i><span>Historial</span>
-      </button>
-      <button class="nav-item" onclick="showSection('mi-qr',this)">
-        <i class="bi bi-qr-code"></i><span>Mi QR</span>
-      </button>
-      <button class="nav-item logout" onclick="handleLogout()">
-        <i class="bi bi-box-arrow-left"></i><span>Cerrar sesión</span>
-      </button>
-    </nav>
-  </aside>
-
-  <!-- Topbar móvil -->
-  <div class="topbar">
-    <button class="hamburger" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
-    <div class="topbar-logo-wrap">
-      <img src="/Frontend/img/logo-icon-cropped.webp" alt="Logo" class="nav-logo-img">
-      <span class="topbar-title">Parksmart</span>
-    </div>
-    <div class="topbar-avatar" id="topbar-av">U</div>
-  </div>
-
-  <!-- ═══ MAIN ═══ -->
-  <main class="main">
-
-    <!-- ─── DASHBOARD ─── -->
-    <section id="section-dashboard" class="section active">
-      <div class="section-header">
-        <div>
-          <h1>Bienvenido, <span class="name-highlight" id="dash-name">Usuario</span> 👋</h1>
-          <p class="section-sub">Sistema de gestion para el parqueadero del Sena (CIGEC)</p>
-        </div>
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <img
+          src="/Frontend/img/logo-icon-cropped.webp"
+          alt="Logo"
+          class="nav-logo-img"
+        />
+        <span>Parksmart</span>
       </div>
-
-      <!-- ── BANNER SIN VEHÍCULO ── -->
-      <div id="banner-sin-vehiculo" style="display:none;background:rgba(47,164,64,0.08);border:1px solid rgba(47,164,64,0.25);border-radius:10px;padding:14px 18px;margin-bottom:18px;align-items:center;gap:14px;flex-wrap:wrap;">
-        <i class="bi bi-exclamation-triangle-fill" style="color:#2FA440;font-size:20px;flex-shrink:0;"></i>
-        <span style="color:rgba(255,255,255,0.85);font-size:14px;flex:1;min-width:180px;">Termina de completar tu perfil añadiendo tu vehículo.</span>
-        <button onclick="showSection('vehiculo',null)" style="background:var(--brand-color);border:none;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
-          <i class="bi bi-plus-circle"></i> Registrar vehículo
+      <nav class="sidebar-nav">
+        <button
+          class="nav-item active"
+          onclick="showSection('dashboard', this)"
+        >
+          <i class="bi bi-grid-1x2-fill"></i><span>Inicio</span>
         </button>
-      </div>
+        <button class="nav-item" onclick="showSection('perfil', this)">
+          <i class="bi bi-person-circle"></i><span>Perfil</span>
+        </button>
+        <button class="nav-item" onclick="showSection('seguridad', this)">
+          <i class="bi bi-shield-lock-fill"></i><span>Seguridad</span>
+        </button>
+        <button class="nav-item" onclick="showSection('vehiculo', this)">
+          <i class="bi bi-car-front-fill"></i><span>Mi Vehículo</span>
+        </button>
+        <button class="nav-item" onclick="showSection('historial', this)">
+          <i class="bi bi-clock-history"></i><span>Historial</span>
+        </button>
+        <button class="nav-item" onclick="showSection('mi-qr', this)">
+          <i class="bi bi-qr-code"></i><span>Mi QR</span>
+        </button>
+        <button class="nav-item logout" onclick="handleLogout()">
+          <i class="bi bi-box-arrow-left"></i><span>Cerrar sesión</span>
+        </button>
+      </nav>
+    </aside>
 
-      <!-- ── QR PERSONAL (primero) ── -->
-      <div class="glass-panel qr-panel" style="margin-bottom:22px;">
-        <div class="panel-title"><i class="bi bi-qr-code"></i> Mi Código QR Personal
-          <button onclick="showSection('mi-qr',this)" style="margin-left:auto;background:rgba(47,164,64,0.15);border:1px solid rgba(47,164,64,0.35);color:var(--brand-color);padding:5px 13px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
-            <i class="bi bi-arrows-fullscreen"></i> Ver sección
-          </button>
-        </div>
-        <div class="qr-layout">
-          <div class="qr-box-wrap">
-            <div class="qr-box" id="qr-box-click" onclick="openQRFullscreen()" title="Toca para ampliar">
-              <canvas id="qrCanvas"></canvas>
-              <div class="qr-box-hint"><i class="bi bi-fullscreen"></i> Toca para ampliar</div>
-            </div>
-          </div>
-          <div class="qr-info">
-            <p>Este código QR es tu identificación personal en el parqueadero. Preséntalo al ingresar o salir.</p>
-            <div class="qr-tip"><i class="bi bi-lightbulb-fill"></i> Sube el brillo de pantalla al máximo para facilitar
-              el escaneo.</div>
-            <div class="qr-id"><i class="bi bi-fingerprint"></i> ID: <strong id="qr-id-label">—</strong></div>
-            <div class="qr-btns-row">
-              <button class="btn-download" onclick="openQRFullscreen()"><i class="bi bi-fullscreen"></i> Pantalla
-                completa</button>
-              <button class="btn-download btn-dl-sec" onclick="downloadQR()"><i class="bi bi-download"></i>
-                Descargar</button>
-            </div>
-          </div>
-        </div>
+    <!-- Topbar móvil -->
+    <div class="topbar">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+      </button>
+      <div class="topbar-logo-wrap">
+        <img
+          src="/Frontend/img/logo-icon-cropped.webp"
+          alt="Logo"
+          class="nav-logo-img"
+        />
+        <span class="topbar-title">Parksmart</span>
       </div>
+      <div class="topbar-avatar" id="topbar-av">U</div>
+    </div>
 
-      <!-- ── LADO A ── -->
-      <div class="panel-title" style="margin-bottom:10px;margin-top:4px;"><i class="bi bi-p-square-fill"></i> Lado A
-        <span id="lado-a-cupos-label" style="font-size:11px;font-weight:400;opacity:.55;">cargando...</span>
-      </div>
-      <div class="cards-row" id="cards-lado-a">
-        <!-- Aprendiz: solo bicicletas -->
-        <div class="stat-card available" id="card-bicis-a" style="display:none">
-          <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="num-bicis-a">—</span>
-            <span class="stat-label">Bicicletas activas</span>
-          </div>
-          <div class="stat-badge green">Lado A</div>
-        </div>
-        <!-- Funcionario / Instructor: carros -->
-        <div class="stat-card available" id="card-carros-a" style="display:none">
-          <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="num-carros-a">—</span>
-            <span class="stat-label">Carros activos</span>
-          </div>
-          <div class="stat-badge green">Lado A</div>
-        </div>
-        <!-- Funcionario / Instructor: motos -->
-        <div class="stat-card occupied" id="card-motos-a" style="display:none">
-          <div class="stat-icon"><i class="bi bi-scooter"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="num-motos-a">—</span>
-            <span class="stat-label">Motos activas</span>
-          </div>
-          <div class="stat-badge red">Lado A</div>
-        </div>
-      </div>
-
-      <!-- ── LADO B ── -->
-      <div id="inicio-ladob-titulo" class="panel-title" style="margin-bottom:10px;margin-top:18px;"><i
-          class="bi bi-p-square"></i> Lado B <span style="font-size:11px;font-weight:400;opacity:.55;">(espacio
-          abierto)</span></div>
-      <div class="cards-row" id="inicio-ladob-cards">
-        <div class="stat-card occupied">
-          <div class="stat-icon"><i class="bi bi-slash-circle"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="num-ocup-b">—</span>
-            <span class="stat-label">Vehículos adentro</span>
-          </div>
-          <div class="stat-badge red" id="badge-pct-b">0%</div>
-        </div>
-        <div class="stat-card available">
-          <div class="stat-icon"><i class="bi bi-sign-parking"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="num-disp-b">—</span>
-            <span class="stat-label">Cupos disponibles</span>
-          </div>
-          <div class="stat-badge green">Lado B</div>
-        </div>
-        <div class="stat-card total">
-          <div class="stat-icon"><i class="bi bi-grid-3x3-gap"></i></div>
-          <div class="stat-info">
-            <span class="stat-number">21</span>
-            <span class="stat-label">Capacidad máxima</span>
-          </div>
-          <div class="stat-badge blue">Total B</div>
-        </div>
-      </div>
-
-      <!-- Barra de ocupación Lado B -->
-      <div class="glass-panel" id="inicio-ladob-barra" style="margin-top:18px;">
-        <div class="panel-title"><i class="bi bi-bar-chart-fill"></i> Ocupación Lado A en tiempo real</div>
-        <div class="progress-bar-wrap">
-          <div class="progress-bar-fill" id="bar-fill-b" style="width:0%"><span id="bar-pct-b">0%</span></div>
-        </div>
-        <div class="progress-labels"><span>0</span><span>10</span><span>20</span></div>
-      </div>
-
-      <div class="glass-panel">
-        <div class="panel-title"><i class="bi bi-clock-history"></i> Registro de Uso</div>
-        <div class="table-wrap">
-          <table class="history-table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Entrada</th>
-                <th>Salida</th>
-                <th>Duración</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody id="dash-history-tbody">
-              <tr>
-                <td colspan="5" style="text-align:center;padding:28px;opacity:.4;">
-                  <i class="bi bi-hourglass" style="font-size:20px;display:block;margin-bottom:8px;"></i>
-                  Cargando registros...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─── PERFIL ─── -->
-    <section id="section-perfil" class="section">
-      <div class="section-header">
-        <div>
-          <h1>Mi <span class="name-highlight">Perfil</span></h1>
-          <p class="section-sub">Administra tu información personal</p>
-        </div>
-      </div>
-
-      <div class="glass-panel">
-        <!-- Cabecera avatar -->
-        <div class="profile-avatar-area">
-          <div class="avatar-photo-wrap no-foto" onclick="document.getElementById('foto-perfil-input').click()" title="Cambiar foto de perfil">
-            <div class="avatar-circle" id="profile-avatar-initials">U</div>
-            <img id="profile-avatar-img" src="" alt="Foto de perfil" style="display:none;width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--brand-color);"/>
-            <div class="avatar-overlay"><i class="bi bi-camera-fill"></i></div>
-          </div>
+    <!-- ═══ MAIN ═══ -->
+    <main class="main">
+      <!-- ─── DASHBOARD ─── -->
+      <section id="section-dashboard" class="section active">
+        <div class="section-header">
           <div>
-            <div class="profile-name" id="profile-display-name">Usuario</div>
-            <div class="profile-role-badge" id="profile-role-badge">Sin rol asignado</div>
-            <button id="btn-quitar-foto" onclick="quitarFotoPerfil()" style="display:none;background:none;border:none;color:rgba(255,100,100,.7);font-size:11px;cursor:pointer;padding:0;margin-top:4px;"><i class="bi bi-trash3"></i> Quitar foto</button>
-          </div>
-          <input type="file" id="foto-perfil-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="subirFotoPerfil(this)"/>
-        </div>
-
-        <!-- Campos -->
-        <div class="profile-form-grid">
-
-          <!-- Nombre — solo lectura, viene de la BD -->
-          <div class="form-group full-width">
-            <label>
-              <i class="bi bi-person-fill"></i> Nombre completo
-              <span style="margin-left:8px;font-size:11px;font-weight:500;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:4px;padding:2px 8px;color:rgba(255,255,255,0.4);vertical-align:middle;">
-                <i class="bi bi-database-fill" style="margin-right:3px;"></i>
-              </span>
-            </label>
-            <input type="text" id="p-nombre" placeholder="Cargando..."
-              style="cursor:not-allowed;opacity:0.6;" disabled readonly />
-          </div>
-
-          <!-- Correo — editable -->
-          <div class="form-group full-width">
-            <label><i class="bi bi-envelope-fill"></i> Correo electrónico</label>
-            <input type="email" id="p-email" placeholder="juan@sena.edu.co" />
-          </div>
-
-          <!-- Tipo de ID — solo lectura, viene de la BD -->
-          <div class="form-group">
-            <label>
-              <i class="bi bi-card-text"></i> Tipo de identificación
-              <span style="margin-left:6px;font-size:11px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:4px;padding:2px 7px;color:rgba(255,255,255,0.4);vertical-align:middle;">
-                <i class="bi bi-database-fill" style="margin-right:3px;"></i>
-              </span>
-            </label>
-            <!-- Campo de solo lectura: el tipo de ID viene de la BD y no puede modificarse -->
-            <input type="text" id="p-tipo-id-display"
-              style="cursor:not-allowed;opacity:0.6;" readonly
-              placeholder="Cargando..." />
-            <!-- Valor real (oculto) para enviar al backend -->
-            <input type="hidden" id="p-tipo-id" />
-          </div>
-
-          <!-- Número de ID — solo lectura, viene de la BD -->
-          <div class="form-group">
-            <label>
-              <i class="bi bi-123"></i> Número de identificación
-              <span style="margin-left:6px;font-size:11px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:4px;padding:2px 7px;color:rgba(255,255,255,0.4);vertical-align:middle;">
-                <i class="bi bi-database-fill" style="margin-right:3px;"></i>
-              </span>
-            </label>
-            <input type="text" id="p-id-num" placeholder="Cargando..."
-              style="cursor:not-allowed;opacity:0.6;" disabled readonly />
-          </div>
-
-          <!-- Región — editable -->
-          <div class="form-group">
-            <label><i class="bi bi-geo-alt-fill"></i> Región</label>
-            <select id="p-region" onchange="filterCentros()">
-              <option value="">Selecciona una región</option>
-            </select>
-          </div>
-
-          <!-- Centro — editable -->
-          <div class="form-group">
-            <label><i class="bi bi-building"></i> Centro de Formación SENA</label>
-            <select id="p-centro">
-              <option value="">Selecciona primero una región</option>
-            </select>
-          </div>
-
-          <!-- Rol — visible pero bloqueado -->
-          <div class="form-group full-width">
-            <label>
-              <i class="bi bi-person-badge-fill"></i> Rol asignado
-              <span style="margin-left:8px;font-size:11px;font-weight:500;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:4px;padding:2px 8px;color:rgba(255,255,255,0.4);vertical-align:middle;">
-              </span>
-            </label>
-            <!-- Badge visual del rol -->
-            <div id="p-rol-badge" style="
-              display:flex;align-items:center;gap:10px;
-              padding:12px 16px;border-radius:8px;
-              background:rgba(255,255,255,0.04);
-              border:1px solid rgba(255,255,255,0.1);
-              min-height:46px;">
-              <span id="p-rol-badge-dot" style="width:10px;height:10px;border-radius:50%;background:#555;flex-shrink:0;"></span>
-              <span id="p-rol-badge-text" style="font-size:15px;font-weight:600;color:#e6edf3;">Cargando...</span>
-            </div>
-            <!-- Valor oculto para el JS interno -->
-            <input type="hidden" id="p-rol" />
-          </div>
-
-          <div id="rol-info-box" class="rol-info-box" style="display:none"></div>
-
-        </div>
-
-        <button class="btn-save" onclick="saveProfile()"><i class="bi bi-check2-circle"></i> Guardar cambios</button>
-      </div>
-
-      <!-- Vehículos registrados -->
-      <div class="glass-panel">
-        <div class="panel-title"><i class="bi bi-truck"></i> Mis Vehículos Registrados</div>
-        <div id="perfil-vehicles-list"></div>
-      </div>
-    </section>
-
-    <!-- ─── MI VEHÍCULO ─── -->
-    <section id="section-vehiculo" class="section">
-      <div class="section-header">
-        <div>
-          <h1>Mi <span class="name-highlight">Vehículo</span></h1>
-          <p class="section-sub" id="vehiculo-sub">Registra tus vehículos</p>
-        </div>
-      </div>
-
-      <div id="vehiculo-rol-alert" class="rol-alert" style="display:none">
-        <i class="bi bi-exclamation-triangle-fill"></i>
-        <span>Primero configura tu <button class="link-btn" onclick="showSection('perfil',null)">perfil y selecciona tu
-            rol</button> para registrar vehículos.</span>
-      </div>
-
-      <div id="vehiculo-form-area">
-
-        <!-- Banner límite 3 vehículos -->
-        <div id="vehiculo-limite-banner" style="display:none; align-items:center; gap:12px;
-          background:rgba(255,183,77,0.12); border:1.5px solid rgba(255,183,77,0.35);
-          border-radius:14px; padding:16px 20px; margin-bottom:18px;">
-          <i class="bi bi-exclamation-triangle-fill" style="color:#ffb74d; font-size:22px; flex-shrink:0;"></i>
-          <div>
-            <strong style="color:#ffb74d; font-size:14px;">Límite de vehículos alcanzado</strong>
-            <p style="margin:4px 0 0; font-size:13px; color:rgba(255,255,255,0.6);">
-              Has registrado el máximo de <strong>3 vehículos</strong>. Elimina uno si deseas agregar otro.
+            <h1>
+              Bienvenido,
+              <span class="name-highlight" id="dash-name">Usuario</span> 👋
+            </h1>
+            <p class="section-sub">
+              Sistema de gestion para el parqueadero del Sena (CIGEC)
             </p>
           </div>
         </div>
 
+        <!-- ── BANNER SIN VEHÍCULO ── -->
+        <div
+          id="banner-sin-vehiculo"
+          style="
+            display: none;
+            background: rgba(47, 164, 64, 0.08);
+            border: 1px solid rgba(47, 164, 64, 0.25);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+          "
+        >
+          <i
+            class="bi bi-exclamation-triangle-fill"
+            style="color: #2fa440; font-size: 20px; flex-shrink: 0"
+          ></i>
+          <span
+            style="
+              color: rgba(255, 255, 255, 0.85);
+              font-size: 14px;
+              flex: 1;
+              min-width: 180px;
+            "
+            >Termina de completar tu perfil añadiendo tu vehículo.</span
+          >
+          <button
+            onclick="showSection('vehiculo', null)"
+            style="
+              background: var(--brand-color);
+              border: none;
+              color: #fff;
+              padding: 8px 16px;
+              border-radius: 8px;
+              font-size: 13px;
+              font-weight: 600;
+              cursor: pointer;
+              white-space: nowrap;
+              flex-shrink: 0;
+            "
+          >
+            <i class="bi bi-plus-circle"></i> Registrar vehículo
+          </button>
+        </div>
+
+        <!-- ── QR PERSONAL (primero) ── -->
+        <div class="glass-panel qr-panel" style="margin-bottom: 22px">
+          <div class="panel-title">
+            <i class="bi bi-qr-code"></i> Mi Código QR Personal
+            <button
+              onclick="showSection('mi-qr', this)"
+              style="
+                margin-left: auto;
+                background: rgba(47, 164, 64, 0.15);
+                border: 1px solid rgba(47, 164, 64, 0.35);
+                color: var(--brand-color);
+                padding: 5px 13px;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+              "
+            >
+              <i class="bi bi-arrows-fullscreen"></i> Ver sección
+            </button>
+          </div>
+          <div class="qr-layout">
+            <div class="qr-box-wrap">
+              <div
+                class="qr-box"
+                id="qr-box-click"
+                onclick="openQRFullscreen()"
+                title="Toca para ampliar"
+              >
+                <canvas id="qrCanvas"></canvas>
+                <div class="qr-box-hint">
+                  <i class="bi bi-fullscreen"></i> Toca para ampliar
+                </div>
+              </div>
+            </div>
+            <div class="qr-info">
+              <p>
+                Este código QR es tu identificación personal en el parqueadero.
+                Preséntalo al ingresar o salir.
+              </p>
+              <div class="qr-tip">
+                <i class="bi bi-lightbulb-fill"></i> Sube el brillo de pantalla
+                al máximo para facilitar el escaneo.
+              </div>
+              <div class="qr-id">
+                <i class="bi bi-fingerprint"></i> ID:
+                <strong id="qr-id-label">—</strong>
+              </div>
+              <div class="qr-btns-row">
+                <button class="btn-download" onclick="openQRFullscreen()">
+                  <i class="bi bi-fullscreen"></i> Pantalla completa
+                </button>
+                <button class="btn-download btn-dl-sec" onclick="downloadQR()">
+                  <i class="bi bi-download"></i> Descargar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── LADO A ── -->
+        <div class="panel-title" style="margin-bottom: 10px; margin-top: 4px">
+          <i class="bi bi-p-square-fill"></i> Lado A
+          <span
+            id="lado-a-cupos-label"
+            style="font-size: 11px; font-weight: 400; opacity: 0.55"
+            >cargando...</span
+          >
+        </div>
+        <div class="cards-row" id="cards-lado-a">
+          <!-- Aprendiz: solo bicicletas -->
+          <div
+            class="stat-card available"
+            id="card-bicis-a"
+            style="display: none"
+          >
+            <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="num-bicis-a">—</span>
+              <span class="stat-label">Bicicletas activas</span>
+            </div>
+            <div class="stat-badge green">Lado A</div>
+          </div>
+          <!-- Funcionario / Instructor: carros -->
+          <div
+            class="stat-card available"
+            id="card-carros-a"
+            style="display: none"
+          >
+            <div class="stat-icon"><i class="bi bi-car-front-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="num-carros-a">—</span>
+              <span class="stat-label">Carros activos</span>
+            </div>
+            <div class="stat-badge green">Lado A</div>
+          </div>
+          <!-- Funcionario / Instructor: motos -->
+          <div
+            class="stat-card occupied"
+            id="card-motos-a"
+            style="display: none"
+          >
+            <div class="stat-icon"><i class="bi bi-scooter"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="num-motos-a">—</span>
+              <span class="stat-label">Motos activas</span>
+            </div>
+            <div class="stat-badge red">Lado A</div>
+          </div>
+        </div>
+
+        <!-- ── LADO B ── -->
+        <div
+          id="inicio-ladob-titulo"
+          class="panel-title"
+          style="margin-bottom: 10px; margin-top: 18px"
+        >
+          <i class="bi bi-p-square"></i> Lado B
+          <span style="font-size: 11px; font-weight: 400; opacity: 0.55"
+            >(espacio abierto)</span
+          >
+        </div>
+        <div class="cards-row" id="inicio-ladob-cards">
+          <div class="stat-card occupied">
+            <div class="stat-icon"><i class="bi bi-slash-circle"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="num-ocup-b">—</span>
+              <span class="stat-label">Vehículos adentro</span>
+            </div>
+            <div class="stat-badge red" id="badge-pct-b">0%</div>
+          </div>
+          <div class="stat-card available">
+            <div class="stat-icon"><i class="bi bi-sign-parking"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="num-disp-b">—</span>
+              <span class="stat-label">Cupos disponibles</span>
+            </div>
+            <div class="stat-badge green">Lado B</div>
+          </div>
+          <div class="stat-card total">
+            <div class="stat-icon"><i class="bi bi-grid-3x3-gap"></i></div>
+            <div class="stat-info">
+              <span class="stat-number">21</span>
+              <span class="stat-label">Capacidad máxima</span>
+            </div>
+            <div class="stat-badge blue">Total B</div>
+          </div>
+        </div>
+
+        <!-- Barra de ocupación Lado B -->
+        <div
+          class="glass-panel"
+          id="inicio-ladob-barra"
+          style="margin-top: 18px"
+        >
+          <div class="panel-title">
+            <i class="bi bi-bar-chart-fill"></i> Ocupación Lado A en tiempo real
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="bar-fill-b" style="width: 0%">
+              <span id="bar-pct-b">0%</span>
+            </div>
+          </div>
+          <div class="progress-labels">
+            <span>0</span><span>10</span><span>20</span>
+          </div>
+        </div>
+
         <div class="glass-panel">
-          <div class="panel-title"><i class="bi bi-plus-circle-fill"></i> Registrar nuevo vehículo</div>
-
-          <div class="vehicle-tabs" id="vehiculo-tabs">
-            <button class="vtab" id="vtab-bicicleta" onclick="setVehicle('bicicleta',this)">
-              <i class="bi bi-bicycle"></i> Bicicleta
-            </button>
-            <button class="vtab" id="vtab-carro" onclick="setVehicle('carro',this)" style="display:none">
-              <i class="bi bi-car-front-fill"></i> Carro
-            </button>
-            <button class="vtab" id="vtab-moto" onclick="setVehicle('moto',this)" style="display:none">
-              <i class="bi bi-scooter"></i> Moto
-            </button>
+          <div class="panel-title">
+            <i class="bi bi-clock-history"></i> Registro de Uso
           </div>
-
-          <!-- Formularios (se ocultan cuando se alcanza el límite) -->
-          <div id="vehiculo-forms-area">
-
-          <!-- Bicicleta -->
-          <div id="form-bicicleta" class="vehicle-form">
-            <div class="rol-info-box info">
-              <i class="bi bi-info-circle-fill"></i>
-              Las bicicletas pueden ingresar al<strong>Lado A y Lado B</strong>.
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label><i class="bi bi-bicycle"></i> Modelo</label>
-                <input type="text" id="bici-modelo" placeholder="Trek FX3, Giant Escape..." />
-              </div>
-              <div class="form-group">
-                <label><i class="bi bi-palette"></i> Color</label>
-                <input type="text" id="bici-color" placeholder="Verde, Plateado..." />
-              </div>
-            </div>
-            <div class="form-group">
-              <label><i class="bi bi-camera"></i> Foto
-                <span class="optional recommended"><i class="bi bi-star-fill"></i> opcional — muy recomendada</span>
-              </label>
-              <div class="file-drop" onclick="document.getElementById('foto-bici').click()">
-                <i class="bi bi-cloud-arrow-up"></i><span>Haz clic para subir una foto</span>
-                <input type="file" id="foto-bici" accept="image/*" hidden
-                  onchange="previewImage(this,'preview-bici')" />
-              </div>
-              <img id="preview-bici" class="img-preview" src="" alt="" style="display:none" />
-            </div>
-            <div class="form-group">
-              <label><i class="bi bi-card-text"></i> Descripción</label>
-              <textarea id="bici-desc" placeholder="Bicicleta de montaña, rin 29, con canasta..."
-                rows="3"></textarea>
-            </div>
-            <button class="btn-save" onclick="saveVehicle('bicicleta', this)"><i class="bi bi-floppy"></i> Guardar
-              vehículo</button>
-          </div>
-
-          <!-- Carro -->
-          <div id="form-carro" class="vehicle-form" style="display:none">
-            <div class="rol-info-box warning">
-              <i class="bi bi-exclamation-triangle-fill"></i>
-              Carros de funcionarios e instructores: <strong>Lado A</strong>
-              (exclusivo · cupos controlados) y <strong>Lado B</strong> (espacio abierto).
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label><i class="bi bi-123"></i> Placa</label>
-                <input type="text" id="carro-placa" placeholder="ABC-123" maxlength="8" />
-              </div>
-              <div class="form-group">
-                <label><i class="bi bi-palette"></i> Color</label>
-                <input type="text" id="carro-color" placeholder="Rojo, Negro..." />
-              </div>
-            </div>
-            <div class="form-group">
-              <label><i class="bi bi-camera"></i> Foto <span class="optional">(opcional)</span></label>
-              <div class="file-drop" onclick="document.getElementById('foto-carro').click()">
-                <i class="bi bi-cloud-arrow-up"></i><span>Haz clic para subir una foto</span>
-                <input type="file" id="foto-carro" accept="image/*" hidden
-                  onchange="previewImage(this,'preview-carro')" />
-              </div>
-              <img id="preview-carro" class="img-preview" src="" alt="" style="display:none" />
-            </div>
-            <div class="form-group">
-              <label><i class="bi bi-card-text"></i> Descripción</label>
-              <textarea id="carro-desc" placeholder="Sedan 4 puertas, modelo 2020..." rows="3"></textarea>
-            </div>
-            <button class="btn-save" onclick="saveVehicle('carro', this)"><i class="bi bi-floppy"></i> Guardar
-              vehículo</button>
-          </div>
-
-          <!-- Moto -->
-          <div id="form-moto" class="vehicle-form" style="display:none">
-            <div class="rol-info-box warning">
-              <i class="bi bi-exclamation-triangle-fill"></i>
-              Las motos de funcionarios e instructores solo ingresan por el <strong>Lado B</strong> (espacio abierto).
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label><i class="bi bi-123"></i> Placa</label>
-                <input type="text" id="moto-placa" placeholder="XYZ-45B" maxlength="8" />
-              </div>
-              <div class="form-group">
-                <label><i class="bi bi-palette"></i> Color</label>
-                <input type="text" id="moto-color" placeholder="Azul, Blanco..." />
-              </div>
-            </div>
-            <div class="form-group">
-              <label><i class="bi bi-camera"></i> Foto <span class="optional">(opcional)</span></label>
-              <div class="file-drop" onclick="document.getElementById('foto-moto').click()">
-                <i class="bi bi-cloud-arrow-up"></i><span>Haz clic para subir una foto</span>
-                <input type="file" id="foto-moto" accept="image/*" hidden
-                  onchange="previewImage(this,'preview-moto')" />
-              </div>
-              <img id="preview-moto" class="img-preview" src="" alt="" style="display:none" />
-            </div>
-            <div class="form-group">
-              <label><i class="bi bi-card-text"></i> Descripción</label>
-              <textarea id="moto-desc" placeholder="Moto deportiva, cilindrada 200cc..." rows="3"></textarea>
-            </div>
-            <button class="btn-save" onclick="saveVehicle('moto', this)"><i class="bi bi-floppy"></i> Guardar
-              vehículo</button>
-          </div>
-
-          </div><!-- /vehiculo-forms-area -->
-        </div>
-      </div>
-    </section>
-
-    <!-- ─── SEGURIDAD ─── -->
-    <section id="section-seguridad" class="section">
-      <div class="section-header">
-        <div>
-          <h1><i class="bi bi-shield-lock-fill" style="color:var(--brand-color);margin-right:8px;"></i>Seguridad</h1>
-          <p class="section-sub">Cambia tu contraseña cuando lo necesites</p>
-        </div>
-      </div>
-
-      <div class="glass-panel">
-        <div class="panel-title"><i class="bi bi-key-fill"></i> Cambiar contraseña</div>
-        <p style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:18px;">
-          Por seguridad, necesitas ingresar tu contraseña actual antes de establecer una nueva.
-          La nueva contraseña debe tener mínimo 8 caracteres.
-        </p>
-        <div class="profile-form-grid">
-          <div class="form-group full-width">
-            <label><i class="bi bi-lock"></i> Contraseña actual</label>
-            <div class="password-wrapper" style="position:relative;">
-              <input type="password" id="sec-pass-act" placeholder="Ingresa tu contraseña actual" />
-              <span class="eye-icon" onclick="toggleSecPass('sec-pass-act','eye-sec-act')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;font-size:18px;">
-                <i id="eye-sec-act" class="bi bi-eye"></i>
-              </span>
-            </div>
-          </div>
-          <div class="form-group">
-            <label><i class="bi bi-lock-fill"></i> Nueva contraseña</label>
-            <div class="password-wrapper" style="position:relative;">
-              <input type="password" id="sec-pass-new" placeholder="Mínimo 8 caracteres" />
-              <span class="eye-icon" onclick="toggleSecPass('sec-pass-new','eye-sec-new')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;font-size:18px;">
-                <i id="eye-sec-new" class="bi bi-eye"></i>
-              </span>
-            </div>
-          </div>
-          <div class="form-group">
-            <label><i class="bi bi-lock-fill"></i> Confirmar nueva contraseña</label>
-            <div class="password-wrapper" style="position:relative;">
-              <input type="password" id="sec-pass-confirm" placeholder="Repite la nueva contraseña" />
-              <span class="eye-icon" onclick="toggleSecPass('sec-pass-confirm','eye-sec-conf')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;font-size:18px;">
-                <i id="eye-sec-conf" class="bi bi-eye"></i>
-              </span>
-            </div>
+          <div class="table-wrap">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Entrada</th>
+                  <th>Salida</th>
+                  <th>Duración</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="dash-history-tbody">
+                <tr>
+                  <td
+                    colspan="5"
+                    style="text-align: center; padding: 28px; opacity: 0.4"
+                  >
+                    <i
+                      class="bi bi-hourglass"
+                      style="
+                        font-size: 20px;
+                        display: block;
+                        margin-bottom: 8px;
+                      "
+                    ></i>
+                    Cargando registros...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-        <div id="sec-pass-match-hint" style="display:none;font-size:12px;margin-bottom:12px;padding:8px 12px;border-radius:8px;"></div>
-        <button class="btn-save" onclick="changePassword()" style="background:var(--brand-color);">
-          <i class="bi bi-shield-check"></i> Actualizar contraseña
-        </button>
-      </div>
-    </section>
+      </section>
 
-    <!-- ─── HISTORIAL ─── -->
-    <section id="section-historial" class="section">
-      <div class="section-header">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <!-- ─── PERFIL ─── -->
+      <section id="section-perfil" class="section">
+        <div class="section-header">
           <div>
-            <h1><i class="bi bi-clock-history" style="color:var(--brand-color);margin-right:8px;"></i>Historial de Uso
-            </h1>
-            <p class="section-sub">Consulta todos tus registros de entrada y salida del parqueadero</p>
+            <h1>Mi <span class="name-highlight">Perfil</span></h1>
+            <p class="section-sub">Administra tu información personal</p>
           </div>
-          <button class="btn-download" onclick="exportarHistorial()">
-            <i class="bi bi-download"></i> Exportar CSV
+        </div>
+
+        <div class="glass-panel">
+          <!-- Cabecera avatar -->
+          <div class="profile-avatar-area">
+            <div
+              class="avatar-photo-wrap no-foto"
+              onclick="document.getElementById('foto-perfil-input').click()"
+              title="Cambiar foto de perfil"
+            >
+              <div class="avatar-circle" id="profile-avatar-initials">U</div>
+              <img
+                id="profile-avatar-img"
+                src=""
+                alt="Foto de perfil"
+                style="
+                  display: none;
+                  width: 72px;
+                  height: 72px;
+                  border-radius: 50%;
+                  object-fit: cover;
+                  border: 2px solid var(--brand-color);
+                "
+              />
+              <div class="avatar-overlay">
+                <i class="bi bi-camera-fill"></i>
+              </div>
+            </div>
+            <div>
+              <div class="profile-name" id="profile-display-name">Usuario</div>
+              <div class="profile-role-badge" id="profile-role-badge">
+                Sin rol asignado
+              </div>
+              <button
+                id="btn-quitar-foto"
+                onclick="quitarFotoPerfil()"
+                style="
+                  display: none;
+                  background: none;
+                  border: none;
+                  color: rgba(255, 100, 100, 0.7);
+                  font-size: 11px;
+                  cursor: pointer;
+                  padding: 0;
+                  margin-top: 4px;
+                "
+              >
+                <i class="bi bi-trash3"></i> Quitar foto
+              </button>
+            </div>
+            <input
+              type="file"
+              id="foto-perfil-input"
+              accept="image/jpeg,image/png,image/webp"
+              style="display: none"
+              onchange="subirFotoPerfil(this)"
+            />
+          </div>
+
+          <!-- Campos -->
+          <div class="profile-form-grid">
+            <!-- Nombre — solo lectura, viene de la BD -->
+            <div class="form-group full-width">
+              <label>
+                <i class="bi bi-person-fill"></i> Nombre completo
+                <span
+                  style="
+                    margin-left: 8px;
+                    font-size: 11px;
+                    font-weight: 500;
+                    background: rgba(255, 255, 255, 0.06);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    border-radius: 4px;
+                    padding: 2px 8px;
+                    color: rgba(255, 255, 255, 0.4);
+                    vertical-align: middle;
+                  "
+                >
+                  <i class="bi bi-database-fill" style="margin-right: 3px"></i>
+                </span>
+              </label>
+              <input
+                type="text"
+                id="p-nombre"
+                placeholder="Cargando..."
+                style="cursor: not-allowed; opacity: 0.6"
+                disabled
+                readonly
+              />
+            </div>
+
+            <!-- Correo — editable -->
+            <div class="form-group full-width">
+              <label
+                ><i class="bi bi-envelope-fill"></i> Correo electrónico</label
+              >
+              <input type="email" id="p-email" placeholder="juan@sena.edu.co" />
+            </div>
+
+            <!-- Tipo de ID — solo lectura, viene de la BD -->
+            <div class="form-group">
+              <label>
+                <i class="bi bi-card-text"></i> Tipo de identificación
+                <span
+                  style="
+                    margin-left: 6px;
+                    font-size: 11px;
+                    background: rgba(255, 255, 255, 0.06);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    border-radius: 4px;
+                    padding: 2px 7px;
+                    color: rgba(255, 255, 255, 0.4);
+                    vertical-align: middle;
+                  "
+                >
+                  <i class="bi bi-database-fill" style="margin-right: 3px"></i>
+                </span>
+              </label>
+              <!-- Campo de solo lectura: el tipo de ID viene de la BD y no puede modificarse -->
+              <input
+                type="text"
+                id="p-tipo-id-display"
+                style="cursor: not-allowed; opacity: 0.6"
+                readonly
+                placeholder="Cargando..."
+              />
+              <!-- Valor real (oculto) para enviar al backend -->
+              <input type="hidden" id="p-tipo-id" />
+            </div>
+
+            <!-- Número de ID — solo lectura, viene de la BD -->
+            <div class="form-group">
+              <label>
+                <i class="bi bi-123"></i> Número de identificación
+                <span
+                  style="
+                    margin-left: 6px;
+                    font-size: 11px;
+                    background: rgba(255, 255, 255, 0.06);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    border-radius: 4px;
+                    padding: 2px 7px;
+                    color: rgba(255, 255, 255, 0.4);
+                    vertical-align: middle;
+                  "
+                >
+                  <i class="bi bi-database-fill" style="margin-right: 3px"></i>
+                </span>
+              </label>
+              <input
+                type="text"
+                id="p-id-num"
+                placeholder="Cargando..."
+                style="cursor: not-allowed; opacity: 0.6"
+                disabled
+                readonly
+              />
+            </div>
+
+            <!-- Región — editable -->
+            <div class="form-group">
+              <label><i class="bi bi-geo-alt-fill"></i> Región</label>
+              <select id="p-region" onchange="filterCentros()">
+                <option value="">Selecciona una región</option>
+              </select>
+            </div>
+
+            <!-- Centro — editable -->
+            <div class="form-group">
+              <label
+                ><i class="bi bi-building"></i> Centro de Formación SENA</label
+              >
+              <select id="p-centro">
+                <option value="">Selecciona primero una región</option>
+              </select>
+            </div>
+
+            <!-- Rol — visible pero bloqueado -->
+            <div class="form-group full-width">
+              <label>
+                <i class="bi bi-person-badge-fill"></i> Rol asignado
+                <span
+                  style="
+                    margin-left: 8px;
+                    font-size: 11px;
+                    font-weight: 500;
+                    background: rgba(255, 255, 255, 0.06);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    border-radius: 4px;
+                    padding: 2px 8px;
+                    color: rgba(255, 255, 255, 0.4);
+                    vertical-align: middle;
+                  "
+                >
+                </span>
+              </label>
+              <!-- Badge visual del rol -->
+              <div
+                id="p-rol-badge"
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  padding: 12px 16px;
+                  border-radius: 8px;
+                  background: rgba(255, 255, 255, 0.04);
+                  border: 1px solid rgba(255, 255, 255, 0.1);
+                  min-height: 46px;
+                "
+              >
+                <span
+                  id="p-rol-badge-dot"
+                  style="
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                    background: #555;
+                    flex-shrink: 0;
+                  "
+                ></span>
+                <span
+                  id="p-rol-badge-text"
+                  style="font-size: 15px; font-weight: 600; color: #e6edf3"
+                  >Cargando...</span
+                >
+              </div>
+              <!-- Valor oculto para el JS interno -->
+              <input type="hidden" id="p-rol" />
+            </div>
+
+            <div
+              id="rol-info-box"
+              class="rol-info-box"
+              style="display: none"
+            ></div>
+          </div>
+
+          <button class="btn-save" onclick="saveProfile()">
+            <i class="bi bi-check2-circle"></i> Guardar cambios
+          </button>
+        </div>
+
+        <!-- Vehículos registrados -->
+        <div class="glass-panel">
+          <div class="panel-title">
+            <i class="bi bi-truck"></i> Mis Vehículos Registrados
+          </div>
+          <div id="perfil-vehicles-list"></div>
+        </div>
+      </section>
+
+      <!-- ─── MI VEHÍCULO ─── -->
+      <section id="section-vehiculo" class="section">
+        <div class="section-header">
+          <div>
+            <h1>Mi <span class="name-highlight">Vehículo</span></h1>
+            <p class="section-sub" id="vehiculo-sub">Registra tus vehículos</p>
+          </div>
+        </div>
+
+        <div id="vehiculo-rol-alert" class="rol-alert" style="display: none">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <span
+            >Primero configura tu
+            <button class="link-btn" onclick="showSection('perfil', null)">
+              perfil y selecciona tu rol
+            </button>
+            para registrar vehículos.</span
+          >
+        </div>
+
+        <div id="vehiculo-form-area">
+          <!-- Banner límite 3 vehículos -->
+          <div
+            id="vehiculo-limite-banner"
+            style="
+              display: none;
+              align-items: center;
+              gap: 12px;
+              background: rgba(255, 183, 77, 0.12);
+              border: 1.5px solid rgba(255, 183, 77, 0.35);
+              border-radius: 14px;
+              padding: 16px 20px;
+              margin-bottom: 18px;
+            "
+          >
+            <i
+              class="bi bi-exclamation-triangle-fill"
+              style="color: #ffb74d; font-size: 22px; flex-shrink: 0"
+            ></i>
+            <div>
+              <strong style="color: #ffb74d; font-size: 14px"
+                >Límite de vehículos alcanzado</strong
+              >
+              <p
+                style="
+                  margin: 4px 0 0;
+                  font-size: 13px;
+                  color: rgba(255, 255, 255, 0.6);
+                "
+              >
+                Has registrado el máximo de <strong>3 vehículos</strong>.
+                Elimina uno si deseas agregar otro.
+              </p>
+            </div>
+          </div>
+
+          <div class="glass-panel">
+            <div class="panel-title">
+              <i class="bi bi-plus-circle-fill"></i> Registrar nuevo vehículo
+            </div>
+
+            <div class="vehicle-tabs" id="vehiculo-tabs">
+              <button
+                class="vtab"
+                id="vtab-bicicleta"
+                onclick="setVehicle('bicicleta', this)"
+              >
+                <i class="bi bi-bicycle"></i> Bicicleta
+              </button>
+              <button
+                class="vtab"
+                id="vtab-carro"
+                onclick="setVehicle('carro', this)"
+                style="display: none"
+              >
+                <i class="bi bi-car-front-fill"></i> Carro
+              </button>
+              <button
+                class="vtab"
+                id="vtab-moto"
+                onclick="setVehicle('moto', this)"
+                style="display: none"
+              >
+                <i class="bi bi-scooter"></i> Moto
+              </button>
+            </div>
+
+            <!-- Formularios (se ocultan cuando se alcanza el límite) -->
+            <div id="vehiculo-forms-area">
+              <!-- Bicicleta -->
+              <div id="form-bicicleta" class="vehicle-form">
+                <div class="rol-info-box info">
+                  <i class="bi bi-info-circle-fill"></i>
+                  Las bicicletas pueden ingresar al<strong
+                    >Lado A y Lado B</strong
+                  >.
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label><i class="bi bi-bicycle"></i> Modelo</label>
+                    <input
+                      type="text"
+                      id="bici-modelo"
+                      placeholder="Trek FX3, Giant Escape..."
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label><i class="bi bi-palette"></i> Color</label>
+                    <input
+                      type="text"
+                      id="bici-color"
+                      placeholder="Verde, Plateado..."
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label
+                    ><i class="bi bi-camera"></i> Foto
+                    <span class="optional recommended"
+                      ><i class="bi bi-star-fill"></i> opcional — muy
+                      recomendada</span
+                    >
+                  </label>
+                  <div
+                    class="file-drop"
+                    onclick="document.getElementById('foto-bici').click()"
+                  >
+                    <i class="bi bi-cloud-arrow-up"></i
+                    ><span>Haz clic para subir una foto</span>
+                    <input
+                      type="file"
+                      id="foto-bici"
+                      accept="image/*"
+                      hidden
+                      onchange="previewImage(this, 'preview-bici')"
+                    />
+                  </div>
+                  <img
+                    id="preview-bici"
+                    class="img-preview"
+                    src=""
+                    alt=""
+                    style="display: none"
+                  />
+                </div>
+                <div class="form-group">
+                  <label><i class="bi bi-card-text"></i> Descripción</label>
+                  <textarea
+                    id="bici-desc"
+                    placeholder="Bicicleta de montaña, rin 29, con canasta..."
+                    rows="3"
+                  ></textarea>
+                </div>
+                <button
+                  class="btn-save"
+                  onclick="saveVehicle('bicicleta', this)"
+                >
+                  <i class="bi bi-floppy"></i> Guardar vehículo
+                </button>
+              </div>
+
+              <!-- Carro -->
+              <div id="form-carro" class="vehicle-form" style="display: none">
+                <div class="rol-info-box warning">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                  Carros de funcionarios e instructores:
+                  <strong>Lado A</strong> (exclusivo · cupos controlados) y
+                  <strong>Lado B</strong> (espacio abierto).
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label><i class="bi bi-123"></i> Placa</label>
+                    <input
+                      type="text"
+                      id="carro-placa"
+                      placeholder="ABC-123"
+                      maxlength="8"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label><i class="bi bi-palette"></i> Color</label>
+                    <input
+                      type="text"
+                      id="carro-color"
+                      placeholder="Rojo, Negro..."
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label
+                    ><i class="bi bi-camera"></i> Foto
+                    <span class="optional">(opcional)</span></label
+                  >
+                  <div
+                    class="file-drop"
+                    onclick="document.getElementById('foto-carro').click()"
+                  >
+                    <i class="bi bi-cloud-arrow-up"></i
+                    ><span>Haz clic para subir una foto</span>
+                    <input
+                      type="file"
+                      id="foto-carro"
+                      accept="image/*"
+                      hidden
+                      onchange="previewImage(this, 'preview-carro')"
+                    />
+                  </div>
+                  <img
+                    id="preview-carro"
+                    class="img-preview"
+                    src=""
+                    alt=""
+                    style="display: none"
+                  />
+                </div>
+                <div class="form-group">
+                  <label><i class="bi bi-card-text"></i> Descripción</label>
+                  <textarea
+                    id="carro-desc"
+                    placeholder="Sedan 4 puertas, modelo 2020..."
+                    rows="3"
+                  ></textarea>
+                </div>
+                <button class="btn-save" onclick="saveVehicle('carro', this)">
+                  <i class="bi bi-floppy"></i> Guardar vehículo
+                </button>
+              </div>
+
+              <!-- Moto -->
+              <div id="form-moto" class="vehicle-form" style="display: none">
+                <div class="rol-info-box warning">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                  Las motos de funcionarios e instructores solo ingresan por el
+                  <strong>Lado B</strong> (espacio abierto).
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label><i class="bi bi-123"></i> Placa</label>
+                    <input
+                      type="text"
+                      id="moto-placa"
+                      placeholder="XYZ-45B"
+                      maxlength="8"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label><i class="bi bi-palette"></i> Color</label>
+                    <input
+                      type="text"
+                      id="moto-color"
+                      placeholder="Azul, Blanco..."
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label
+                    ><i class="bi bi-camera"></i> Foto
+                    <span class="optional">(opcional)</span></label
+                  >
+                  <div
+                    class="file-drop"
+                    onclick="document.getElementById('foto-moto').click()"
+                  >
+                    <i class="bi bi-cloud-arrow-up"></i
+                    ><span>Haz clic para subir una foto</span>
+                    <input
+                      type="file"
+                      id="foto-moto"
+                      accept="image/*"
+                      hidden
+                      onchange="previewImage(this, 'preview-moto')"
+                    />
+                  </div>
+                  <img
+                    id="preview-moto"
+                    class="img-preview"
+                    src=""
+                    alt=""
+                    style="display: none"
+                  />
+                </div>
+                <div class="form-group">
+                  <label><i class="bi bi-card-text"></i> Descripción</label>
+                  <textarea
+                    id="moto-desc"
+                    placeholder="Moto deportiva, cilindrada 200cc..."
+                    rows="3"
+                  ></textarea>
+                </div>
+                <button class="btn-save" onclick="saveVehicle('moto', this)">
+                  <i class="bi bi-floppy"></i> Guardar vehículo
+                </button>
+              </div>
+            </div>
+            <!-- /vehiculo-forms-area -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── SEGURIDAD ─── -->
+      <section id="section-seguridad" class="section">
+        <div class="section-header">
+          <div>
+            <h1>
+              <i
+                class="bi bi-shield-lock-fill"
+                style="color: var(--brand-color); margin-right: 8px"
+              ></i
+              >Seguridad
+            </h1>
+            <p class="section-sub">Cambia tu contraseña cuando lo necesites</p>
+          </div>
+        </div>
+
+        <div class="glass-panel">
+          <div class="panel-title">
+            <i class="bi bi-key-fill"></i> Cambiar contraseña
+          </div>
+          <p
+            style="
+              font-size: 13px;
+              color: rgba(255, 255, 255, 0.5);
+              margin-bottom: 18px;
+            "
+          >
+            Por seguridad, necesitas ingresar tu contraseña actual antes de
+            establecer una nueva. La nueva contraseña debe tener mínimo 8
+            caracteres.
+          </p>
+          <div class="profile-form-grid">
+            <div class="form-group full-width">
+              <label><i class="bi bi-lock"></i> Contraseña actual</label>
+              <div class="password-wrapper" style="position: relative">
+                <input
+                  type="password"
+                  id="sec-pass-act"
+                  placeholder="Ingresa tu contraseña actual"
+                />
+                <span
+                  class="eye-icon"
+                  onclick="toggleSecPass('sec-pass-act', 'eye-sec-act')"
+                  style="
+                    position: absolute;
+                    right: 14px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    cursor: pointer;
+                    color: #aaa;
+                    font-size: 18px;
+                  "
+                >
+                  <i id="eye-sec-act" class="bi bi-eye"></i>
+                </span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-lock-fill"></i> Nueva contraseña</label>
+              <div class="password-wrapper" style="position: relative">
+                <input
+                  type="password"
+                  id="sec-pass-new"
+                  placeholder="Mínimo 8 caracteres"
+                />
+                <span
+                  class="eye-icon"
+                  onclick="toggleSecPass('sec-pass-new', 'eye-sec-new')"
+                  style="
+                    position: absolute;
+                    right: 14px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    cursor: pointer;
+                    color: #aaa;
+                    font-size: 18px;
+                  "
+                >
+                  <i id="eye-sec-new" class="bi bi-eye"></i>
+                </span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label
+                ><i class="bi bi-lock-fill"></i> Confirmar nueva
+                contraseña</label
+              >
+              <div class="password-wrapper" style="position: relative">
+                <input
+                  type="password"
+                  id="sec-pass-confirm"
+                  placeholder="Repite la nueva contraseña"
+                />
+                <span
+                  class="eye-icon"
+                  onclick="toggleSecPass('sec-pass-confirm', 'eye-sec-conf')"
+                  style="
+                    position: absolute;
+                    right: 14px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    cursor: pointer;
+                    color: #aaa;
+                    font-size: 18px;
+                  "
+                >
+                  <i id="eye-sec-conf" class="bi bi-eye"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div
+            id="sec-pass-match-hint"
+            style="
+              display: none;
+              font-size: 12px;
+              margin-bottom: 12px;
+              padding: 8px 12px;
+              border-radius: 8px;
+            "
+          ></div>
+          <button
+            class="btn-save"
+            onclick="changePassword()"
+            style="background: var(--brand-color)"
+          >
+            <i class="bi bi-shield-check"></i> Actualizar contraseña
+          </button>
+        </div>
+      </section>
+
+      <!-- ─── HISTORIAL ─── -->
+      <section id="section-historial" class="section">
+        <div class="section-header">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              flex-wrap: wrap;
+              gap: 12px;
+            "
+          >
+            <div>
+              <h1>
+                <i
+                  class="bi bi-clock-history"
+                  style="color: var(--brand-color); margin-right: 8px"
+                ></i
+                >Historial de Uso
+              </h1>
+              <p class="section-sub">
+                Consulta todos tus registros de entrada y salida del parqueadero
+              </p>
+            </div>
+            <button class="btn-download" onclick="exportarHistorial()">
+              <i class="bi bi-download"></i> Exportar CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Stat cards resumen -->
+        <div class="cards-row" id="hist-cards-row">
+          <div class="stat-card available">
+            <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="hist-total">—</span>
+              <span class="stat-label">Visitas totales</span>
+            </div>
+            <div class="stat-badge green">Total</div>
+          </div>
+          <div class="stat-card occupied">
+            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="hist-promedio">—</span>
+              <span class="stat-label">Promedio por visita</span>
+            </div>
+            <div class="stat-badge red">Horas</div>
+          </div>
+          <div class="stat-card total">
+            <div class="stat-icon"><i class="bi bi-activity"></i></div>
+            <div class="stat-info">
+              <span class="stat-number" id="hist-activos">—</span>
+              <span class="stat-label">En curso ahora</span>
+            </div>
+            <div class="stat-badge blue">Activo</div>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="glass-panel">
+          <div class="panel-title">
+            <i class="bi bi-funnel-fill"></i> Filtros
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+              gap: 14px;
+              align-items: end;
+            "
+          >
+            <div class="form-group" style="margin: 0">
+              <label><i class="bi bi-calendar-event"></i> Fecha inicio</label>
+              <input
+                type="date"
+                id="hist-fecha-ini"
+                onchange="aplicarFiltros()"
+              />
+            </div>
+            <div class="form-group" style="margin: 0">
+              <label><i class="bi bi-calendar-check"></i> Fecha fin</label>
+              <input
+                type="date"
+                id="hist-fecha-fin"
+                onchange="aplicarFiltros()"
+              />
+            </div>
+            <div class="form-group" style="margin: 0">
+              <label><i class="bi bi-car-front"></i> Tipo de vehículo</label>
+              <select id="hist-tipo" onchange="aplicarFiltros()">
+                <option value="">Todos</option>
+                <option value="auto">Carro / Auto</option>
+                <option value="motocicleta">Moto</option>
+                <option value="bicicleta">Bicicleta</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0">
+              <label><i class="bi bi-tag"></i> Estado</label>
+              <select id="hist-estado" onchange="aplicarFiltros()">
+                <option value="">Todos</option>
+                <option value="completado">Completado</option>
+                <option value="activo">En curso</option>
+              </select>
+            </div>
+            <div style="display: flex; gap: 8px">
+              <button
+                class="btn-save"
+                style="padding: 10px 18px; font-size: 13px"
+                onclick="aplicarFiltros()"
+              >
+                <i class="bi bi-search"></i> Buscar
+              </button>
+              <button
+                class="btn-download btn-dl-sec"
+                onclick="limpiarFiltros()"
+              >
+                <i class="bi bi-x-circle"></i> Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla historial completa -->
+        <div class="glass-panel">
+          <div class="panel-title" style="justify-content: space-between">
+            <span><i class="bi bi-table"></i> Registros de visita</span>
+            <span
+              id="hist-count-label"
+              style="
+                font-size: 12px;
+                font-weight: 400;
+                color: rgba(255, 255, 255, 0.45);
+              "
+            ></span>
+          </div>
+
+          <div class="table-wrap">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>
+                    <i class="bi bi-calendar3" style="margin-right: 4px"></i
+                    >Fecha entrada
+                  </th>
+                  <th>
+                    <i class="bi bi-car-front" style="margin-right: 4px"></i
+                    >Vehículo
+                  </th>
+                  <th>
+                    <i class="bi bi-geo-alt" style="margin-right: 4px"></i>Lado
+                  </th>
+                  <th>
+                    <i
+                      class="bi bi-box-arrow-right"
+                      style="margin-right: 4px"
+                    ></i
+                    >Fecha / Hora salida
+                  </th>
+                  <th>
+                    <i class="bi bi-stopwatch" style="margin-right: 4px"></i
+                    >Duración
+                  </th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="hist-tbody">
+                <tr>
+                  <td
+                    colspan="7"
+                    style="text-align: center; padding: 40px; opacity: 0.45"
+                  >
+                    <i
+                      class="bi bi-hourglass"
+                      style="
+                        font-size: 24px;
+                        display: block;
+                        margin-bottom: 10px;
+                      "
+                    ></i>
+                    Cargando registros...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginación -->
+          <div
+            id="hist-pagination"
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-top: 20px;
+              flex-wrap: wrap;
+              gap: 12px;
+            "
+          >
+            <span
+              id="hist-page-info"
+              style="font-size: 12px; color: rgba(255, 255, 255, 0.45)"
+            ></span>
+            <div style="display: flex; gap: 8px" id="hist-page-btns"></div>
+          </div>
+        </div>
+
+        <!-- Detalle de registro (panel expandible) -->
+        <div class="glass-panel" id="hist-detail-panel" style="display: none">
+          <div class="panel-title">
+            <i class="bi bi-info-circle-fill"></i> Detalle del registro
+          </div>
+          <div
+            id="hist-detail-body"
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+              gap: 16px;
+            "
+          ></div>
+        </div>
+      </section>
+
+      <!-- ─── MI CÓDIGO QR ─── -->
+      <section id="section-mi-qr" class="section">
+        <div class="section-header">
+          <div>
+            <h1>Mi <span class="name-highlight">Código QR</span></h1>
+            <p class="section-sub">
+              Tu identificación personal para ingresar al parqueadero
+            </p>
+          </div>
+        </div>
+
+        <div class="glass-panel qr-panel">
+          <div class="panel-title">
+            <i class="bi bi-qr-code"></i> Código QR Personal
+          </div>
+          <div class="qr-layout">
+            <div class="qr-box-wrap">
+              <div
+                class="qr-box"
+                id="qr-box-click-sec"
+                onclick="openQRFullscreen()"
+                title="Toca para ampliar"
+              >
+                <canvas id="qrCanvasSec"></canvas>
+                <div class="qr-box-hint">
+                  <i class="bi bi-fullscreen"></i> Toca para ampliar
+                </div>
+              </div>
+            </div>
+            <div class="qr-info">
+              <p>
+                Este código QR es tu identificación personal en el parqueadero.
+                Preséntalo al ingresar o salir.
+              </p>
+              <div class="qr-tip">
+                <i class="bi bi-lightbulb-fill"></i> Sube el brillo de pantalla
+                al máximo para facilitar el escaneo.
+              </div>
+              <div class="qr-id">
+                <i class="bi bi-fingerprint"></i> ID:
+                <strong id="qr-id-label-sec">—</strong>
+              </div>
+              <div class="qr-btns-row">
+                <button class="btn-download" onclick="openQRFullscreen()">
+                  <i class="bi bi-fullscreen"></i> Pantalla completa
+                </button>
+                <button class="btn-download btn-dl-sec" onclick="downloadQR()">
+                  <i class="bi bi-download"></i> Descargar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-panel" style="margin-top: 20px">
+          <div class="panel-title">
+            <i class="bi bi-info-circle-fill"></i> ¿Cómo usar tu QR?
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              gap: 16px;
+              margin-top: 8px;
+            "
+          >
+            <div
+              style="
+                background: rgba(47, 164, 64, 0.07);
+                border: 1px solid rgba(47, 164, 64, 0.2);
+                border-radius: 10px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+              "
+            >
+              <span style="font-size: 24px">📲</span>
+              <strong style="color: var(--brand-color); font-size: 14px"
+                >Muéstralo al entrar</strong
+              >
+              <span style="font-size: 13px; opacity: 0.75"
+                >Presenta tu QR al operario o al escáner al momento de ingresar
+                al parqueadero.</span
+              >
+            </div>
+            <div
+              style="
+                background: rgba(47, 164, 64, 0.07);
+                border: 1px solid rgba(47, 164, 64, 0.2);
+                border-radius: 10px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+              "
+            >
+              <span style="font-size: 24px">🔆</span>
+              <strong style="color: var(--brand-color); font-size: 14px"
+                >Brillo al máximo</strong
+              >
+              <span style="font-size: 13px; opacity: 0.75"
+                >Aumenta el brillo de tu pantalla para facilitar el escaneo,
+                especialmente en exteriores.</span
+              >
+            </div>
+            <div
+              style="
+                background: rgba(47, 164, 64, 0.07);
+                border: 1px solid rgba(47, 164, 64, 0.2);
+                border-radius: 10px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+              "
+            >
+              <span style="font-size: 24px">🔒</span>
+              <strong style="color: var(--brand-color); font-size: 14px"
+                >Es personal</strong
+              >
+              <span style="font-size: 13px; opacity: 0.75"
+                >No compartas tu QR con otras personas. Cada usuario tiene un
+                código único e intransferible.</span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <!-- ═══ BOTTOM NAV (solo móvil) ═══ -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button
+        class="nav-item bottom-nav-item active"
+        onclick="showSection('dashboard', this)"
+      >
+        <i class="bi bi-grid-1x2-fill"></i>
+        <span>Inicio</span>
+      </button>
+      <button
+        class="nav-item bottom-nav-item"
+        onclick="showSection('mi-qr', this)"
+      >
+        <i class="bi bi-qr-code"></i>
+        <span>Mi QR</span>
+      </button>
+      <button
+        class="nav-item bottom-nav-item"
+        onclick="showSection('vehiculo', this)"
+      >
+        <i class="bi bi-car-front-fill"></i>
+        <span>Mi Vehículo</span>
+      </button>
+      <button
+        class="nav-item bottom-nav-item"
+        onclick="showSection('perfil', this)"
+      >
+        <i class="bi bi-person-circle"></i>
+        <span>Perfil</span>
+      </button>
+      <button class="nav-item bottom-nav-item logout" onclick="handleLogout()">
+        <i class="bi bi-box-arrow-left"></i>
+        <span>Salir</span>
+      </button>
+    </nav>
+
+    <!-- Modal QR pantalla completa -->
+    <div
+      id="qr-fullscreen-modal"
+      class="qr-fs-modal"
+      style="display: none"
+      onclick="closeQRFullscreen()"
+    >
+      <div class="qr-fs-inner" onclick="event.stopPropagation()">
+        <div class="qr-fs-header">
+          <span class="qr-fs-name" id="qr-fs-name"></span>
+          <button class="qr-fs-close" onclick="closeQRFullscreen()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="qr-fs-box">
+          <canvas id="qrCanvasFS"></canvas>
+        </div>
+        <div class="qr-fs-id" id="qr-fs-id"></div>
+        <p class="qr-fs-tip">
+          <i class="bi bi-lightbulb-fill"></i> Muestra este código al operario
+          del parqueadero
+        </p>
+      </div>
+    </div>
+
+    <!-- Modal eliminar -->
+    <div id="delete-modal" class="modal-overlay" style="display: none">
+      <div class="modal-box">
+        <div class="modal-icon"><i class="bi bi-trash3-fill"></i></div>
+        <h3>¿Eliminar vehículo?</h3>
+        <p id="delete-modal-desc">Esta acción no se puede deshacer.</p>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeDeleteModal()">
+            Cancelar
+          </button>
+          <button class="btn-confirm-delete" onclick="confirmDelete()">
+            Sí, eliminar
           </button>
         </div>
       </div>
-
-      <!-- Stat cards resumen -->
-      <div class="cards-row" id="hist-cards-row">
-        <div class="stat-card available">
-          <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="hist-total">—</span>
-            <span class="stat-label">Visitas totales</span>
-          </div>
-          <div class="stat-badge green">Total</div>
-        </div>
-        <div class="stat-card occupied">
-          <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="hist-promedio">—</span>
-            <span class="stat-label">Promedio por visita</span>
-          </div>
-          <div class="stat-badge red">Horas</div>
-        </div>
-        <div class="stat-card total">
-          <div class="stat-icon"><i class="bi bi-activity"></i></div>
-          <div class="stat-info">
-            <span class="stat-number" id="hist-activos">—</span>
-            <span class="stat-label">En curso ahora</span>
-          </div>
-          <div class="stat-badge blue">Activo</div>
-        </div>
-      </div>
-
-      <!-- Filtros -->
-      <div class="glass-panel">
-        <div class="panel-title"><i class="bi bi-funnel-fill"></i> Filtros</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:end;">
-          <div class="form-group" style="margin:0;">
-            <label><i class="bi bi-calendar-event"></i> Fecha inicio</label>
-            <input type="date" id="hist-fecha-ini" onchange="aplicarFiltros()">
-          </div>
-          <div class="form-group" style="margin:0;">
-            <label><i class="bi bi-calendar-check"></i> Fecha fin</label>
-            <input type="date" id="hist-fecha-fin" onchange="aplicarFiltros()">
-          </div>
-          <div class="form-group" style="margin:0;">
-            <label><i class="bi bi-car-front"></i> Tipo de vehículo</label>
-            <select id="hist-tipo" onchange="aplicarFiltros()">
-              <option value="">Todos</option>
-              <option value="auto">Carro / Auto</option>
-              <option value="motocicleta">Moto</option>
-              <option value="bicicleta">Bicicleta</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin:0;">
-            <label><i class="bi bi-tag"></i> Estado</label>
-            <select id="hist-estado" onchange="aplicarFiltros()">
-              <option value="">Todos</option>
-              <option value="completado">Completado</option>
-              <option value="activo">En curso</option>
-            </select>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn-save" style="padding:10px 18px;font-size:13px;" onclick="aplicarFiltros()">
-              <i class="bi bi-search"></i> Buscar
-            </button>
-            <button class="btn-download btn-dl-sec" onclick="limpiarFiltros()">
-              <i class="bi bi-x-circle"></i> Limpiar
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tabla historial completa -->
-      <div class="glass-panel">
-        <div class="panel-title" style="justify-content:space-between;">
-          <span><i class="bi bi-table"></i> Registros de visita</span>
-          <span id="hist-count-label" style="font-size:12px;font-weight:400;color:rgba(255,255,255,0.45);"></span>
-        </div>
-
-        <div class="table-wrap">
-          <table class="history-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th><i class="bi bi-calendar3" style="margin-right:4px;"></i>Fecha entrada</th>
-                <th><i class="bi bi-car-front" style="margin-right:4px;"></i>Vehículo</th>
-                <th><i class="bi bi-geo-alt" style="margin-right:4px;"></i>Lado</th>
-                <th><i class="bi bi-box-arrow-right" style="margin-right:4px;"></i>Fecha / Hora salida</th>
-                <th><i class="bi bi-stopwatch" style="margin-right:4px;"></i>Duración</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody id="hist-tbody">
-              <tr>
-                <td colspan="7" style="text-align:center;padding:40px;opacity:.45;">
-                  <i class="bi bi-hourglass" style="font-size:24px;display:block;margin-bottom:10px;"></i>
-                  Cargando registros...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Paginación -->
-        <div id="hist-pagination"
-          style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:12px;">
-          <span id="hist-page-info" style="font-size:12px;color:rgba(255,255,255,0.45);"></span>
-          <div style="display:flex;gap:8px;" id="hist-page-btns"></div>
-        </div>
-      </div>
-
-      <!-- Detalle de registro (panel expandible) -->
-      <div class="glass-panel" id="hist-detail-panel" style="display:none;">
-        <div class="panel-title"><i class="bi bi-info-circle-fill"></i> Detalle del registro</div>
-        <div id="hist-detail-body"
-          style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;"></div>
-      </div>
-    </section>
-
-    <!-- ─── MI CÓDIGO QR ─── -->
-    <section id="section-mi-qr" class="section">
-      <div class="section-header">
-        <div>
-          <h1>Mi <span class="name-highlight">Código QR</span></h1>
-          <p class="section-sub">Tu identificación personal para ingresar al parqueadero</p>
-        </div>
-      </div>
-
-      <div class="glass-panel qr-panel">
-        <div class="panel-title"><i class="bi bi-qr-code"></i> Código QR Personal</div>
-        <div class="qr-layout">
-          <div class="qr-box-wrap">
-            <div class="qr-box" id="qr-box-click-sec" onclick="openQRFullscreen()" title="Toca para ampliar">
-              <canvas id="qrCanvasSec"></canvas>
-              <div class="qr-box-hint"><i class="bi bi-fullscreen"></i> Toca para ampliar</div>
-            </div>
-          </div>
-          <div class="qr-info">
-            <p>Este código QR es tu identificación personal en el parqueadero. Preséntalo al ingresar o salir.</p>
-            <div class="qr-tip"><i class="bi bi-lightbulb-fill"></i> Sube el brillo de pantalla al máximo para facilitar el escaneo.</div>
-            <div class="qr-id"><i class="bi bi-fingerprint"></i> ID: <strong id="qr-id-label-sec">—</strong></div>
-            <div class="qr-btns-row">
-              <button class="btn-download" onclick="openQRFullscreen()"><i class="bi bi-fullscreen"></i> Pantalla completa</button>
-              <button class="btn-download btn-dl-sec" onclick="downloadQR()"><i class="bi bi-download"></i> Descargar</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="glass-panel" style="margin-top:20px;">
-        <div class="panel-title"><i class="bi bi-info-circle-fill"></i> ¿Cómo usar tu QR?</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:8px;">
-          <div style="background:rgba(47,164,64,0.07);border:1px solid rgba(47,164,64,0.2);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;">
-            <span style="font-size:24px;">📲</span>
-            <strong style="color:var(--brand-color);font-size:14px;">Muéstralo al entrar</strong>
-            <span style="font-size:13px;opacity:.75;">Presenta tu QR al operario o al escáner al momento de ingresar al parqueadero.</span>
-          </div>
-          <div style="background:rgba(47,164,64,0.07);border:1px solid rgba(47,164,64,0.2);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;">
-            <span style="font-size:24px;">🔆</span>
-            <strong style="color:var(--brand-color);font-size:14px;">Brillo al máximo</strong>
-            <span style="font-size:13px;opacity:.75;">Aumenta el brillo de tu pantalla para facilitar el escaneo, especialmente en exteriores.</span>
-          </div>
-          <div style="background:rgba(47,164,64,0.07);border:1px solid rgba(47,164,64,0.2);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;">
-            <span style="font-size:24px;">🔒</span>
-            <strong style="color:var(--brand-color);font-size:14px;">Es personal</strong>
-            <span style="font-size:13px;opacity:.75;">No compartas tu QR con otras personas. Cada usuario tiene un código único e intransferible.</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-
-  <!-- ═══ BOTTOM NAV (solo móvil) ═══ -->
-  <nav class="bottom-nav" id="bottom-nav">
-    <button class="nav-item bottom-nav-item active" onclick="showSection('dashboard', this)">
-      <i class="bi bi-grid-1x2-fill"></i>
-      <span>Inicio</span>
-    </button>
-    <button class="nav-item bottom-nav-item" onclick="showSection('mi-qr', this)">
-      <i class="bi bi-qr-code"></i>
-      <span>Mi QR</span>
-    </button>
-    <button class="nav-item bottom-nav-item" onclick="showSection('vehiculo', this)">
-      <i class="bi bi-car-front-fill"></i>
-      <span>Mi Vehículo</span>
-    </button>
-    <button class="nav-item bottom-nav-item" onclick="showSection('perfil', this)">
-      <i class="bi bi-person-circle"></i>
-      <span>Perfil</span>
-    </button>
-    <button class="nav-item bottom-nav-item logout" onclick="handleLogout()">
-      <i class="bi bi-box-arrow-left"></i>
-      <span>Salir</span>
-    </button>
-  </nav>
-
-  <!-- Modal QR pantalla completa -->
-  <div id="qr-fullscreen-modal" class="qr-fs-modal" style="display:none" onclick="closeQRFullscreen()">
-    <div class="qr-fs-inner" onclick="event.stopPropagation()">
-      <div class="qr-fs-header">
-        <span class="qr-fs-name" id="qr-fs-name"></span>
-        <button class="qr-fs-close" onclick="closeQRFullscreen()"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="qr-fs-box">
-        <canvas id="qrCanvasFS"></canvas>
-      </div>
-      <div class="qr-fs-id" id="qr-fs-id"></div>
-      <p class="qr-fs-tip"><i class="bi bi-lightbulb-fill"></i> Muestra este código al operario del parqueadero</p>
     </div>
-  </div>
 
-  <!-- Modal eliminar -->
-  <div id="delete-modal" class="modal-overlay" style="display:none">
-    <div class="modal-box">
-      <div class="modal-icon"><i class="bi bi-trash3-fill"></i></div>
-      <h3>¿Eliminar vehículo?</h3>
-      <p id="delete-modal-desc">Esta acción no se puede deshacer.</p>
-      <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeDeleteModal()">Cancelar</button>
-        <button class="btn-confirm-delete" onclick="confirmDelete()">Sí, eliminar</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="dashboard-parqueadero.js"></script>
-  <script src="photo-crop.js"></script>
-  <script src="dashboard-perfil.js"></script>
-  <script src="bg-animation.js"></script>
-  <script src="/Frontend/custom-select.js"></script>
-</body>
-
+    <script src="dashboard-parqueadero.js"></script>
+    <script src="photo-crop.js"></script>
+    <script src="dashboard-perfil.js"></script>
+    <script src="bg-animation.js"></script>
+    <script src="/Frontend/custom-select.js"></script>
+  </body>
 </html>

@@ -1,46 +1,46 @@
 // superadmin-datos.js — Lógica EXCLUSIVA del Super Administrador
 // Los scripts admin-cupos.js, admin-datos.js y admin-scanner.js ya proveen
 // las funciones compartidas (cupos, scanner, historial, stats, toast, showSection, etc.)
-'use strict';
+"use strict";
 
 // ══ GUARD: solo superadmin puede entrar aquí ══
 (function () {
   const u = Auth.getUser();
-  if (!u || u.rol !== 'superadmin') {
+  if (!u || u.rol !== "superadmin") {
     Auth.clear();
-    window.location.href = 'login.html';
+    window.location.href = "login.html";
   }
 })();
 
 // ══ VARIABLES EXCLUSIVAS DEL SUPERADMIN ══
-let guardias   = [];
-let saProfile  = null;
-let saModalCb  = null;
+let guardias = [];
+let saProfile = null;
+let saModalCb = null;
 let saUsuarios = [];
 
 const SA_ROL_LABELS = {
-  aprendiz:    'Aprendiz',
-  funcionario: 'Funcionario',
-  instructor:  'Instructor',
-  admin:       'Operario',
-  guardia:     'Operario',
-  superadmin:  'Superadmin',
+  aprendiz: "Aprendiz",
+  funcionario: "Funcionario",
+  instructor: "Instructor",
+  admin: "Operario",
+  guardia: "Operario",
+  superadmin: "Superadmin",
 };
 const SA_ROL_COLORS = {
-  aprendiz:    '#1565c0',
-  funcionario: '#2e7d32',
-  instructor:  '#6a1b9a',
-  admin:       '#e65100',
-  guardia:     '#e65100',
-  superadmin:  '#7b1fa2',
+  aprendiz: "#1565c0",
+  funcionario: "#2e7d32",
+  instructor: "#6a1b9a",
+  admin: "#e65100",
+  guardia: "#e65100",
+  superadmin: "#7b1fa2",
 };
 
 // ══ INICIALIZACIÓN SUPERADMIN ══
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener("DOMContentLoaded", async () => {
   cargarPerfilSA();
   // Cargar estadísticas del dashboard (gráficas de hora y semana)
   // cargarStatsAvanzados viene de admin-datos.js y llena los charts del dashboard
-  if (typeof cargarStatsAvanzados === 'function') cargarStatsAvanzados();
+  if (typeof cargarStatsAvanzados === "function") cargarStatsAvanzados();
   await Promise.all([
     cargarStatsGuardias(),
     cargarUsuariosSA(),
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   ]);
   // Auto-refresh de gráficas y guardias
   setInterval(() => {
-    if (typeof cargarStatsAvanzados === 'function') cargarStatsAvanzados();
+    if (typeof cargarStatsAvanzados === "function") cargarStatsAvanzados();
   }, 60000);
   setInterval(cargarGuardias, 120000);
 });
@@ -56,203 +56,381 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ══ PERFIL SA ══
 async function cargarPerfilSA() {
   try {
-    const res  = await apiFetch('/usuarios/perfil');
+    const res = await apiFetch("/usuarios/perfil");
     if (!res) return;
     const data = await res.json();
     if (!data.ok) return;
     saProfile = data.data;
-    const nombre = document.getElementById('sa-nombre');
-    const email  = document.getElementById('sa-email');
-    if (nombre) nombre.value = data.data.nombre_completo || '';
-    if (email)  email.value  = data.data.email || '';
+    const nombre = document.getElementById("sa-nombre");
+    const email = document.getElementById("sa-email");
+    if (nombre) nombre.value = data.data.nombre_completo || "";
+    if (email) email.value = data.data.email || "";
     liveUpdateSAHeader();
     if (data.data.foto_perfil) {
-      const img = document.getElementById('profile-avatar-img');
-      if (img) { img.src = data.data.foto_perfil; img.style.display = 'block'; }
-      const ini = document.getElementById('profile-avatar-initials');
-      if (ini) ini.style.display = 'none';
-      const av = document.getElementById('topbar-av');
-      if (av) { av.style.backgroundImage = 'url('+data.data.foto_perfil+')'; av.style.backgroundSize = 'cover'; av.textContent = ''; }
+      const img = document.getElementById("profile-avatar-img");
+      if (img) {
+        img.src = data.data.foto_perfil;
+        img.style.display = "block";
+      }
+      const ini = document.getElementById("profile-avatar-initials");
+      if (ini) ini.style.display = "none";
+      const av = document.getElementById("topbar-av");
+      if (av) {
+        av.style.backgroundImage = "url(" + data.data.foto_perfil + ")";
+        av.style.backgroundSize = "cover";
+        av.textContent = "";
+      }
     }
-  } catch (e) { console.warn('cargarPerfilSA:', e); }
+  } catch (e) {
+    console.warn("cargarPerfilSA:", e);
+  }
 }
 
 function liveUpdateSAHeader() {
-  const nombre   = (document.getElementById('sa-nombre')?.value || '').trim();
-  const parts    = nombre.split(' ').filter(Boolean);
-  const initials = parts.length >= 2
-    ? (parts[0][0] + parts[1][0]).toUpperCase()
-    : (parts[0]?.[0]?.toUpperCase() || 'SA');
-  const ini = document.getElementById('profile-avatar-initials');
+  const nombre = (document.getElementById("sa-nombre")?.value || "").trim();
+  const parts = nombre.split(" ").filter(Boolean);
+  const initials =
+    parts.length >= 2
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : parts[0]?.[0]?.toUpperCase() || "SA";
+  const ini = document.getElementById("profile-avatar-initials");
   if (ini) ini.textContent = initials;
-  const av = document.getElementById('topbar-av');
+  const av = document.getElementById("topbar-av");
   if (av && !saProfile?.foto_perfil) av.textContent = initials;
 }
 
 async function savePerfilSA() {
-  const nombre = document.getElementById('sa-nombre')?.value.trim();
-  const email  = document.getElementById('sa-email')?.value.trim();
-  if (!nombre) { showToast('Ingresa tu nombre completo.', 'error'); return; }
-  const btn = document.getElementById('btn-save-perfil-sa');
+  const nombre = document.getElementById("sa-nombre")?.value.trim();
+  const email = document.getElementById("sa-email")?.value.trim();
+  if (!nombre) {
+    showToast("Ingresa tu nombre completo.", "error");
+    return;
+  }
+  const btn = document.getElementById("btn-save-perfil-sa");
   if (btn?.disabled) return;
-  const originalHTML = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...'; }
+  const originalHTML = btn ? btn.innerHTML : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
+  }
   try {
-    const res  = await apiFetch('/usuarios/perfil', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ nombre_completo: nombre, email }) });
-    if (!res) { if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
+    const res = await apiFetch("/usuarios/perfil", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre_completo: nombre, email }),
+    });
+    if (!res) {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+      return;
+    }
     const data = await res.json();
-    if (!data.ok) { showToast(data.message || 'Error al guardar.', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
+    if (!data.ok) {
+      showToast(data.message || "Error al guardar.", "error");
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+      return;
+    }
     liveUpdateSAHeader();
-    showToast('Perfil actualizado', 'success');
-  } catch { showToast('Error de conexión.', 'error'); }
-  if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+    showToast("Perfil actualizado", "success");
+  } catch {
+    showToast("Error de conexión.", "error");
+  }
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
 }
 
 async function subirFotoPerfilSA(input) {
   if (!input.files[0]) return;
   const file = input.files[0];
-  input.value = '';   // limpiar input antes del crop
+  input.value = ""; // limpiar input antes del crop
 
   // Abrir editor de recorte estilo Facebook
   PhotoCrop.open(file, {
     onConfirm: async (blob) => {
       const fd = new FormData();
-      fd.append('foto', blob, 'perfil.jpg');
+      fd.append("foto", blob, "perfil.jpg");
       try {
-        const res  = await apiFetch('/usuarios/foto-perfil', { method:'POST', body: fd });
+        const res = await apiFetch("/usuarios/foto-perfil", {
+          method: "POST",
+          body: fd,
+        });
         if (!res) return;
         const data = await res.json();
-        if (!data.ok) { showToast(data.message || 'Error al subir foto', 'error'); return; }
-        const img = document.getElementById('profile-avatar-img');
-        if (img) { img.src = data.foto_url + '?t=' + Date.now(); img.style.display = 'block'; }
-        const ini = document.getElementById('profile-avatar-initials');
-        if (ini) ini.style.display = 'none';
-        const av = document.getElementById('topbar-av');
-        if (av) { av.style.backgroundImage = 'url('+data.foto_url+')'; av.style.backgroundSize = 'cover'; av.textContent = ''; }
-        showToast('Foto actualizada');
-      } catch { showToast('No se pudo subir la foto', 'error'); }
-    }
+        if (!data.ok) {
+          showToast(data.message || "Error al subir foto", "error");
+          return;
+        }
+        const img = document.getElementById("profile-avatar-img");
+        if (img) {
+          img.src = data.foto_url + "?t=" + Date.now();
+          img.style.display = "block";
+        }
+        const ini = document.getElementById("profile-avatar-initials");
+        if (ini) ini.style.display = "none";
+        const av = document.getElementById("topbar-av");
+        if (av) {
+          av.style.backgroundImage = "url(" + data.foto_url + ")";
+          av.style.backgroundSize = "cover";
+          av.textContent = "";
+        }
+        showToast("Foto actualizada");
+      } catch {
+        showToast("No se pudo subir la foto", "error");
+      }
+    },
   });
 }
 
 async function changePasswordSA() {
-  const actual  = document.getElementById('sec-pass-act')?.value;
-  const nuevo   = document.getElementById('sec-pass-new')?.value;
-  const confirm = document.getElementById('sec-pass-confirm')?.value;
-  if (!actual || !nuevo || !confirm) { showToast('Completa los tres campos.', 'error'); return; }
-  if (nuevo.length < 8) { showToast('Mínimo 8 caracteres.', 'error'); return; }
-  if (nuevo !== confirm) { showToast('Las contraseñas no coinciden.', 'error'); return; }
-  const btn = document.getElementById('btn-change-password');
+  const actual = document.getElementById("sec-pass-act")?.value;
+  const nuevo = document.getElementById("sec-pass-new")?.value;
+  const confirm = document.getElementById("sec-pass-confirm")?.value;
+  if (!actual || !nuevo || !confirm) {
+    showToast("Completa los tres campos.", "error");
+    return;
+  }
+  if (nuevo.length < 8) {
+    showToast("Mínimo 8 caracteres.", "error");
+    return;
+  }
+  if (nuevo !== confirm) {
+    showToast("Las contraseñas no coinciden.", "error");
+    return;
+  }
+  const btn = document.getElementById("btn-change-password");
   if (btn?.disabled) return;
-  const originalHTML = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Cambiando...'; }
+  const originalHTML = btn ? btn.innerHTML : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Cambiando...';
+  }
   try {
-    const res  = await apiFetch('/usuarios/cambiar-password', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password_actual: actual, password_nuevo: nuevo }) });
-    if (!res) { if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
+    const res = await apiFetch("/usuarios/cambiar-password", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password_actual: actual, password_nuevo: nuevo }),
+    });
+    if (!res) {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+      return;
+    }
     const data = await res.json();
-    if (!data.ok) { showToast(data.message || 'Error.', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
-    ['sec-pass-act','sec-pass-new','sec-pass-confirm'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    showToast('Contraseña actualizada', 'success');
-  } catch { showToast('Error de conexión.', 'error'); }
-  if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+    if (!data.ok) {
+      showToast(data.message || "Error.", "error");
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+      return;
+    }
+    ["sec-pass-act", "sec-pass-new", "sec-pass-confirm"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    showToast("Contraseña actualizada", "success");
+  } catch {
+    showToast("Error de conexión.", "error");
+  }
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
 }
 
 function toggleSecPass(inputId, iconId) {
   const inp = document.getElementById(inputId);
   const ico = document.getElementById(iconId);
   if (!inp) return;
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-  if (ico) ico.className = inp.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+  inp.type = inp.type === "password" ? "text" : "password";
+  if (ico)
+    ico.className = inp.type === "password" ? "bi bi-eye" : "bi bi-eye-slash";
 }
 
 // ══ STATS GUARDIAS ══
 async function cargarStatsGuardias() {
   try {
-    const res  = await apiFetch('/parqueadero/guardias');
+    const res = await apiFetch("/parqueadero/guardias");
     if (!res) return;
     const data = await res.json();
     if (!data.ok) return;
-    const activos = (data.data || []).filter(g => g.activo).length;
-    const el = document.getElementById('stat-operarios');
+    const activos = (data.data || []).filter((g) => g.activo).length;
+    const el = document.getElementById("stat-operarios");
     if (el) el.textContent = activos;
-  } catch (e) { console.warn('stats guardias:', e); }
+  } catch (e) {
+    console.warn("stats guardias:", e);
+  }
 }
 
 // ══ REGISTRAR USUARIO ══
 async function registrarUsuario() {
-  const nombre = document.getElementById('reg-nombre')?.value.trim();
-  const tipoId = document.getElementById('reg-tipo-id')?.value;
-  const numId  = document.getElementById('reg-num-id')?.value.trim();
-  const email  = document.getElementById('reg-email')?.value.trim();
-  const rol    = document.getElementById('reg-rol')?.value;
-  const centro = document.getElementById('reg-centro')?.value;
-  if (!nombre || !tipoId || !numId || !rol) { showToast('Completa los campos obligatorios.', 'error'); return; }
-  const btn = document.getElementById('btn-registrar-usuario');
+  const nombre = document.getElementById("reg-nombre")?.value.trim();
+  const tipoId = document.getElementById("reg-tipo-id")?.value;
+  const numId = document.getElementById("reg-num-id")?.value.trim();
+  const email = document.getElementById("reg-email")?.value.trim();
+  const rol = document.getElementById("reg-rol")?.value;
+  const centro = document.getElementById("reg-centro")?.value;
+  if (!nombre || !tipoId || !numId || !rol) {
+    showToast("Completa los campos obligatorios.", "error");
+    return;
+  }
+  const btn = document.getElementById("btn-registrar-usuario");
   if (btn?.disabled) return;
-  const originalHTML = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Registrando...'; }
+  const originalHTML = btn ? btn.innerHTML : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Registrando...';
+  }
   try {
-    const res  = await apiFetch('/auth/admin-register', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+    const res = await apiFetch("/auth/admin-register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       // La contraseña temporal es el número de identificación del usuario
-      body: JSON.stringify({ nombre_completo: nombre, tipo_id: tipoId, numero_id: numId, email: email||undefined, rol, id_centro: centro||undefined }),
+      body: JSON.stringify({
+        nombre_completo: nombre,
+        tipo_id: tipoId,
+        numero_id: numId,
+        email: email || undefined,
+        rol,
+        id_centro: centro || undefined,
+      }),
     });
-    if (!res) { if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
+    if (!res) {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+      return;
+    }
     const data = await res.json();
-    if (!data.ok) { showToast(data.message || (data.errors && data.errors[0]?.msg) || 'Error al registrar.', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; } return; }
-    showToast(`✅ ${nombre} registrado como ${SA_ROL_LABELS[rol]||rol}. Contraseña temporal: ${numId}`, 'success');
-    ['reg-nombre','reg-num-id','reg-email'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
-    const tipoEl = document.getElementById('reg-tipo-id'); if(tipoEl) tipoEl.value = '';
-    const rolEl  = document.getElementById('reg-rol');     if(rolEl)  rolEl.value  = 'aprendiz';
-    const cEl    = document.getElementById('reg-centro');  if(cEl)    cEl.innerHTML = '<option value="">Selecciona primero una región</option>';
+    if (!data.ok) {
+      showToast(
+        data.message ||
+          (data.errors && data.errors[0]?.msg) ||
+          "Error al registrar.",
+        "error",
+      );
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+      return;
+    }
+    showToast(
+      `✅ ${nombre} registrado como ${SA_ROL_LABELS[rol] || rol}. Contraseña temporal: ${numId}`,
+      "success",
+    );
+    ["reg-nombre", "reg-num-id", "reg-email"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    const tipoEl = document.getElementById("reg-tipo-id");
+    if (tipoEl) tipoEl.value = "";
+    const rolEl = document.getElementById("reg-rol");
+    if (rolEl) rolEl.value = "aprendiz";
+    const cEl = document.getElementById("reg-centro");
+    if (cEl)
+      cEl.innerHTML = '<option value="">Selecciona primero una región</option>';
     cargarUsuariosSA();
     cargarGuardias();
-  } catch { showToast('Error de conexión.', 'error'); }
-  if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+  } catch {
+    showToast("Error de conexión.", "error");
+  }
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
 }
 
 // ══ TABLA USUARIOS SUPERADMIN (con cambio de rol y activar/desactivar) ══
 async function cargarUsuariosSA() {
   try {
-    const res  = await apiFetch('/parqueadero/usuarios-superadmin');
+    const res = await apiFetch("/parqueadero/usuarios-superadmin");
     if (!res) return;
     const data = await res.json();
     if (data.ok && data.data) {
-      saUsuarios = data.data.map(u => ({
-        id:u.qr_code||'SIN-QR', id_usuario:u.id_usuario,
-        nombre:u.nombre_completo||'Sin nombre', tipoId:u.tipo_id, numId:u.numero_id,
-        email:u.email||null, rol:u.rol||'aprendiz', centro:u.centro_nombre||'No asignado',
-        activo:u.activo, vehiculos:u.vehiculos||[],
+      saUsuarios = data.data.map((u) => ({
+        id: u.qr_code || "SIN-QR",
+        id_usuario: u.id_usuario,
+        nombre: u.nombre_completo || "Sin nombre",
+        tipoId: u.tipo_id,
+        numId: u.numero_id,
+        email: u.email || null,
+        rol: u.rol || "aprendiz",
+        centro: u.centro_nombre || "No asignado",
+        activo: u.activo,
+        vehiculos: u.vehiculos || [],
       }));
-      const el = document.getElementById('stat-usuarios-total');
-      if (el) el.textContent = saUsuarios.filter(u => u.activo).length;
+      const el = document.getElementById("stat-usuarios-total");
+      if (el) el.textContent = saUsuarios.filter((u) => u.activo).length;
       renderSAUsersTable(saUsuarios);
     }
-  } catch (e) { console.warn('usuarios-sa:', e); }
+  } catch (e) {
+    console.warn("usuarios-sa:", e);
+  }
 }
 
 function renderSAUsersTable(list) {
-  const tbody = document.getElementById('users-tbody');
+  const tbody = document.getElementById("users-tbody");
   if (!tbody) return;
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.4);padding:24px">Sin resultados</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.4);padding:24px">Sin resultados</td></tr>';
     return;
   }
-  tbody.innerHTML = list.map(u => {
-    const rolColor    = SA_ROL_COLORS[u.rol] || '#555';
-    const rolLabel    = SA_ROL_LABELS[u.rol]  || u.rol;
-    const estadoBadge = u.activo ? '<span class="event-badge in">Activo</span>' : '<span class="event-badge out">Inactivo</span>';
-    const numMasked   = '*'.repeat(Math.max(0,(u.numId||'').length-4))+(u.numId||'').slice(-4);
-    const rolesOpts   = ['aprendiz','funcionario','instructor','admin'].map(r =>
-      '<option value="'+r+'"'+(u.rol===r?' selected':'')+'>'+SA_ROL_LABELS[r]+'</option>').join('');
-    const toggleClass = u.activo ? 'sa-toggle-btn on' : 'sa-toggle-btn off';
-    const toggleLabel = u.activo ? 'Desactivar' : 'Activar';
-    const isSA        = u.rol === 'superadmin';
-    const controles   = isSA
-      ? '<span style="font-size:11px;color:rgba(255,255,255,0.3);">\u2014 superadmin \u2014</span>'
-      : '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><select class="sa-rol-select" onchange="cambiarRol('+u.id_usuario+', this.value)">'+rolesOpts+'</select><button class="'+toggleClass+'" onclick="toggleUsuario('+u.id_usuario+', this)">'+toggleLabel+'</button></div>';
-    const initials = u.nombre.split(' ').map(w=>w[0]).slice(0,2).join('');
-    return `<tr style="${u.activo ? '' : 'opacity:0.5;'}">
+  tbody.innerHTML = list
+    .map((u) => {
+      const rolColor = SA_ROL_COLORS[u.rol] || "#555";
+      const rolLabel = SA_ROL_LABELS[u.rol] || u.rol;
+      const estadoBadge = u.activo
+        ? '<span class="event-badge in">Activo</span>'
+        : '<span class="event-badge out">Inactivo</span>';
+      const numMasked =
+        "*".repeat(Math.max(0, (u.numId || "").length - 4)) +
+        (u.numId || "").slice(-4);
+      const rolesOpts = ["aprendiz", "funcionario", "instructor", "admin"]
+        .map(
+          (r) =>
+            '<option value="' +
+            r +
+            '"' +
+            (u.rol === r ? " selected" : "") +
+            ">" +
+            SA_ROL_LABELS[r] +
+            "</option>",
+        )
+        .join("");
+      const toggleClass = u.activo ? "sa-toggle-btn on" : "sa-toggle-btn off";
+      const toggleLabel = u.activo ? "Desactivar" : "Activar";
+      const isSA = u.rol === "superadmin";
+      const controles = isSA
+        ? '<span style="font-size:11px;color:rgba(255,255,255,0.3);">\u2014 superadmin \u2014</span>'
+        : '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><select class="sa-rol-select" onchange="cambiarRol(' +
+          u.id_usuario +
+          ', this.value)">' +
+          rolesOpts +
+          '</select><button class="' +
+          toggleClass +
+          '" onclick="toggleUsuario(' +
+          u.id_usuario +
+          ', this)">' +
+          toggleLabel +
+          "</button></div>";
+      const initials = u.nombre
+        .split(" ")
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join("");
+      return `<tr style="${u.activo ? "" : "opacity:0.5;"}">
       <td>
         <div class="user-cell">
           <div class="mini-av">${initials}</div>
@@ -265,161 +443,348 @@ function renderSAUsersTable(list) {
       <td>${estadoBadge}</td>
       <td>${controles}</td>
     </tr>`;
-  }).join('');
+    })
+    .join("");
 }
 
-
 function filterUsers() {
-  const q       = document.getElementById('user-search')?.value.toLowerCase()  || '';
-  const rolF    = document.getElementById('filter-rol')?.value                  || '';
-  const estadoF = document.getElementById('filter-estado')?.value               || '';
-  renderSAUsersTable(saUsuarios.filter(u => {
-    const matchQ = u.nombre.toLowerCase().includes(q)||u.numId.includes(q)||u.id.toLowerCase().includes(q);
-    return matchQ && (!rolF||u.rol===rolF) && (!estadoF||(estadoF==='activo'?u.activo:!u.activo));
-  }));
+  const q = document.getElementById("user-search")?.value.toLowerCase() || "";
+  const rolF = document.getElementById("filter-rol")?.value || "";
+  const estadoF = document.getElementById("filter-estado")?.value || "";
+  renderSAUsersTable(
+    saUsuarios.filter((u) => {
+      const matchQ =
+        u.nombre.toLowerCase().includes(q) ||
+        u.numId.includes(q) ||
+        u.id.toLowerCase().includes(q);
+      return (
+        matchQ &&
+        (!rolF || u.rol === rolF) &&
+        (!estadoF || (estadoF === "activo" ? u.activo : !u.activo))
+      );
+    }),
+  );
 }
 
 async function toggleUsuario(id, btn) {
   if (btn) btn.disabled = true;
   try {
-    const res  = await apiFetch('/parqueadero/usuarios/'+id+'/toggle', { method:'PUT' });
-    if (!res) { if(btn) btn.disabled=false; return; }
+    const res = await apiFetch("/parqueadero/usuarios/" + id + "/toggle", {
+      method: "PUT",
+    });
+    if (!res) {
+      if (btn) btn.disabled = false;
+      return;
+    }
     const data = await res.json();
-    if (!data.ok) { showToast(data.message||'Error.','error'); if(btn) btn.disabled=false; return; }
-    showToast(data.message, data.activo?'success':'info');
+    if (!data.ok) {
+      showToast(data.message || "Error.", "error");
+      if (btn) btn.disabled = false;
+      return;
+    }
+    showToast(data.message, data.activo ? "success" : "info");
     await cargarUsuariosSA();
-  } catch { showToast('Error de conexión.','error'); }
+  } catch {
+    showToast("Error de conexión.", "error");
+  }
   if (btn) btn.disabled = false;
 }
 
 async function cambiarRol(id, nuevoRol) {
   openSAModal({
-    icon:'🔄', title:'Cambiar rol',
-    desc:'¿Deseas cambiar el rol de este usuario a <strong>'+(SA_ROL_LABELS[nuevoRol]||nuevoRol)+'</strong>?',
-    btnClass:'ok', btnLabel:'Cambiar rol',
+    icon: "🔄",
+    title: "Cambiar rol",
+    desc:
+      "¿Deseas cambiar el rol de este usuario a <strong>" +
+      (SA_ROL_LABELS[nuevoRol] || nuevoRol) +
+      "</strong>?",
+    btnClass: "ok",
+    btnLabel: "Cambiar rol",
     onConfirm: async () => {
       try {
-        const res  = await apiFetch('/parqueadero/usuarios/'+id+'/rol', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({rol:nuevoRol}) });
+        const res = await apiFetch("/parqueadero/usuarios/" + id + "/rol", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rol: nuevoRol }),
+        });
         if (!res) return;
         const data = await res.json();
-        if (!data.ok) { showToast(data.message||'Error.','error'); return; }
-        showToast(data.message,'success');
+        if (!data.ok) {
+          showToast(data.message || "Error.", "error");
+          return;
+        }
+        showToast(data.message, "success");
         await cargarUsuariosSA();
         await cargarGuardias();
-      } catch { showToast('Error de conexión.','error'); }
+      } catch {
+        showToast("Error de conexión.", "error");
+      }
     },
   });
 }
 
 // ══ GUARDIAS ══
 async function cargarGuardias() {
-  const list     = document.getElementById('operarios-list');
-  const dashList = document.getElementById('dash-operarios-list');
+  const list = document.getElementById("operarios-list");
+  const dashList = document.getElementById("dash-operarios-list");
   try {
-    const res  = await apiFetch('/parqueadero/guardias');
+    const res = await apiFetch("/parqueadero/guardias");
     if (!res) return;
     const data = await res.json();
     if (!data.ok) return;
     guardias = data.data;
-    const activos   = guardias.filter(g =>  g.activo);
-    const inactivos = guardias.filter(g => !g.activo);
-    const totalHoy  = guardias.reduce((s,g)=>s+parseInt(g.registros_hoy||0),0);
-    const setEl = (id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-    setEl('stat-operarios',activos.length); setEl('g-activos',activos.length);
-    setEl('g-inactivos',inactivos.length); setEl('g-registros-hoy',totalHoy);
+    const activos = guardias.filter((g) => g.activo);
+    const inactivos = guardias.filter((g) => !g.activo);
+    const totalHoy = guardias.reduce(
+      (s, g) => s + parseInt(g.registros_hoy || 0),
+      0,
+    );
+    const setEl = (id, v) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = v;
+    };
+    setEl("stat-operarios", activos.length);
+    setEl("g-activos", activos.length);
+    setEl("g-inactivos", inactivos.length);
+    setEl("g-registros-hoy", totalHoy);
     if (list) {
       if (!guardias.length) {
-        list.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);"><i class="bi bi-shield-x" style="font-size:36px;display:block;margin-bottom:12px;"></i>No hay guardias registrados. <button class="link-btn" onclick="showSection(\'registrar\',null)">Registra uno aquí</button></div>';
+        list.innerHTML =
+          '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);"><i class="bi bi-shield-x" style="font-size:36px;display:block;margin-bottom:12px;"></i>No hay guardias registrados. <button class="link-btn" onclick="showSection(\'registrar\',null)">Registra uno aquí</button></div>';
       } else {
-        list.innerHTML = guardias.map(g=>renderGuardiaCard(g)).join('');
+        list.innerHTML = guardias.map((g) => renderGuardiaCard(g)).join("");
       }
     }
     if (dashList) {
       if (!activos.length) {
-        dashList.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:13px;">Sin operarios activos</div>';
+        dashList.innerHTML =
+          '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:13px;">Sin operarios activos</div>';
       } else {
-        dashList.innerHTML = activos.slice(0,5).map(g=>'<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,0.06);"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1a3d1f,#2FA440);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;">'+g.nombre_completo.split(' ').map(w=>w[0]).slice(0,2).join('')+'</div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+g.nombre_completo+'</div><div style="font-size:11px;color:rgba(255,255,255,0.4);">'+parseInt(g.registros_hoy||0)+' registros hoy</div></div><span class="event-badge in" style="font-size:10px;">Activo</span></div>').join('');
+        dashList.innerHTML = activos
+          .slice(0, 5)
+          .map(
+            (g) =>
+              '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,0.06);"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1a3d1f,#2FA440);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;">' +
+              g.nombre_completo
+                .split(" ")
+                .map((w) => w[0])
+                .slice(0, 2)
+                .join("") +
+              '</div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+              g.nombre_completo +
+              '</div><div style="font-size:11px;color:rgba(255,255,255,0.4);">' +
+              parseInt(g.registros_hoy || 0) +
+              ' registros hoy</div></div><span class="event-badge in" style="font-size:10px;">Activo</span></div>',
+          )
+          .join("");
       }
     }
-  } catch (e) { console.warn('guardias:', e); }
+  } catch (e) {
+    console.warn("guardias:", e);
+  }
 }
 
 function renderGuardiaCard(g) {
-  const ini = g.nombre_completo.split(' ').map(w=>w[0]).slice(0,2).join('');
-  const ult = g.ultimo_registro ? new Date(g.ultimo_registro).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short',timeZone:'America/Bogota'}) : 'Sin actividad';
-  const tc  = g.activo ? 'g-btn g-btn-toggle-on' : 'g-btn g-btn-toggle-off';
-  const tl  = g.activo ? '<i class="bi bi-toggle2-on"></i> Activo' : '<i class="bi bi-toggle2-off"></i> Inactivo';
-  return '<div class="guardia-card '+(g.activo?'':'inactivo')+'" id="guardia-card-'+g.id_usuario+'"><div class="guardia-av">'+ini+'</div><div class="guardia-info"><p class="guardia-nombre">'+g.nombre_completo+'</p><div class="guardia-meta"><span><i class="bi bi-building"></i>'+(g.centro_nombre||'Sin centro')+'</span><span><i class="bi bi-clipboard-check"></i>'+parseInt(g.registros_hoy||0)+' registros hoy</span><span><i class="bi bi-clock-history"></i>Último: '+ult+'</span></div></div><div class="guardia-actions"><button class="'+tc+'" onclick="toggleGuardia('+g.id_usuario+', this)">'+tl+'</button><button class="g-btn g-btn-del" onclick="eliminarGuardia('+g.id_usuario+', \''+g.nombre_completo.replace(/'/g,"\\'")+'\')"><i class="bi bi-trash3"></i></button></div></div>';
+  const ini = g.nombre_completo
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("");
+  const ult = g.ultimo_registro
+    ? new Date(g.ultimo_registro).toLocaleString("es-CO", {
+        dateStyle: "short",
+        timeStyle: "short",
+        timeZone: "America/Bogota",
+      })
+    : "Sin actividad";
+  const tc = g.activo ? "g-btn g-btn-toggle-on" : "g-btn g-btn-toggle-off";
+  const tl = g.activo
+    ? '<i class="bi bi-toggle2-on"></i> Activo'
+    : '<i class="bi bi-toggle2-off"></i> Inactivo';
+  return (
+    '<div class="guardia-card ' +
+    (g.activo ? "" : "inactivo") +
+    '" id="guardia-card-' +
+    g.id_usuario +
+    '"><div class="guardia-av">' +
+    ini +
+    '</div><div class="guardia-info"><p class="guardia-nombre">' +
+    g.nombre_completo +
+    '</p><div class="guardia-meta"><span><i class="bi bi-building"></i>' +
+    (g.centro_nombre || "Sin centro") +
+    '</span><span><i class="bi bi-clipboard-check"></i>' +
+    parseInt(g.registros_hoy || 0) +
+    ' registros hoy</span><span><i class="bi bi-clock-history"></i>Último: ' +
+    ult +
+    '</span></div></div><div class="guardia-actions"><button class="' +
+    tc +
+    '" onclick="toggleGuardia(' +
+    g.id_usuario +
+    ', this)">' +
+    tl +
+    '</button><button class="g-btn g-btn-del" onclick="eliminarGuardia(' +
+    g.id_usuario +
+    ", '" +
+    g.nombre_completo.replace(/'/g, "\\'") +
+    '\')"><i class="bi bi-trash3"></i></button></div></div>'
+  );
 }
 
 async function toggleGuardia(id, btn) {
   if (btn) btn.disabled = true;
   try {
-    const res  = await apiFetch('/parqueadero/guardias/'+id+'/toggle', {method:'PUT'});
-    if (!res) { if(btn) btn.disabled=false; return; }
+    const res = await apiFetch("/parqueadero/guardias/" + id + "/toggle", {
+      method: "PUT",
+    });
+    if (!res) {
+      if (btn) btn.disabled = false;
+      return;
+    }
     const data = await res.json();
-    if (!data.ok) { showToast(data.message||'Error.','error'); if(btn) btn.disabled=false; return; }
-    showToast(data.message, data.activo?'success':'info');
+    if (!data.ok) {
+      showToast(data.message || "Error.", "error");
+      if (btn) btn.disabled = false;
+      return;
+    }
+    showToast(data.message, data.activo ? "success" : "info");
     await cargarGuardias();
-  } catch { showToast('Error de conexión.','error'); }
+  } catch {
+    showToast("Error de conexión.", "error");
+  }
   if (btn) btn.disabled = false;
 }
 
 function eliminarGuardia(id, nombre) {
   openSAModal({
-    icon:'⚠️', title:'Desactivar operario',
-    desc:'¿Seguro que deseas desactivar la cuenta de <strong>'+nombre+'</strong>? El operario no podrá iniciar sesión.',
-    btnClass:'danger', btnLabel:'Desactivar',
+    icon: "⚠️",
+    title: "Desactivar operario",
+    desc:
+      "¿Seguro que deseas desactivar la cuenta de <strong>" +
+      nombre +
+      "</strong>? El operario no podrá iniciar sesión.",
+    btnClass: "danger",
+    btnLabel: "Desactivar",
     onConfirm: async () => {
       try {
-        const res  = await apiFetch('/parqueadero/guardias/'+id, {method:'DELETE'});
+        const res = await apiFetch("/parqueadero/guardias/" + id, {
+          method: "DELETE",
+        });
         if (!res) return;
         const data = await res.json();
-        if (!data.ok) { showToast(data.message||'Error.','error'); return; }
-        showToast('Operario desactivado.','info');
+        if (!data.ok) {
+          showToast(data.message || "Error.", "error");
+          return;
+        }
+        showToast("Operario desactivado.", "info");
         await cargarGuardias();
-      } catch { showToast('Error de conexión.','error'); }
+      } catch {
+        showToast("Error de conexión.", "error");
+      }
     },
   });
 }
 
 // ══ MODAL CONFIRMACIÓN ══
 function openSAModal({ icon, title, desc, btnClass, btnLabel, onConfirm }) {
-  document.getElementById('sa-modal-icon').textContent  = icon;
-  document.getElementById('sa-modal-title').textContent = title;
-  document.getElementById('sa-modal-desc').innerHTML    = desc;
-  const btn = document.getElementById('sa-modal-confirm-btn');
-  btn.className = 'sa-modal-confirm '+btnClass;
+  document.getElementById("sa-modal-icon").textContent = icon;
+  document.getElementById("sa-modal-title").textContent = title;
+  document.getElementById("sa-modal-desc").innerHTML = desc;
+  const btn = document.getElementById("sa-modal-confirm-btn");
+  btn.className = "sa-modal-confirm " + btnClass;
   btn.textContent = btnLabel;
   saModalCb = onConfirm;
-  btn.onclick = async () => { const cb = saModalCb; closeSAModal(); if (cb) await cb(); };
-  document.getElementById('sa-confirm-modal').classList.add('visible');
+  btn.onclick = async () => {
+    const cb = saModalCb;
+    closeSAModal();
+    if (cb) await cb();
+  };
+  document.getElementById("sa-confirm-modal").classList.add("visible");
 }
 
 function closeSAModal() {
-  document.getElementById('sa-confirm-modal').classList.remove('visible');
+  document.getElementById("sa-confirm-modal").classList.remove("visible");
   saModalCb = null;
 }
 
 // ══ EXPORTAR EXCEL (versión SA — color púrpura) ══
 function exportarAdminExcel() {
-  if (!haRegistros.length) { showToast('No hay registros para exportar','error'); return; }
-  const cols = ['#','Usuario','Vehículo','Identificador','Lado','Entrada','Salida','Duración','Estado'];
-  const rows = haRegistros.map((r,i) => [
-    i+1, r.nombre_completo||'—', r.tipo_vehiculo||'—', r.identificador||'—', r.lado||'—',
-    new Date(r.fecha_entrada).toLocaleString('es-CO',{timeZone:'America/Bogota'}),
-    r.fecha_salida ? new Date(r.fecha_salida).toLocaleString('es-CO',{timeZone:'America/Bogota'}) : '—',
-    r.duracion_min!=null?(r.duracion_min>=60?Math.floor(r.duracion_min/60)+'h '+Math.round(r.duracion_min%60)+'m':Math.round(r.duracion_min)+'m'):'—',
-    r.estado==='completado'?'Completado':'En curso',
+  if (!haRegistros.length) {
+    showToast("No hay registros para exportar", "error");
+    return;
+  }
+  const cols = [
+    "#",
+    "Usuario",
+    "Vehículo",
+    "Identificador",
+    "Lado",
+    "Entrada",
+    "Salida",
+    "Duración",
+    "Estado",
+  ];
+  const rows = haRegistros.map((r, i) => [
+    i + 1,
+    r.nombre_completo || "—",
+    r.tipo_vehiculo || "—",
+    r.identificador || "—",
+    r.lado || "—",
+    new Date(r.fecha_entrada).toLocaleString("es-CO", {
+      timeZone: "America/Bogota",
+    }),
+    r.fecha_salida
+      ? new Date(r.fecha_salida).toLocaleString("es-CO", {
+          timeZone: "America/Bogota",
+        })
+      : "—",
+    r.duracion_min != null
+      ? r.duracion_min >= 60
+        ? Math.floor(r.duracion_min / 60) +
+          "h " +
+          Math.round(r.duracion_min % 60) +
+          "m"
+        : Math.round(r.duracion_min) + "m"
+      : "—",
+    r.estado === "completado" ? "Completado" : "En curso",
   ]);
-  const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body><table><tr><td colspan="'+cols.length+'" style="background:#7b1fa2;color:#fff;font-size:15pt;font-weight:700;padding:10pt;">Parksmart — Historial (Superadmin)</td></tr><tr>'+cols.map(c=>'<td style="background:#4a148c;color:#fff;font-weight:700;padding:7pt 10pt;">'+c+'</td>').join('')+'</tr>'+rows.map(r=>'<tr>'+r.map(v=>'<td style="padding:6pt 10pt;border:0.5pt solid #e1bee7;">'+v+'</td>').join('')+'</tr>').join('')+'</table></body></html>';
-  const blob = new Blob(['\uFEFF'+html],{type:'application/vnd.ms-excel;charset=utf-8'});
-  const a = document.createElement('a');
+  const html =
+    '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body><table><tr><td colspan="' +
+    cols.length +
+    '" style="background:#7b1fa2;color:#fff;font-size:15pt;font-weight:700;padding:10pt;">Parksmart — Historial (Superadmin)</td></tr><tr>' +
+    cols
+      .map(
+        (c) =>
+          '<td style="background:#4a148c;color:#fff;font-weight:700;padding:7pt 10pt;">' +
+          c +
+          "</td>",
+      )
+      .join("") +
+    "</tr>" +
+    rows
+      .map(
+        (r) =>
+          "<tr>" +
+          r
+            .map(
+              (v) =>
+                '<td style="padding:6pt 10pt;border:0.5pt solid #e1bee7;">' +
+                v +
+                "</td>",
+            )
+            .join("") +
+          "</tr>",
+      )
+      .join("") +
+    "</table></body></html>";
+  const blob = new Blob(["\uFEFF" + html], {
+    type: "application/vnd.ms-excel;charset=utf-8",
+  });
+  const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = 'Parksmart_SA_'+new Date().toISOString().slice(0,10)+'.xls';
+  a.download = "Parksmart_SA_" + new Date().toISOString().slice(0, 10) + ".xls";
   a.click();
   URL.revokeObjectURL(a.href);
-  showToast('Excel exportado','success');
+  showToast("Excel exportado", "success");
 }
 
 // ══ OVERRIDES — neutraliza funciones del admin que causarían crash en superadmin ══
@@ -427,7 +792,9 @@ function exportarAdminExcel() {
 // Esto permite reutilizar toda la lógica compartida sin que fallen en el contexto SA.
 
 // cargarPerfilAdmin → en superadmin usamos cargarPerfilSA (ya invocado en el init SA)
-async function cargarPerfilAdmin() { /* no-op: superadmin usa cargarPerfilSA */ }
+async function cargarPerfilAdmin() {
+  /* no-op: superadmin usa cargarPerfilSA */
+}
 
 // updateAdminAvatar → en superadmin no hay #admin-avatar ni #admin-display-name
 function updateAdminAvatar(nombre) {
@@ -445,41 +812,61 @@ async function cargarUsuariosDesdeAPI() {
 // renderUsersTable → usada por cargarUsuariosDesdeAPI del admin; en SA usa la versión SA
 // La capturamos para evitar que pinte columnas incorrectas en la tabla SA
 function renderUsersTable(list) {
-  try { renderSAUsersTable(list); } catch(e) { /* tabla SA ya inicializada por cargarUsuariosSA */ }
+  try {
+    renderSAUsersTable(list);
+  } catch (e) {
+    /* tabla SA ya inicializada por cargarUsuariosSA */
+  }
 }
 
 // filterCentrosAdmin → en superadmin no hay #a-region ni #a-centro (son #reg-region, #reg-centro)
-function filterCentrosAdmin() { /* no-op en superadmin */ }
+function filterCentrosAdmin() {
+  /* no-op en superadmin */
+}
 
 // showSection → override para también recargar guardias/usuarios SA
 function showSection(name, btn) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const sec = document.getElementById('section-' + name);
-  if (sec) sec.classList.add('active');
-  document.querySelectorAll(".nav-item[onclick*=\"'" + name + "'\"]").forEach(el => el.classList.add('active'));
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('overlay');
-  if (sidebar) sidebar.classList.remove('open');
-  if (overlay) overlay.classList.remove('show');
-  if (name !== 'scanner') { if (typeof stopScan === 'function') stopScan(); }
-  if (name === 'historia') { if (typeof initHistorialAdmin === 'function') initHistorialAdmin(); }
-  if (name === 'guardias') cargarGuardias();
-  if (name === 'usuarios') cargarUsuariosSA();
+  document
+    .querySelectorAll(".section")
+    .forEach((s) => s.classList.remove("active"));
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((n) => n.classList.remove("active"));
+  const sec = document.getElementById("section-" + name);
+  if (sec) sec.classList.add("active");
+  document
+    .querySelectorAll(".nav-item[onclick*=\"'" + name + "'\"]")
+    .forEach((el) => el.classList.add("active"));
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("overlay");
+  if (sidebar) sidebar.classList.remove("open");
+  if (overlay) overlay.classList.remove("show");
+  if (name !== "scanner") {
+    if (typeof stopScan === "function") stopScan();
+  }
+  if (name === "historia") {
+    if (typeof initHistorialAdmin === "function") initHistorialAdmin();
+  }
+  if (name === "guardias") cargarGuardias();
+  if (name === "usuarios") cargarUsuariosSA();
   // Al entrar al dashboard, refrescar gráficas y stats de cupos
-  if (name === 'dashboard') {
-    if (typeof cargarStatsAvanzados === 'function') cargarStatsAvanzados();
-    if (typeof cargarCuposDesdeAPI  === 'function') cargarCuposDesdeAPI();
+  if (name === "dashboard") {
+    if (typeof cargarStatsAvanzados === "function") cargarStatsAvanzados();
+    if (typeof cargarCuposDesdeAPI === "function") cargarCuposDesdeAPI();
     cargarGuardias();
   }
-  if (name === 'metricas') cargarMetricas();
-  if (name === 'alertas')  cargarAlertas();
-  if (name === 'auditoria') { cargarAuditoria(); }
-  if (name === 'busqueda') {
-    const inp = document.getElementById('global-search-input');
+  if (name === "metricas") cargarMetricas();
+  if (name === "alertas") cargarAlertas();
+  if (name === "auditoria") {
+    cargarAuditoria();
+  }
+  if (name === "busqueda") {
+    const inp = document.getElementById("global-search-input");
     if (inp && !inp.value) {
-      const cont = document.getElementById('busqueda-resultados');
-      if (cont) cont.innerHTML = '<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);"><i class="bi bi-search" style="font-size:40px;display:block;margin-bottom:12px;"></i>Escribe al menos 2 caracteres para buscar</div>';
+      const cont = document.getElementById("busqueda-resultados");
+      if (cont)
+        cont.innerHTML =
+          '<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.25);"><i class="bi bi-search" style="font-size:40px;display:block;margin-bottom:12px;"></i>Escribe al menos 2 caracteres para buscar</div>';
     }
   }
 }
@@ -488,8 +875,13 @@ function showSection(name, btn) {
 function startClock() {
   function tick() {
     const now = new Date();
-    const el  = document.getElementById('sa-clock');
-    if (el) el.textContent = now.toLocaleString('es-CO', { dateStyle:'long', timeStyle:'short', timeZone:'America/Bogota' });
+    const el = document.getElementById("sa-clock");
+    if (el)
+      el.textContent = now.toLocaleString("es-CO", {
+        dateStyle: "long",
+        timeStyle: "short",
+        timeZone: "America/Bogota",
+      });
   }
   tick();
   setInterval(tick, 1000);
@@ -500,18 +892,30 @@ function startClock() {
 
 // ── Helpers compartidos ───────────────────────────────────────────────
 function fmtDur(min) {
-  if (min == null) return '—';
+  if (min == null) return "—";
   const m = Math.round(min);
-  return m >= 60 ? Math.floor(m/60)+'h '+Math.round(m%60)+'m' : m+'m';
+  return m >= 60
+    ? Math.floor(m / 60) + "h " + Math.round(m % 60) + "m"
+    : m + "m";
 }
 function fmtDT(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short',timeZone:'America/Bogota'});
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("es-CO", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "America/Bogota",
+  });
 }
 function fmtHora(h) {
-  if (h == null) return '?';
+  if (h == null) return "?";
   const hh = Number(h);
-  return hh === 0 ? '12 AM' : hh < 12 ? hh+'AM' : hh === 12 ? '12PM' : (hh-12)+'PM';
+  return hh === 0
+    ? "12 AM"
+    : hh < 12
+      ? hh + "AM"
+      : hh === 12
+        ? "12PM"
+        : hh - 12 + "PM";
 }
 
 // ═══════════════════════════════════════════════
@@ -519,12 +923,17 @@ function fmtHora(h) {
 // ═══════════════════════════════════════════════
 // ── Chart instances para Análisis ─────────────────────────────────────
 const _analCharts = {};
-function _destroyChart(id) { if (_analCharts[id]) { _analCharts[id].destroy(); delete _analCharts[id]; } }
+function _destroyChart(id) {
+  if (_analCharts[id]) {
+    _analCharts[id].destroy();
+    delete _analCharts[id];
+  }
+}
 
 const CHART_DEFAULTS = {
-  color: 'rgba(255,255,255,0.7)',
-  grid:  'rgba(255,255,255,0.06)',
-  font:  { family: 'DM Sans, sans-serif', size: 11 },
+  color: "rgba(255,255,255,0.7)",
+  grid: "rgba(255,255,255,0.06)",
+  font: { family: "DM Sans, sans-serif", size: 11 },
 };
 
 function _mkLineChart(id, labels, data, label, color) {
@@ -532,24 +941,54 @@ function _mkLineChart(id, labels, data, label, color) {
   const ctx = document.getElementById(id);
   if (!ctx) return;
   _analCharts[id] = new Chart(ctx, {
-    type: 'line',
+    type: "line",
     data: {
       labels,
-      datasets: [{ label, data, borderColor: color, backgroundColor: color.replace(')', ',0.12)').replace('rgb','rgba'),
-        tension: 0.4, fill: true, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2 }]
+      datasets: [
+        {
+          label,
+          data,
+          borderColor: color,
+          backgroundColor: color.replace(")", ",0.12)").replace("rgb", "rgba"),
+          tension: 0.4,
+          fill: true,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          borderWidth: 2,
+        },
+      ],
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: {
-        label: ctx => ` ${ctx.parsed.y} ingresos`
-      }}},
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.parsed.y} ingresos`,
+          },
+        },
+      },
       scales: {
-        x: { ticks: { color: CHART_DEFAULTS.color, font: CHART_DEFAULTS.font, maxRotation:45 },
-             grid: { color: CHART_DEFAULTS.grid } },
-        y: { ticks: { color: CHART_DEFAULTS.color, font: CHART_DEFAULTS.font, precision:0 },
-             grid: { color: CHART_DEFAULTS.grid }, beginAtZero: true }
-      }
-    }
+        x: {
+          ticks: {
+            color: CHART_DEFAULTS.color,
+            font: CHART_DEFAULTS.font,
+            maxRotation: 45,
+          },
+          grid: { color: CHART_DEFAULTS.grid },
+        },
+        y: {
+          ticks: {
+            color: CHART_DEFAULTS.color,
+            font: CHART_DEFAULTS.font,
+            precision: 0,
+          },
+          grid: { color: CHART_DEFAULTS.grid },
+          beginAtZero: true,
+        },
+      },
+    },
   });
 }
 
@@ -558,20 +997,36 @@ function _mkBarChart(id, labels, data, colors, horizontal) {
   const ctx = document.getElementById(id);
   if (!ctx) return;
   _analCharts[id] = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: colors,
-      borderRadius: 6, borderSkipped: false }] },
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: colors,
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+      ],
+    },
     options: {
-      indexAxis: horizontal ? 'y' : 'x',
-      responsive: true, maintainAspectRatio: false,
+      indexAxis: horizontal ? "y" : "x",
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: CHART_DEFAULTS.color, font: CHART_DEFAULTS.font },
-             grid: { color: CHART_DEFAULTS.grid }, beginAtZero: true },
-        y: { ticks: { color: CHART_DEFAULTS.color, font: CHART_DEFAULTS.font },
-             grid: { color: CHART_DEFAULTS.grid }, beginAtZero: true }
-      }
-    }
+        x: {
+          ticks: { color: CHART_DEFAULTS.color, font: CHART_DEFAULTS.font },
+          grid: { color: CHART_DEFAULTS.grid },
+          beginAtZero: true,
+        },
+        y: {
+          ticks: { color: CHART_DEFAULTS.color, font: CHART_DEFAULTS.font },
+          grid: { color: CHART_DEFAULTS.grid },
+          beginAtZero: true,
+        },
+      },
+    },
   });
 }
 
@@ -580,141 +1035,226 @@ function _mkDonutChart(id, labels, data, colors) {
   const ctx = document.getElementById(id);
   if (!ctx) return;
   _analCharts[id] = new Chart(ctx, {
-    type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2,
-      borderColor: 'rgba(0,0,0,0.3)', hoverOffset: 6 }] },
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: colors,
+          borderWidth: 2,
+          borderColor: "rgba(0,0,0,0.3)",
+          hoverOffset: 6,
+        },
+      ],
+    },
     options: {
-      responsive: true, maintainAspectRatio: false, cutout: '65%',
-      plugins: { legend: { display: false }, tooltip: { callbacks: {
-        label: ctx => ` ${ctx.label}: ${ctx.parsed} vehículos`
-      }}}
-    }
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "65%",
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.label}: ${ctx.parsed} vehículos`,
+          },
+        },
+      },
+    },
   });
 }
 
 async function cargarMetricas() {
   try {
-    const res  = await apiFetch('/parqueadero/metricas');
+    const res = await apiFetch("/parqueadero/metricas");
     if (!res) return;
     const data = await res.json();
-    if (!data.ok) { showToast(data.message || 'Error cargando análisis', 'error'); return; }
+    if (!data.ok) {
+      showToast(data.message || "Error cargando análisis", "error");
+      return;
+    }
     const { usuarios, vehiculos, registros, picos_hora, por_tipo } = data.data;
 
     // ── KPIs ─────────────────────────────────────────────────────────
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v ?? '0'; };
-    set('met-total-activos',   usuarios.total_activos);
-    set('met-total-vehiculos', vehiculos.total_vehiculos);
-    set('met-reg-hoy',         registros.hoy);
-    set('met-reg-7d',          registros.ultimos_7_dias);
-    set('met-reg-30d',         registros.ultimos_30_dias);
-    set('met-nuevos-hoy',      usuarios.nuevos_hoy);
+    const set = (id, v) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = v ?? "0";
+    };
+    set("met-total-activos", usuarios.total_activos);
+    set("met-total-vehiculos", vehiculos.total_vehiculos);
+    set("met-reg-hoy", registros.hoy);
+    set("met-reg-7d", registros.ultimos_7_dias);
+    set("met-reg-30d", registros.ultimos_30_dias);
+    set("met-nuevos-hoy", usuarios.nuevos_hoy);
 
-    const periodo = parseInt(document.getElementById('anal-periodo')?.value || '30');
-    const labelEl = document.getElementById('anal-periodo-label');
+    const periodo = parseInt(
+      document.getElementById("anal-periodo")?.value || "30",
+    );
+    const labelEl = document.getElementById("anal-periodo-label");
     if (labelEl) labelEl.textContent = `(últimos ${periodo} días)`;
 
     // ── Chart 1: Ingresos por hora (horas pico como histograma 24h) ──
-    const horasLabels = Array.from({length:24},(_,i)=>i.toString().padStart(2,'0')+':00');
-    const horasData   = new Array(24).fill(0);
-    (picos_hora || []).forEach(p => {
+    const horasLabels = Array.from(
+      { length: 24 },
+      (_, i) => i.toString().padStart(2, "0") + ":00",
+    );
+    const horasData = new Array(24).fill(0);
+    (picos_hora || []).forEach((p) => {
       const h = parseInt(p.hora);
       if (h >= 0 && h < 24) horasData[h] = Number(p.total) || 0;
     });
     const maxHora = Math.max(...horasData) || 1;
-    const horaColors = horasData.map(v => {
+    const horaColors = horasData.map((v) => {
       const pct = v / maxHora;
-      if (pct > 0.75) return 'rgba(255,100,80,0.85)';
-      if (pct > 0.4)  return 'rgba(255,193,7,0.75)';
-      return 'rgba(33,150,243,0.6)';
+      if (pct > 0.75) return "rgba(255,100,80,0.85)";
+      if (pct > 0.4) return "rgba(255,193,7,0.75)";
+      return "rgba(33,150,243,0.6)";
     });
-    _mkBarChart('chartAnalHora', horasLabels, horasData, horaColors, false);
+    _mkBarChart("chartAnalHora", horasLabels, horasData, horaColors, false);
 
     // ── Chart 2: Ingresos diarios — usando datos reales del backend ──────
     const { ingresos_diarios = [], por_dia_semana = [] } = data.data;
-    const diaNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const diaNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
     let diasLabels, diasData;
     if (ingresos_diarios.length) {
       // Datos reales: mostrar últimos 30 días
-      diasLabels = ingresos_diarios.map(d => {
+      diasLabels = ingresos_diarios.map((d) => {
         const fecha = new Date(d.dia);
-        return `${fecha.getDate()}/${fecha.getMonth()+1}`;
+        return `${fecha.getDate()}/${fecha.getMonth() + 1}`;
       });
-      diasData = ingresos_diarios.map(d => Number(d.total) || 0);
+      diasData = ingresos_diarios.map((d) => Number(d.total) || 0);
     } else {
       // Fallback con datos disponibles
       const hoy = new Date();
-      diasLabels = []; diasData = [];
+      diasLabels = [];
+      diasData = [];
       const total7d = Number(registros.ultimos_7_dias) || 0;
       const weights = [0.08, 0.16, 0.17, 0.18, 0.17, 0.16, 0.08];
       for (let i = 6; i >= 0; i--) {
-        const d = new Date(hoy); d.setDate(hoy.getDate() - i);
-        diasLabels.push(i === 0 ? 'Hoy' : i === 1 ? 'Ayer' : diaNames[d.getDay()]);
-        diasData.push(i === 0 ? (Number(registros.hoy)||0) : Math.round(total7d * weights[d.getDay()]));
+        const d = new Date(hoy);
+        d.setDate(hoy.getDate() - i);
+        diasLabels.push(
+          i === 0 ? "Hoy" : i === 1 ? "Ayer" : diaNames[d.getDay()],
+        );
+        diasData.push(
+          i === 0
+            ? Number(registros.hoy) || 0
+            : Math.round(total7d * weights[d.getDay()]),
+        );
       }
     }
-    _mkLineChart('chartAnalDias', diasLabels, diasData, 'Ingresos', 'rgb(47,164,64)');
+    _mkLineChart(
+      "chartAnalDias",
+      diasLabels,
+      diasData,
+      "Ingresos",
+      "rgb(47,164,64)",
+    );
 
     // ── Chart 3: Donut vehículos ──────────────────────────────────────
-    const vColores = ['#42a5f5','#66bb6a','#ffa726','#ab47bc','#ef5350','#78909c'];
-    const vLabels  = (por_tipo||[]).map(t=>t.tipo);
-    const vData    = (por_tipo||[]).map(t=>Number(t.total)||0);
-    const vColors  = vLabels.map((_,i)=>vColores[i%vColores.length]);
-    _mkDonutChart('chartAnalDonut', vLabels, vData, vColors);
+    const vColores = [
+      "#42a5f5",
+      "#66bb6a",
+      "#ffa726",
+      "#ab47bc",
+      "#ef5350",
+      "#78909c",
+    ];
+    const vLabels = (por_tipo || []).map((t) => t.tipo);
+    const vData = (por_tipo || []).map((t) => Number(t.total) || 0);
+    const vColors = vLabels.map((_, i) => vColores[i % vColores.length]);
+    _mkDonutChart("chartAnalDonut", vLabels, vData, vColors);
 
     // Leyenda manual del donut
-    const totalVeh = vData.reduce((a,b)=>a+b,0)||1;
-    const legendEl = document.getElementById('anal-donut-legend');
-    if (legendEl) legendEl.innerHTML = vLabels.map((l,i) => {
-      const pct = Math.round(vData[i]/totalVeh*100);
-      return `<div style="display:flex;align-items:center;gap:8px;">
+    const totalVeh = vData.reduce((a, b) => a + b, 0) || 1;
+    const legendEl = document.getElementById("anal-donut-legend");
+    if (legendEl)
+      legendEl.innerHTML = vLabels
+        .map((l, i) => {
+          const pct = Math.round((vData[i] / totalVeh) * 100);
+          return `<div style="display:flex;align-items:center;gap:8px;">
         <span style="width:10px;height:10px;border-radius:50%;background:${vColors[i]};flex-shrink:0;"></span>
         <span style="font-size:12px;color:rgba(255,255,255,0.7);flex:1;">${l}</span>
         <span style="font-size:12px;font-weight:600;color:#fff;">${pct}%</span>
       </div>`;
-    }).join('');
+        })
+        .join("");
 
     // ── Chart 4: Roles barras horizontales ───────────────────────────
     const rolesDef = [
-      { label:'Aprendices',   val: parseInt(usuarios.aprendices)   || 0, color:'rgba(33,150,243,0.75)'  },
-      { label:'Funcionarios', val: parseInt(usuarios.funcionarios) || 0, color:'rgba(76,175,80,0.75)'   },
-      { label:'Instructores', val: parseInt(usuarios.instructores) || 0, color:'rgba(156,39,176,0.75)'  },
-      { label:'Operarios', val: parseInt(usuarios.guardias)   || 0, color:'rgba(255,152,0,0.75)'   },
+      {
+        label: "Aprendices",
+        val: parseInt(usuarios.aprendices) || 0,
+        color: "rgba(33,150,243,0.75)",
+      },
+      {
+        label: "Funcionarios",
+        val: parseInt(usuarios.funcionarios) || 0,
+        color: "rgba(76,175,80,0.75)",
+      },
+      {
+        label: "Instructores",
+        val: parseInt(usuarios.instructores) || 0,
+        color: "rgba(156,39,176,0.75)",
+      },
+      {
+        label: "Operarios",
+        val: parseInt(usuarios.guardias) || 0,
+        color: "rgba(255,152,0,0.75)",
+      },
     ];
-    _mkBarChart('chartAnalRoles',
-      rolesDef.map(r=>r.label),
-      rolesDef.map(r=>r.val),
-      rolesDef.map(r=>r.color),
-      true
+    _mkBarChart(
+      "chartAnalRoles",
+      rolesDef.map((r) => r.label),
+      rolesDef.map((r) => r.val),
+      rolesDef.map((r) => r.color),
+      true,
     );
 
     // ── Chart 5: Día de la semana — datos reales (dow 0=Dom … 6=Sáb) ────
-    const semDays = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    const semDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
     // dow: 0=Dom,1=Lun,...,6=Sáb  →  reordenar a Lun-Dom
     const dowMap = new Array(7).fill(0);
-    por_dia_semana.forEach(r => { dowMap[Number(r.dow)] = Number(r.total)||0; });
+    por_dia_semana.forEach((r) => {
+      dowMap[Number(r.dow)] = Number(r.total) || 0;
+    });
     // Reordenar: Lun(1),Mar(2),Mié(3),Jue(4),Vie(5),Sáb(6),Dom(0)
-    const semData = [1,2,3,4,5,6,0].map(i => dowMap[i]);
-    const semHasData = semData.some(v => v > 0);
-    const semDataFinal = semHasData ? semData : (() => {
-      const total30 = Number(registros.ultimos_30_dias)||0;
-      return [0.19,0.19,0.19,0.19,0.15,0.05,0.04].map(w => Math.round(total30*w/4));
-    })();
-    _mkBarChart('chartAnalSemana', semDays, semDataFinal,
-      semDays.map((_,i)=> i < 5 ? 'rgba(47,164,64,0.7)' : 'rgba(255,152,0,0.6)'),
-      false);
+    const semData = [1, 2, 3, 4, 5, 6, 0].map((i) => dowMap[i]);
+    const semHasData = semData.some((v) => v > 0);
+    const semDataFinal = semHasData
+      ? semData
+      : (() => {
+          const total30 = Number(registros.ultimos_30_dias) || 0;
+          return [0.19, 0.19, 0.19, 0.19, 0.15, 0.05, 0.04].map((w) =>
+            Math.round((total30 * w) / 4),
+          );
+        })();
+    _mkBarChart(
+      "chartAnalSemana",
+      semDays,
+      semDataFinal,
+      semDays.map((_, i) =>
+        i < 5 ? "rgba(47,164,64,0.7)" : "rgba(255,152,0,0.6)",
+      ),
+      false,
+    );
 
     // ── Horas pico ranking ────────────────────────────────────────────
-    const picoEl = document.getElementById('anal-picos-list');
+    const picoEl = document.getElementById("anal-picos-list");
     if (picoEl) {
-      const sorted = [...(picos_hora||[])].sort((a,b)=>Number(b.total)-Number(a.total)).slice(0,5);
+      const sorted = [...(picos_hora || [])]
+        .sort((a, b) => Number(b.total) - Number(a.total))
+        .slice(0, 5);
       if (!sorted.length) {
-        picoEl.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:13px;text-align:center;padding:20px;">Sin datos suficientes</p>';
+        picoEl.innerHTML =
+          '<p style="color:rgba(255,255,255,0.3);font-size:13px;text-align:center;padding:20px;">Sin datos suficientes</p>';
       } else {
         const maxVal = Number(sorted[0].total) || 1;
-        const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
-        picoEl.innerHTML = sorted.map((p,i) => {
-          const pct = Math.round(Number(p.total)/maxVal*100);
-          return `<div class="anal-pico-row">
+        const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
+        picoEl.innerHTML = sorted
+          .map((p, i) => {
+            const pct = Math.round((Number(p.total) / maxVal) * 100);
+            return `<div class="anal-pico-row">
             <span class="anal-pico-rank">${medals[i]}</span>
             <div class="anal-pico-info">
               <div class="anal-pico-hora">${fmtHora(p.hora)}</div>
@@ -725,55 +1265,64 @@ async function cargarMetricas() {
             </div>
             <span class="anal-pico-count">${p.total}</span>
           </div>`;
-        }).join('');
+          })
+          .join("");
       }
     }
 
     // ── Tabla vehículos detallada ─────────────────────────────────────
-    const vehTbody = document.getElementById('anal-veh-tbody');
+    const vehTbody = document.getElementById("anal-veh-tbody");
     if (vehTbody) {
-      const tvTotal = vData.reduce((a,b)=>a+b,0)||1;
-      vehTbody.innerHTML = (por_tipo||[]).map((t,i) => {
-        const pct = Math.round(Number(t.total)/tvTotal*100);
-        return `<tr>
+      const tvTotal = vData.reduce((a, b) => a + b, 0) || 1;
+      vehTbody.innerHTML =
+        (por_tipo || [])
+          .map((t, i) => {
+            const pct = Math.round((Number(t.total) / tvTotal) * 100);
+            return `<tr>
           <td><span style="display:inline-flex;align-items:center;gap:6px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:${vColors[i]||'#78909c'};"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:${vColors[i] || "#78909c"};"></span>
             ${t.tipo}
           </span></td>
           <td>${t.total}</td>
           <td>${pct}%</td>
           <td><div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.07);overflow:hidden;">
-            <div style="height:100%;width:${pct}%;background:${vColors[i]||'#78909c'};border-radius:3px;"></div>
+            <div style="height:100%;width:${pct}%;background:${vColors[i] || "#78909c"};border-radius:3px;"></div>
           </div></td>
         </tr>`;
-      }).join('') || '<tr><td colspan="4" style="text-align:center;opacity:.4;padding:20px;">Sin datos</td></tr>';
+          })
+          .join("") ||
+        '<tr><td colspan="4" style="text-align:center;opacity:.4;padding:20px;">Sin datos</td></tr>';
     }
-
-  } catch (e) { console.warn('analisis:', e); showToast('Error cargando análisis.', 'error'); }
+  } catch (e) {
+    console.warn("analisis:", e);
+    showToast("Error cargando análisis.", "error");
+  }
 }
 
-
 async function cargarAlertas() {
-  const cont = document.getElementById('alertas-container');
+  const cont = document.getElementById("alertas-container");
   if (!cont) return;
   cont.innerHTML = `<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.4);">
     <i class="bi bi-hourglass-split" style="font-size:28px;display:block;margin-bottom:10px;"></i>Verificando sistema...
   </div>`;
   try {
-    const res  = await apiFetch('/parqueadero/alertas');
+    const res = await apiFetch("/parqueadero/alertas");
     if (!res) return;
     const data = await res.json();
-    if (!data.ok) { cont.innerHTML = `<div style="padding:20px;color:#ef9a9a;">${data.message}</div>`; return; }
+    if (!data.ok) {
+      cont.innerHTML = `<div style="padding:20px;color:#ef9a9a;">${data.message}</div>`;
+      return;
+    }
     const { alertas } = data.data;
 
     // Badge en nav
-    const badge = document.getElementById('nav-alert-badge');
+    const badge = document.getElementById("nav-alert-badge");
     if (badge) {
       if (alertas.length > 0) {
-        badge.style.display = 'flex';
-        badge.textContent   = alertas.length > 9 ? '9+' : alertas.length;
+        badge.style.display = "flex";
+        badge.textContent = alertas.length > 9 ? "9+" : alertas.length;
       } else {
-        badge.style.display = 'none';
+        badge.style.display = "none";
       }
     }
 
@@ -787,39 +1336,69 @@ async function cargarAlertas() {
     }
 
     const nivelCfg = {
-      critico:      { color:'#ef5350', bg:'rgba(239,83,80,0.12)', border:'rgba(239,83,80,0.35)', icon:'bi-exclamation-triangle-fill' },
-      advertencia:  { color:'#ffa726', bg:'rgba(255,167,38,0.10)', border:'rgba(255,167,38,0.30)', icon:'bi-exclamation-circle-fill' },
-      info:         { color:'#42a5f5', bg:'rgba(66,165,245,0.08)', border:'rgba(66,165,245,0.25)', icon:'bi-clock-history' },
+      critico: {
+        color: "#ef5350",
+        bg: "rgba(239,83,80,0.12)",
+        border: "rgba(239,83,80,0.35)",
+        icon: "bi-exclamation-triangle-fill",
+      },
+      advertencia: {
+        color: "#ffa726",
+        bg: "rgba(255,167,38,0.10)",
+        border: "rgba(255,167,38,0.30)",
+        icon: "bi-exclamation-circle-fill",
+      },
+      info: {
+        color: "#42a5f5",
+        bg: "rgba(66,165,245,0.08)",
+        border: "rgba(66,165,245,0.25)",
+        icon: "bi-clock-history",
+      },
     };
 
     cont.innerHTML = `
       <div style="display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;">
-        ${['critico','advertencia','info'].map(n => {
-          const c = alertas.filter(a=>a.nivel===n).length;
-          const cfg = nivelCfg[n];
-          return `<div style="padding:12px 20px;border-radius:12px;background:${cfg.bg};border:1px solid ${cfg.border};display:flex;align-items:center;gap:10px;">
+        ${["critico", "advertencia", "info"]
+          .map((n) => {
+            const c = alertas.filter((a) => a.nivel === n).length;
+            const cfg = nivelCfg[n];
+            return `<div style="padding:12px 20px;border-radius:12px;background:${cfg.bg};border:1px solid ${cfg.border};display:flex;align-items:center;gap:10px;">
             <i class="bi ${cfg.icon}" style="color:${cfg.color};font-size:18px;"></i>
             <div><div style="font-size:20px;font-weight:700;color:#fff;">${c}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.45);">${n.charAt(0).toUpperCase()+n.slice(1)}</div></div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45);">${n.charAt(0).toUpperCase() + n.slice(1)}</div></div>
           </div>`;
-        }).join('')}
+          })
+          .join("")}
       </div>
       <div style="display:flex;flex-direction:column;gap:12px;">
-        ${alertas.map(a => {
-          const cfg = nivelCfg[a.nivel] || nivelCfg.info;
-          const hora = a.detalle?.fecha_entrada ? fmtDT(a.detalle.fecha_entrada) : '';
-          const horas = a.detalle?.horas_dentro ? Math.floor(a.detalle.horas_dentro)+'h '+(Math.round((a.detalle.horas_dentro%1)*60))+'m' : '';
-          return `<div style="padding:16px 20px;border-radius:14px;background:${cfg.bg};border:1px solid ${cfg.border};display:flex;align-items:flex-start;gap:14px;">
+        ${alertas
+          .map((a) => {
+            const cfg = nivelCfg[a.nivel] || nivelCfg.info;
+            const hora = a.detalle?.fecha_entrada
+              ? fmtDT(a.detalle.fecha_entrada)
+              : "";
+            const horas = a.detalle?.horas_dentro
+              ? Math.floor(a.detalle.horas_dentro) +
+                "h " +
+                Math.round((a.detalle.horas_dentro % 1) * 60) +
+                "m"
+              : "";
+            return `<div style="padding:16px 20px;border-radius:14px;background:${cfg.bg};border:1px solid ${cfg.border};display:flex;align-items:flex-start;gap:14px;">
             <i class="bi ${cfg.icon}" style="color:${cfg.color};font-size:22px;margin-top:2px;flex-shrink:0;"></i>
             <div style="flex:1;min-width:0;">
               <div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:4px;">${a.titulo}</div>
               <div style="font-size:13px;color:rgba(255,255,255,0.6);">${a.descripcion}</div>
-              ${hora ? `<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:5px;"><i class="bi bi-clock"></i> Entró: ${hora}${horas?' — lleva '+horas:''}</div>` : ''}
+              ${hora ? `<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:5px;"><i class="bi bi-clock"></i> Entró: ${hora}${horas ? " — lleva " + horas : ""}</div>` : ""}
             </div>
           </div>`;
-        }).join('')}
+          })
+          .join("")}
       </div>`;
-  } catch (e) { console.warn('alertas:', e); cont.innerHTML = '<div style="padding:20px;color:#ef9a9a;">Error de conexión.</div>'; }
+  } catch (e) {
+    console.warn("alertas:", e);
+    cont.innerHTML =
+      '<div style="padding:20px;color:#ef9a9a;">Error de conexión.</div>';
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -828,116 +1407,207 @@ async function cargarAlertas() {
 let expRegistros = [];
 
 async function previewExportar() {
-  const desde = document.getElementById('exp-desde')?.value;
-  const hasta = document.getElementById('exp-hasta')?.value;
-  if (!desde || !hasta) { showToast('Selecciona el rango de fechas.', 'error'); return; }
-  if (desde > hasta)    { showToast('La fecha "desde" debe ser anterior a "hasta".', 'error'); return; }
-  const preview = document.getElementById('exp-preview');
-  const tbody   = document.getElementById('exp-tbody');
-  const count   = document.getElementById('exp-count');
-  const title   = document.getElementById('exp-preview-title');
-  if (tbody) tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;opacity:.5;"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>`;
-  if (preview) preview.style.display = 'block';
+  const desde = document.getElementById("exp-desde")?.value;
+  const hasta = document.getElementById("exp-hasta")?.value;
+  if (!desde || !hasta) {
+    showToast("Selecciona el rango de fechas.", "error");
+    return;
+  }
+  if (desde > hasta) {
+    showToast('La fecha "desde" debe ser anterior a "hasta".', "error");
+    return;
+  }
+  const preview = document.getElementById("exp-preview");
+  const tbody = document.getElementById("exp-tbody");
+  const count = document.getElementById("exp-count");
+  const title = document.getElementById("exp-preview-title");
+  if (tbody)
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;opacity:.5;"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>`;
+  if (preview) preview.style.display = "block";
   try {
-    const res  = await apiFetch(`/parqueadero/exportar?desde=${desde}&hasta=${hasta}`);
+    const res = await apiFetch(
+      `/parqueadero/exportar?desde=${desde}&hasta=${hasta}`,
+    );
     if (!res) return;
     const data = await res.json();
-    if (!data.ok) { showToast(data.message || 'Error al obtener datos.', 'error'); if(preview) preview.style.display='none'; return; }
+    if (!data.ok) {
+      showToast(data.message || "Error al obtener datos.", "error");
+      if (preview) preview.style.display = "none";
+      return;
+    }
     expRegistros = data.data;
-    if (title) title.textContent = `Registros del ${desde} al ${hasta} (${expRegistros.length})`;
-    if (count) count.textContent = `${expRegistros.length} registros encontrados`;
+    if (title)
+      title.textContent = `Registros del ${desde} al ${hasta} (${expRegistros.length})`;
+    if (count)
+      count.textContent = `${expRegistros.length} registros encontrados`;
     if (!tbody) return;
     if (!expRegistros.length) {
       tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;opacity:.5;">Sin registros en ese rango</td></tr>`;
       return;
     }
-    tbody.innerHTML = expRegistros.map((r,i) => `<tr>
-      <td>${i+1}</td>
-      <td>${r.nombre_completo||'—'}</td>
-      <td style="font-size:11px;">${r.tipo_id||''} ${r.numero_id||''}</td>
-      <td>${r.tipo_vehiculo||'—'}</td>
-      <td style="font-size:11px;">${r.identificador||'—'} ${r.color?'· '+r.color:''}</td>
-      <td>${r.lado||'—'}</td>
+    tbody.innerHTML = expRegistros
+      .map(
+        (r, i) => `<tr>
+      <td>${i + 1}</td>
+      <td>${r.nombre_completo || "—"}</td>
+      <td style="font-size:11px;">${r.tipo_id || ""} ${r.numero_id || ""}</td>
+      <td>${r.tipo_vehiculo || "—"}</td>
+      <td style="font-size:11px;">${r.identificador || "—"} ${r.color ? "· " + r.color : ""}</td>
+      <td>${r.lado || "—"}</td>
       <td style="font-size:11px;">${fmtDT(r.fecha_entrada)}</td>
       <td style="font-size:11px;">${fmtDT(r.fecha_salida)}</td>
       <td>${fmtDur(r.duracion_min)}</td>
-      <td>${r.estado==='completado'?'<span class="event-badge in">Completado</span>':'<span class="event-badge out">En curso</span>'}</td>
-    </tr>`).join('');
-  } catch (e) { console.warn('exportar preview:', e); showToast('Error de conexión.', 'error'); }
+      <td>${r.estado === "completado" ? '<span class="event-badge in">Completado</span>' : '<span class="event-badge out">En curso</span>'}</td>
+    </tr>`,
+      )
+      .join("");
+  } catch (e) {
+    console.warn("exportar preview:", e);
+    showToast("Error de conexión.", "error");
+  }
 }
 
 function exportarCSV() {
-  if (!expRegistros.length) { showToast('Primero previsualiza los datos.', 'error'); return; }
-  const cols = ['#','Nombre','Documento','Rol','Tipo Vehículo','Identificador','Color','Lado','Entrada','Salida','Duración (min)','Estado'];
-  const rows = expRegistros.map((r,i) => [
-    i+1, r.nombre_completo||'', `${r.tipo_id||''} ${r.numero_id||''}`.trim(), r.rol||'',
-    r.tipo_vehiculo||'', r.identificador||'', r.color||'', r.lado||'',
-    r.fecha_entrada ? new Date(r.fecha_entrada).toLocaleString('es-CO',{timeZone:'America/Bogota'}) : '',
-    r.fecha_salida  ? new Date(r.fecha_salida).toLocaleString('es-CO',{timeZone:'America/Bogota'})  : '',
-    r.duracion_min != null ? Math.round(r.duracion_min) : '',
-    r.estado==='completado' ? 'Completado' : 'En curso',
+  if (!expRegistros.length) {
+    showToast("Primero previsualiza los datos.", "error");
+    return;
+  }
+  const cols = [
+    "#",
+    "Nombre",
+    "Documento",
+    "Rol",
+    "Tipo Vehículo",
+    "Identificador",
+    "Color",
+    "Lado",
+    "Entrada",
+    "Salida",
+    "Duración (min)",
+    "Estado",
+  ];
+  const rows = expRegistros.map((r, i) => [
+    i + 1,
+    r.nombre_completo || "",
+    `${r.tipo_id || ""} ${r.numero_id || ""}`.trim(),
+    r.rol || "",
+    r.tipo_vehiculo || "",
+    r.identificador || "",
+    r.color || "",
+    r.lado || "",
+    r.fecha_entrada
+      ? new Date(r.fecha_entrada).toLocaleString("es-CO", {
+          timeZone: "America/Bogota",
+        })
+      : "",
+    r.fecha_salida
+      ? new Date(r.fecha_salida).toLocaleString("es-CO", {
+          timeZone: "America/Bogota",
+        })
+      : "",
+    r.duracion_min != null ? Math.round(r.duracion_min) : "",
+    r.estado === "completado" ? "Completado" : "En curso",
   ]);
-  const csv = [cols, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
+  const csv = [cols, ...rows]
+    .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `Parksmart_${document.getElementById('exp-desde')?.value}_${document.getElementById('exp-hasta')?.value}.csv`;
+  a.download = `Parksmart_${document.getElementById("exp-desde")?.value}_${document.getElementById("exp-hasta")?.value}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
-  showToast('CSV descargado', 'success');
+  showToast("CSV descargado", "success");
 }
 
 function exportarExcelRango() {
-  if (!expRegistros.length) { showToast('Primero previsualiza los datos.', 'error'); return; }
-  const desde = document.getElementById('exp-desde')?.value || '';
-  const hasta = document.getElementById('exp-hasta')?.value || '';
-  const cols  = ['#','Nombre','Documento','Rol','Tipo Vehículo','Identificador','Color','Lado','Entrada','Salida','Duración','Estado'];
-  const rows  = expRegistros.map((r,i) => [
-    i+1, r.nombre_completo||'—', `${r.tipo_id||''} ${r.numero_id||''}`.trim(), r.rol||'—',
-    r.tipo_vehiculo||'—', r.identificador||'—', r.color||'—', r.lado||'—',
-    r.fecha_entrada ? new Date(r.fecha_entrada).toLocaleString('es-CO',{timeZone:'America/Bogota'}) : '—',
-    r.fecha_salida  ? new Date(r.fecha_salida).toLocaleString('es-CO',{timeZone:'America/Bogota'})  : '—',
+  if (!expRegistros.length) {
+    showToast("Primero previsualiza los datos.", "error");
+    return;
+  }
+  const desde = document.getElementById("exp-desde")?.value || "";
+  const hasta = document.getElementById("exp-hasta")?.value || "";
+  const cols = [
+    "#",
+    "Nombre",
+    "Documento",
+    "Rol",
+    "Tipo Vehículo",
+    "Identificador",
+    "Color",
+    "Lado",
+    "Entrada",
+    "Salida",
+    "Duración",
+    "Estado",
+  ];
+  const rows = expRegistros.map((r, i) => [
+    i + 1,
+    r.nombre_completo || "—",
+    `${r.tipo_id || ""} ${r.numero_id || ""}`.trim(),
+    r.rol || "—",
+    r.tipo_vehiculo || "—",
+    r.identificador || "—",
+    r.color || "—",
+    r.lado || "—",
+    r.fecha_entrada
+      ? new Date(r.fecha_entrada).toLocaleString("es-CO", {
+          timeZone: "America/Bogota",
+        })
+      : "—",
+    r.fecha_salida
+      ? new Date(r.fecha_salida).toLocaleString("es-CO", {
+          timeZone: "America/Bogota",
+        })
+      : "—",
     fmtDur(r.duracion_min),
-    r.estado==='completado' ? 'Completado' : 'En curso',
+    r.estado === "completado" ? "Completado" : "En curso",
   ]);
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
     <head><meta charset="UTF-8"></head><body><table>
     <tr><td colspan="${cols.length}" style="background:#4a148c;color:#fff;font-size:15pt;font-weight:700;padding:10pt;">
       Parksmart — Registros ${desde} al ${hasta}
     </td></tr>
-    <tr>${cols.map(c=>`<td style="background:#6a1b9a;color:#fff;font-weight:700;padding:7pt 10pt;">${c}</td>`).join('')}</tr>
-    ${rows.map(r=>`<tr>${r.map(v=>`<td style="padding:6pt 10pt;border:0.5pt solid #e1bee7;">${v}</td>`).join('')}</tr>`).join('')}
+    <tr>${cols.map((c) => `<td style="background:#6a1b9a;color:#fff;font-weight:700;padding:7pt 10pt;">${c}</td>`).join("")}</tr>
+    ${rows.map((r) => `<tr>${r.map((v) => `<td style="padding:6pt 10pt;border:0.5pt solid #e1bee7;">${v}</td>`).join("")}</tr>`).join("")}
     </table></body></html>`;
-  const blob = new Blob(['\uFEFF'+html], {type:'application/vnd.ms-excel;charset=utf-8'});
-  const a = document.createElement('a');
+  const blob = new Blob(["\uFEFF" + html], {
+    type: "application/vnd.ms-excel;charset=utf-8",
+  });
+  const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `Parksmart_${desde}_${hasta}.xls`;
   a.click();
   URL.revokeObjectURL(a.href);
-  showToast('Excel descargado', 'success');
+  showToast("Excel descargado", "success");
 }
 
 // ══ showSection extendido — ver bloque showSection arriba para módulos nuevos ══
 
 // Cargar alertas al inicio para mostrar el badge en el nav
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   cargarAlertas();
   // Poner fecha de hoy por defecto en exportar
-  const hoy = new Date().toISOString().slice(0,10);
-  const expHasta = document.getElementById('exp-hasta');
-  const expDesde = document.getElementById('exp-desde');
+  const hoy = new Date().toISOString().slice(0, 10);
+  const expHasta = document.getElementById("exp-hasta");
+  const expDesde = document.getElementById("exp-desde");
   if (expHasta) expHasta.value = hoy;
   if (expDesde) {
-    const d = new Date(); d.setDate(d.getDate()-7);
-    expDesde.value = d.toISOString().slice(0,10);
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    expDesde.value = d.toISOString().slice(0, 10);
   }
   setInterval(cargarAlertas, 300000); // refrescar alertas cada 5 min
   // Fechas por defecto en auditoría (últimos 7 días)
-  const audHoy = new Date().toISOString().slice(0,10);
-  const audHasta = document.getElementById('aud-hasta');
-  const audDesde = document.getElementById('aud-desde');
+  const audHoy = new Date().toISOString().slice(0, 10);
+  const audHasta = document.getElementById("aud-hasta");
+  const audDesde = document.getElementById("aud-desde");
   if (audHasta) audHasta.value = audHoy;
-  if (audDesde) { const d7 = new Date(); d7.setDate(d7.getDate()-7); audDesde.value = d7.toISOString().slice(0,10); }
+  if (audDesde) {
+    const d7 = new Date();
+    d7.setDate(d7.getDate() - 7);
+    audDesde.value = d7.toISOString().slice(0, 10);
+  }
 });
 
 // ═══════════════════════════════════════════════
@@ -948,34 +1618,49 @@ const AUD_PER_PAGE = 30;
 let _audPage = 1;
 
 const AUD_TIPO_CFG = {
-  entrada:  { icon:'bi-box-arrow-in-right', color:'#42a5f5', label:'Entrada'   },
-  salida:   { icon:'bi-box-arrow-right',    color:'#66bb6a', label:'Salida'    },
-  registro: { icon:'bi-person-plus-fill',   color:'#ce93d8', label:'Registro'  },
-  rol:      { icon:'bi-shuffle',            color:'#ffa726', label:'Cambio Rol'},
-  toggle:   { icon:'bi-toggle2-on',         color:'#78909c', label:'Activar/Des'},
+  entrada: {
+    icon: "bi-box-arrow-in-right",
+    color: "#42a5f5",
+    label: "Entrada",
+  },
+  salida: { icon: "bi-box-arrow-right", color: "#66bb6a", label: "Salida" },
+  registro: {
+    icon: "bi-person-plus-fill",
+    color: "#ce93d8",
+    label: "Registro",
+  },
+  rol: { icon: "bi-shuffle", color: "#ffa726", label: "Cambio Rol" },
+  toggle: { icon: "bi-toggle2-on", color: "#78909c", label: "Activar/Des" },
 };
 
 async function cargarAuditoria() {
-  const desde = document.getElementById('aud-desde')?.value;
-  const hasta  = document.getElementById('aud-hasta')?.value;
-  const tipo   = document.getElementById('aud-filtro-tipo')?.value || '';
-  const q      = document.getElementById('aud-buscar')?.value || '';
-  const tbody  = document.getElementById('aud-tbody');
-  if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;opacity:.45;"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>`;
+  const desde = document.getElementById("aud-desde")?.value;
+  const hasta = document.getElementById("aud-hasta")?.value;
+  const tipo = document.getElementById("aud-filtro-tipo")?.value || "";
+  const q = document.getElementById("aud-buscar")?.value || "";
+  const tbody = document.getElementById("aud-tbody");
+  if (tbody)
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;opacity:.45;"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>`;
   try {
-    let url = '/parqueadero/auditoria?';
+    let url = "/parqueadero/auditoria?";
     if (desde) url += `desde=${desde}&`;
-    if (hasta)  url += `hasta=${hasta}&`;
-    if (tipo)   url += `tipo=${tipo}&`;
+    if (hasta) url += `hasta=${hasta}&`;
+    if (tipo) url += `tipo=${tipo}&`;
     if (q.trim().length >= 2) url += `q=${encodeURIComponent(q.trim())}`;
-    const res  = await apiFetch(url);
+    const res = await apiFetch(url);
     if (!res) return;
     const data = await res.json();
-    if (!data.ok) { showToast(data.message || 'Error cargando auditoría', 'error'); return; }
+    if (!data.ok) {
+      showToast(data.message || "Error cargando auditoría", "error");
+      return;
+    }
     _audRegistros = data.data;
     _audPage = 1;
     renderAuditoria();
-  } catch (e) { console.warn('auditoria:', e); showToast('Error de conexión.', 'error'); }
+  } catch (e) {
+    console.warn("auditoria:", e);
+    showToast("Error de conexión.", "error");
+  }
 }
 
 function filtrarAuditoria() {
@@ -984,36 +1669,43 @@ function filtrarAuditoria() {
 }
 
 function renderAuditoria() {
-  const tbody    = document.getElementById('aud-tbody');
-  const countEl  = document.getElementById('aud-count');
-  const pageInfo = document.getElementById('aud-page-info');
-  const pageBtns = document.getElementById('aud-page-btns');
+  const tbody = document.getElementById("aud-tbody");
+  const countEl = document.getElementById("aud-count");
+  const pageInfo = document.getElementById("aud-page-info");
+  const pageBtns = document.getElementById("aud-page-btns");
   if (!tbody) return;
 
-  const total   = _audRegistros.length;
-  const pages   = Math.max(1, Math.ceil(total / AUD_PER_PAGE));
-  _audPage      = Math.min(_audPage, pages);
-  const start   = (_audPage - 1) * AUD_PER_PAGE;
-  const slice   = _audRegistros.slice(start, start + AUD_PER_PAGE);
+  const total = _audRegistros.length;
+  const pages = Math.max(1, Math.ceil(total / AUD_PER_PAGE));
+  _audPage = Math.min(_audPage, pages);
+  const start = (_audPage - 1) * AUD_PER_PAGE;
+  const slice = _audRegistros.slice(start, start + AUD_PER_PAGE);
 
-  if (countEl)  countEl.textContent  = total + ' eventos';
-  if (pageInfo) pageInfo.textContent = `Página ${_audPage} de ${pages} · ${total} resultados`;
+  if (countEl) countEl.textContent = total + " eventos";
+  if (pageInfo)
+    pageInfo.textContent = `Página ${_audPage} de ${pages} · ${total} resultados`;
 
   if (!slice.length) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;opacity:.4;"><i class="bi bi-journal-x" style="font-size:28px;display:block;margin-bottom:10px;"></i>Sin eventos en este rango</td></tr>`;
   } else {
-    tbody.innerHTML = slice.map(e => {
-      const cfg   = AUD_TIPO_CFG[e.tipo_accion] || { icon:'bi-dot', color:'#aaa', label: e.tipo_accion };
-      const fecha = fmtDT(e.fecha);
-      const rolBadge = e.actor_rol && e.actor_rol !== 'sistema'
-        ? `<span style="font-size:10px;padding:1px 7px;border-radius:20px;background:${SA_ROL_COLORS[e.actor_rol]||'#555'}22;color:${SA_ROL_COLORS[e.actor_rol]||'#aaa'};border:0.5px solid ${SA_ROL_COLORS[e.actor_rol]||'#555'}44;">${SA_ROL_LABELS[e.actor_rol]||e.actor_rol}</span>`
-        : '';
-      return `<tr>
+    tbody.innerHTML = slice
+      .map((e) => {
+        const cfg = AUD_TIPO_CFG[e.tipo_accion] || {
+          icon: "bi-dot",
+          color: "#aaa",
+          label: e.tipo_accion,
+        };
+        const fecha = fmtDT(e.fecha);
+        const rolBadge =
+          e.actor_rol && e.actor_rol !== "sistema"
+            ? `<span style="font-size:10px;padding:1px 7px;border-radius:20px;background:${SA_ROL_COLORS[e.actor_rol] || "#555"}22;color:${SA_ROL_COLORS[e.actor_rol] || "#aaa"};border:0.5px solid ${SA_ROL_COLORS[e.actor_rol] || "#555"}44;">${SA_ROL_LABELS[e.actor_rol] || e.actor_rol}</span>`
+            : "";
+        return `<tr>
         <td style="font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">${fecha}</td>
         <td>
-          <div style="font-size:13px;color:#fff;">${e.actor||'—'}</div>
+          <div style="font-size:13px;color:#fff;">${e.actor || "—"}</div>
           <div style="display:flex;gap:5px;align-items:center;margin-top:2px;">
-            ${e.actor_doc ? `<span style="font-size:11px;color:rgba(255,255,255,0.35);">${e.actor_doc}</span>` : ''}
+            ${e.actor_doc ? `<span style="font-size:11px;color:rgba(255,255,255,0.35);">${e.actor_doc}</span>` : ""}
             ${rolBadge}
           </div>
         </td>
@@ -1022,20 +1714,25 @@ function renderAuditoria() {
             <i class="bi ${cfg.icon}"></i> ${cfg.label}
           </span>
         </td>
-        <td style="font-size:13px;color:rgba(255,255,255,0.8);">${e.afectado||'—'}</td>
-        <td style="font-size:12px;color:rgba(255,255,255,0.45);">${e.detalle||'—'}</td>
+        <td style="font-size:13px;color:rgba(255,255,255,0.8);">${e.afectado || "—"}</td>
+        <td style="font-size:12px;color:rgba(255,255,255,0.45);">${e.detalle || "—"}</td>
       </tr>`;
-    }).join('');
+      })
+      .join("");
   }
 
   // Paginación
   if (pageBtns) {
-    let btns = '';
-    btns += `<button onclick="audGoPage(${_audPage-1})" ${_audPage===1?'disabled':''} style="padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:12px;" ${_audPage===1?'style="opacity:.4"':''}>‹ Ant</button>`;
-    for (let p = Math.max(1,_audPage-2); p <= Math.min(pages,_audPage+2); p++) {
-      btns += `<button onclick="audGoPage(${p})" style="padding:5px 12px;border-radius:8px;border:1px solid ${p===_audPage?'rgba(156,39,176,0.6)':'rgba(255,255,255,0.18)'};background:${p===_audPage?'rgba(156,39,176,0.25)':'rgba(255,255,255,0.06)'};color:#fff;cursor:pointer;font-size:12px;font-weight:${p===_audPage?'700':'400'};">${p}</button>`;
+    let btns = "";
+    btns += `<button onclick="audGoPage(${_audPage - 1})" ${_audPage === 1 ? "disabled" : ""} style="padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:12px;" ${_audPage === 1 ? 'style="opacity:.4"' : ""}>‹ Ant</button>`;
+    for (
+      let p = Math.max(1, _audPage - 2);
+      p <= Math.min(pages, _audPage + 2);
+      p++
+    ) {
+      btns += `<button onclick="audGoPage(${p})" style="padding:5px 12px;border-radius:8px;border:1px solid ${p === _audPage ? "rgba(156,39,176,0.6)" : "rgba(255,255,255,0.18)"};background:${p === _audPage ? "rgba(156,39,176,0.25)" : "rgba(255,255,255,0.06)"};color:#fff;cursor:pointer;font-size:12px;font-weight:${p === _audPage ? "700" : "400"};">${p}</button>`;
     }
-    btns += `<button onclick="audGoPage(${_audPage+1})" ${_audPage===pages?'disabled':''} style="padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:12px;">Sig ›</button>`;
+    btns += `<button onclick="audGoPage(${_audPage + 1})" ${_audPage === pages ? "disabled" : ""} style="padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);cursor:pointer;font-size:12px;">Sig ›</button>`;
     pageBtns.innerHTML = btns;
   }
 }
@@ -1045,65 +1742,94 @@ function audGoPage(p) {
   if (p < 1 || p > pages) return;
   _audPage = p;
   renderAuditoria();
-  document.getElementById('section-auditoria')?.scrollIntoView({ behavior:'smooth', block:'start' });
+  document
+    .getElementById("section-auditoria")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function exportarAuditoriaCSV() {
-  if (!_audRegistros.length) { showToast('Primero carga el log.', 'error'); return; }
-  const cols = ['Fecha','Actor','Documento','Rol','Tipo Acción','Afectado','Detalle'];
-  const rows = _audRegistros.map(e => [
-    e.fecha ? new Date(e.fecha).toLocaleString('es-CO',{timeZone:'America/Bogota'}) : '',
-    e.actor||'', e.actor_doc||'', e.actor_rol||'',
+  if (!_audRegistros.length) {
+    showToast("Primero carga el log.", "error");
+    return;
+  }
+  const cols = [
+    "Fecha",
+    "Actor",
+    "Documento",
+    "Rol",
+    "Tipo Acción",
+    "Afectado",
+    "Detalle",
+  ];
+  const rows = _audRegistros.map((e) => [
+    e.fecha
+      ? new Date(e.fecha).toLocaleString("es-CO", {
+          timeZone: "America/Bogota",
+        })
+      : "",
+    e.actor || "",
+    e.actor_doc || "",
+    e.actor_rol || "",
     AUD_TIPO_CFG[e.tipo_accion]?.label || e.tipo_accion,
-    e.afectado||'', e.detalle||'',
+    e.afectado || "",
+    e.detalle || "",
   ]);
-  const csv = [cols,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
-  const a = document.createElement('a');
+  const csv = [cols, ...rows]
+    .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `Auditoria_Parksmart_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `Auditoria_Parksmart_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
-  showToast('CSV de auditoría descargado', 'success');
+  showToast("CSV de auditoría descargado", "success");
 }
 // ════════════════════════════════════════════════════════════
 // ══ GESTIÓN DE PARQUEADERO (superadmin) — API REAL ══
 // ════════════════════════════════════════════════════════════
 
 // ─── Estado activo ────────────────────────────────────────────────────
-let pkConfig    = null;   // { id_centro, lados: [...] }
-let pkModalCtx  = null;   // { mode:'edit'|'add', ladoId? }
+let pkConfig = null; // { id_centro, lados: [...] }
+let pkModalCtx = null; // { mode:'edit'|'add', ladoId? }
 
-const TIPOS_DISPONIBLES = ['Bicicleta', 'Moto', 'Carro'];
-const TIPO_ICONS = { Bicicleta: 'bi-bicycle', Moto: 'bi-scooter', Carro: 'bi-car-front-fill' };
+const TIPOS_DISPONIBLES = ["Bicicleta", "Moto", "Carro"];
+const TIPO_ICONS = {
+  Bicicleta: "bi-bicycle",
+  Moto: "bi-scooter",
+  Carro: "bi-car-front-fill",
+};
 
 // ─── Helpers API ─────────────────────────────────────────────────────
 async function pkApiGet(id_centro) {
-  const res  = await apiFetch(`/parqueadero/config/${id_centro}`);
+  const res = await apiFetch(`/parqueadero/config/${id_centro}`);
   if (!res) return null;
   const data = await res.json();
-  if (!data.ok) { showToast(data.message || 'Error cargando configuración', 'error'); return null; }
+  if (!data.ok) {
+    showToast(data.message || "Error cargando configuración", "error");
+    return null;
+  }
   // Normalizar: el backend devuelve {id, nombre, habilitado, modo, capacidad, tipos, ocupacion}
   // El render usa lado.id y lado.tipos; el backend devuelve id_lado y tipos (array de nombres)
   return {
     id_centro: data.data.id_centro,
-    lados: (data.data.lados || []).map(l => ({
+    lados: (data.data.lados || []).map((l) => ({
       ...l,
-      id: l.id,  // ya viene como `id` desde el route
+      id: l.id, // ya viene como `id` desde el route
     })),
   };
 }
 
 // ─── Inicialización ───────────────────────────────────────────────────
 async function pkInit() {
-  const sel = document.getElementById('pk-centro-select');
+  const sel = document.getElementById("pk-centro-select");
   // Solo cargar el select de centros si aún no tiene opciones reales
   if (!sel || sel.options.length <= 1) {
     await pkCargarSelectCentros();
   }
   // Solo autoseleccionar el primero si no hay ninguno seleccionado aún
-  const selAfter = document.getElementById('pk-centro-select');
-  if (selAfter && selAfter.value === '' && selAfter.options.length > 1) {
+  const selAfter = document.getElementById("pk-centro-select");
+  if (selAfter && selAfter.value === "" && selAfter.options.length > 1) {
     selAfter.selectedIndex = 1;
     await pkCargarCentro();
   }
@@ -1111,23 +1837,26 @@ async function pkInit() {
 
 async function pkCargarSelectCentros() {
   try {
-    const res  = await apiFetch('/catalogos/centros');
+    const res = await apiFetch("/catalogos/centros");
     if (!res) return;
     const data = await res.json();
-    const sel  = document.getElementById('pk-centro-select');
+    const sel = document.getElementById("pk-centro-select");
     if (!sel || !data.ok) return;
-    sel.innerHTML = '<option value="">— Selecciona un centro —</option>' +
-      (data.data || []).map(c =>
-        `<option value="${c.id_centro}">${c.nombre}</option>`
-      ).join('');
-  } catch (e) { console.warn('pkCargarSelectCentros:', e); }
+    sel.innerHTML =
+      '<option value="">— Selecciona un centro —</option>' +
+      (data.data || [])
+        .map((c) => `<option value="${c.id_centro}">${c.nombre}</option>`)
+        .join("");
+  } catch (e) {
+    console.warn("pkCargarSelectCentros:", e);
+  }
 }
 
 async function pkCargarCentro() {
-  const sel = document.getElementById('pk-centro-select');
-  const id  = sel?.value;
+  const sel = document.getElementById("pk-centro-select");
+  const id = sel?.value;
   if (!id) {
-    document.getElementById('pk-lados-container').innerHTML =
+    document.getElementById("pk-lados-container").innerHTML =
       `<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.3);">
         <i class="bi bi-building" style="font-size:36px;display:block;margin-bottom:12px;"></i>
         Selecciona un centro de formación
@@ -1136,7 +1865,7 @@ async function pkCargarCentro() {
   }
 
   // Mostrar loading
-  document.getElementById('pk-lados-container').innerHTML =
+  document.getElementById("pk-lados-container").innerHTML =
     `<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);">
        <i class="bi bi-arrow-repeat" style="font-size:28px;display:block;margin-bottom:8px;animation:spin 1s linear infinite;"></i>
        Cargando configuración...
@@ -1147,10 +1876,9 @@ async function pkCargarCentro() {
   pkRenderLados();
 }
 
-
 // ─── Render principal ─────────────────────────────────────────────────
 function pkRenderLados() {
-  const cont = document.getElementById('pk-lados-container');
+  const cont = document.getElementById("pk-lados-container");
   if (!cont) return;
 
   if (!pkConfig || !pkConfig.lados.length) {
@@ -1166,37 +1894,44 @@ function pkRenderLados() {
     return;
   }
 
-  cont.innerHTML = pkConfig.lados.map(l => pkRenderLadoCard(l)).join('');
+  cont.innerHTML = pkConfig.lados.map((l) => pkRenderLadoCard(l)).join("");
 }
 
 function pkRenderLadoCard(lado) {
   // El backend ya incluye ocupacion dentro del objeto lado
-  const occ      = lado.ocupacion || {};
-  const dentro   = (occ.bicicleta||0) + (occ.motocicleta||occ.moto||0) + (occ.auto||occ.carro||0) + (occ.furgoneta||0);
-  const ocupados = lado.ocupados !== null && lado.ocupados !== undefined
-    ? lado.ocupados
-    : ((occ.auto||occ.carro||0) + (occ.motocicleta||occ.moto||0) + (occ.furgoneta||0));
+  const occ = lado.ocupacion || {};
+  const dentro =
+    (occ.bicicleta || 0) +
+    (occ.motocicleta || occ.moto || 0) +
+    (occ.auto || occ.carro || 0) +
+    (occ.furgoneta || 0);
+  const ocupados =
+    lado.ocupados !== null && lado.ocupados !== undefined
+      ? lado.ocupados
+      : (occ.auto || occ.carro || 0) +
+        (occ.motocicleta || occ.moto || 0) +
+        (occ.furgoneta || 0);
 
   // Badge de modo
   const modeBadge = !lado.habilitado
     ? `<span class="pk-mode-badge off"><i class="bi bi-slash-circle"></i> Deshabilitado</span>`
-    : lado.modo === 'controlado'
+    : lado.modo === "controlado"
       ? `<span class="pk-mode-badge controlado"><i class="bi bi-ui-checks-grid"></i> Controlado</span>`
       : `<span class="pk-mode-badge libre"><i class="bi bi-wind"></i> Espacio libre</span>`;
 
   // Tipos permitidos
-  const tiposPills = TIPOS_DISPONIBLES.map(t => {
+  const tiposPills = TIPOS_DISPONIBLES.map((t) => {
     const activo = lado.tipos?.includes(t);
-    return `<span class="pk-tipo-pill ${activo ? '' : 'off'}">
+    return `<span class="pk-tipo-pill ${activo ? "" : "off"}">
       <i class="bi ${TIPO_ICONS[t]}"></i> ${t}
     </span>`;
-  }).join('');
+  }).join("");
 
   // Barra de ocupación (solo si es controlado y habilitado)
-  let barraHtml = '';
-  if (lado.habilitado && lado.modo === 'controlado' && lado.capacidad) {
-    const pct = Math.min(100, Math.round(ocupados / lado.capacidad * 100));
-    const barColor = pct >= 90 ? '#ef5350' : pct >= 70 ? '#ffa726' : '#2FA440';
+  let barraHtml = "";
+  if (lado.habilitado && lado.modo === "controlado" && lado.capacidad) {
+    const pct = Math.min(100, Math.round((ocupados / lado.capacidad) * 100));
+    const barColor = pct >= 90 ? "#ef5350" : pct >= 70 ? "#ffa726" : "#2FA440";
     barraHtml = `
       <div style="margin-top:12px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px;">
@@ -1210,12 +1945,12 @@ function pkRenderLadoCard(lado) {
   }
 
   // Stats chips
-  const chipsBici  = `<div class="pk-stat-chip"><i class="bi bi-bicycle pk-chip-icon" style="color:#ffd54f;"></i><div><div class="pk-chip-num">${occ.bicicletas||0}</div><div class="pk-chip-lbl">Bicis dentro</div></div></div>`;
-  const chipsMoto  = `<div class="pk-stat-chip"><i class="bi bi-scooter pk-chip-icon" style="color:#81c784;"></i><div><div class="pk-chip-num">${occ.motos||0}</div><div class="pk-chip-lbl">Motos dentro</div></div></div>`;
-  const chipsCarros = `<div class="pk-stat-chip"><i class="bi bi-car-front-fill pk-chip-icon" style="color:#90caf9;"></i><div><div class="pk-chip-num">${occ.carros||0}</div><div class="pk-chip-lbl">Carros dentro</div></div></div>`;
+  const chipsBici = `<div class="pk-stat-chip"><i class="bi bi-bicycle pk-chip-icon" style="color:#ffd54f;"></i><div><div class="pk-chip-num">${occ.bicicletas || 0}</div><div class="pk-chip-lbl">Bicis dentro</div></div></div>`;
+  const chipsMoto = `<div class="pk-stat-chip"><i class="bi bi-scooter pk-chip-icon" style="color:#81c784;"></i><div><div class="pk-chip-num">${occ.motos || 0}</div><div class="pk-chip-lbl">Motos dentro</div></div></div>`;
+  const chipsCarros = `<div class="pk-stat-chip"><i class="bi bi-car-front-fill pk-chip-icon" style="color:#90caf9;"></i><div><div class="pk-chip-num">${occ.carros || 0}</div><div class="pk-chip-lbl">Carros dentro</div></div></div>`;
 
-  let capacidadChip = '';
-  if (lado.modo === 'controlado' && lado.capacidad) {
+  let capacidadChip = "";
+  if (lado.modo === "controlado" && lado.capacidad) {
     const disp = Math.max(0, lado.capacidad - ocupados);
     capacidadChip = `<div class="pk-stat-chip"><i class="bi bi-p-circle-fill pk-chip-icon" style="color:#ce93d8;"></i><div><div class="pk-chip-num">${disp}</div><div class="pk-chip-lbl">Disponibles</div></div></div>`;
   }
@@ -1226,25 +1961,27 @@ function pkRenderLadoCard(lado) {
     : `<button class="pk-btn green" onclick="pkToggleLado('${lado.id}')"><i class="bi bi-toggle2-on"></i> Habilitar</button>`;
 
   return `
-    <div class="pk-lado-card ${lado.habilitado ? '' : 'disabled'}" id="pk-card-${lado.id}">
+    <div class="pk-lado-card ${lado.habilitado ? "" : "disabled"}" id="pk-card-${lado.id}">
       <div class="pk-lado-header">
-        <div class="pk-lado-avatar ${lado.habilitado ? '' : 'disabled'}">
+        <div class="pk-lado-avatar ${lado.habilitado ? "" : "disabled"}">
           <i class="bi bi-p-circle-fill" style="font-size:20px;color:#fff;"></i>
         </div>
         <div style="flex:1;min-width:0;">
           <div class="pk-lado-nombre">${lado.nombre}</div>
           <div class="pk-lado-meta">
             ${modeBadge}
-            ${lado.modo === 'controlado' && lado.capacidad
-              ? `<span><i class="bi bi-grid-fill"></i> ${lado.capacidad} espacios</span>`
-              : '<span><i class="bi bi-infinity"></i> Sin límite de cupos</span>'}
+            ${
+              lado.modo === "controlado" && lado.capacidad
+                ? `<span><i class="bi bi-grid-fill"></i> ${lado.capacidad} espacios</span>`
+                : '<span><i class="bi bi-infinity"></i> Sin límite de cupos</span>'
+            }
             <span><i class="bi bi-people-fill"></i> ${dentro} dentro ahora</span>
           </div>
         </div>
         <div class="pk-lado-actions">
           <button class="pk-btn" onclick="pkEditarLado('${lado.id}')"><i class="bi bi-pencil-fill"></i> Editar</button>
           ${toggleBtn}
-          <button class="pk-btn red" onclick="pkEliminarLado('${lado.id}', '${lado.nombre.replace(/'/g,"\\'")}')"><i class="bi bi-trash3-fill"></i></button>
+          <button class="pk-btn red" onclick="pkEliminarLado('${lado.id}', '${lado.nombre.replace(/'/g, "\\'")}')"><i class="bi bi-trash3-fill"></i></button>
         </div>
       </div>
 
@@ -1263,24 +2000,33 @@ function pkRenderLadoCard(lado) {
 
 // ─── Toggle habilitar/deshabilitar ───────────────────────────────────
 function pkToggleLado(ladoId) {
-  const lado = pkConfig?.lados.find(l => String(l.id) === String(ladoId));
+  const lado = pkConfig?.lados.find((l) => String(l.id) === String(ladoId));
   if (!lado) return;
-  const accion = lado.habilitado ? 'deshabilitar' : 'habilitar';
+  const accion = lado.habilitado ? "deshabilitar" : "habilitar";
   openSAModal({
-    icon: lado.habilitado ? '⛔' : '✅',
+    icon: lado.habilitado ? "⛔" : "✅",
     title: `${accion.charAt(0).toUpperCase() + accion.slice(1)} "${lado.nombre}"`,
     desc: `¿Confirmas que deseas <strong>${accion}</strong> el lado <strong>${lado.nombre}</strong>?
-           ${lado.habilitado ? '<br><small style="color:rgba(255,255,255,0.4);">Los usuarios no podrán registrar entradas en este lado mientras esté deshabilitado.</small>' : ''}`,
-    btnClass: lado.habilitado ? 'warn' : 'ok',
+           ${lado.habilitado ? '<br><small style="color:rgba(255,255,255,0.4);">Los usuarios no podrán registrar entradas en este lado mientras esté deshabilitado.</small>' : ""}`,
+    btnClass: lado.habilitado ? "warn" : "ok",
     btnLabel: accion.charAt(0).toUpperCase() + accion.slice(1),
     onConfirm: async () => {
       try {
-        const res = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados/${ladoId}/toggle`, { method: 'PUT' });
-        if (!res) { showToast('Error de sesión. Vuelve a iniciar sesión.', 'error'); return; }
+        const res = await apiFetch(
+          `/parqueadero/config/${pkConfig.id_centro}/lados/${ladoId}/toggle`,
+          { method: "PUT" },
+        );
+        if (!res) {
+          showToast("Error de sesión. Vuelve a iniciar sesión.", "error");
+          return;
+        }
         const data = await res.json();
-        if (!data.ok) { showToast(data.message || 'Error al cambiar estado', 'error'); return; }
+        if (!data.ok) {
+          showToast(data.message || "Error al cambiar estado", "error");
+          return;
+        }
 
-        showToast(data.message || 'Estado actualizado', 'success');
+        showToast(data.message || "Estado actualizado", "success");
 
         // Intentar recargar config completa desde el servidor;
         // si falla (ej. servidor dormido en Render), actualizar solo el lado
@@ -1290,11 +2036,16 @@ function pkToggleLado(ladoId) {
         if (nuevoConfig) {
           pkConfig = nuevoConfig;
         } else {
-          const idx = pkConfig.lados.findIndex(l => String(l.id) === String(ladoId));
+          const idx = pkConfig.lados.findIndex(
+            (l) => String(l.id) === String(ladoId),
+          );
           if (idx !== -1) pkConfig.lados[idx].habilitado = data.habilitado;
         }
         pkRenderLados();
-      } catch (e) { console.error('pkToggleLado error:', e); showToast('Error de conexión', 'error'); }
+      } catch (e) {
+        console.error("pkToggleLado error:", e);
+        showToast("Error de conexión", "error");
+      }
     },
   });
 }
@@ -1302,79 +2053,104 @@ function pkToggleLado(ladoId) {
 // ─── Eliminar lado ────────────────────────────────────────────────────
 function pkEliminarLado(ladoId, nombre) {
   openSAModal({
-    icon: '🗑️',
+    icon: "🗑️",
     title: `Eliminar "${nombre}"`,
     desc: `¿Estás seguro de eliminar el lado <strong>${nombre}</strong>? Esta acción no se puede deshacer.<br>
            <small style="color:rgba(244,67,54,0.7);">Los registros de uso históricos no se verán afectados.</small>`,
-    btnClass: 'danger',
-    btnLabel: 'Eliminar',
+    btnClass: "danger",
+    btnLabel: "Eliminar",
     onConfirm: async () => {
       try {
-        const res = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados/${ladoId}`, { method: 'DELETE' });
-        if (!res) { showToast('Error de sesión. Vuelve a iniciar sesión.', 'error'); return; }
+        const res = await apiFetch(
+          `/parqueadero/config/${pkConfig.id_centro}/lados/${ladoId}`,
+          { method: "DELETE" },
+        );
+        if (!res) {
+          showToast("Error de sesión. Vuelve a iniciar sesión.", "error");
+          return;
+        }
         const data = await res.json();
-        if (!data.ok) { showToast(data.message || 'No se pudo eliminar', 'error'); return; }
+        if (!data.ok) {
+          showToast(data.message || "No se pudo eliminar", "error");
+          return;
+        }
         const idCentro = pkConfig.id_centro;
         pkConfig = await pkApiGet(idCentro);
         pkRenderLados();
-        showToast(data.message || `Lado "${nombre}" eliminado`, 'info');
-      } catch (e) { console.error('pkEliminarLado error:', e); showToast('Error de conexión', 'error'); }
+        showToast(data.message || `Lado "${nombre}" eliminado`, "info");
+      } catch (e) {
+        console.error("pkEliminarLado error:", e);
+        showToast("Error de conexión", "error");
+      }
     },
   });
 }
 
 // ─── Modal editar/agregar lado ────────────────────────────────────────
 function pkAgregarLado() {
-  if (!pkConfig) { showToast('Selecciona un centro primero.', 'error'); return; }
-  pkModalCtx = { mode: 'add' };
+  if (!pkConfig) {
+    showToast("Selecciona un centro primero.", "error");
+    return;
+  }
+  pkModalCtx = { mode: "add" };
   pkOpenModal({
-    icon: '➕',
-    title: 'Agregar nuevo lado',
-    nombre: '',
-    modo: 'controlado',
-    capacidad: '',
+    icon: "➕",
+    title: "Agregar nuevo lado",
+    nombre: "",
+    modo: "controlado",
+    capacidad: "",
     habilitado: true,
-    tipos: ['Bicicleta', 'Moto', 'Carro'],
+    tipos: ["Bicicleta", "Moto", "Carro"],
   });
 }
 
 function pkEditarLado(ladoId) {
-  const lado = pkConfig?.lados.find(l => String(l.id) === String(ladoId));
+  const lado = pkConfig?.lados.find((l) => String(l.id) === String(ladoId));
   if (!lado) return;
-  pkModalCtx = { mode: 'edit', ladoId };
-  pkOpenModal({ ...lado, icon: '✏️', title: `Editar "${lado.nombre}"` });
+  pkModalCtx = { mode: "edit", ladoId };
+  pkOpenModal({ ...lado, icon: "✏️", title: `Editar "${lado.nombre}"` });
 }
 
-function pkOpenModal({ icon, title, nombre, modo, capacidad, habilitado, tipos }) {
-  document.getElementById('pk-modal-icon').textContent  = icon;
-  document.getElementById('pk-modal-title').textContent = title;
+function pkOpenModal({
+  icon,
+  title,
+  nombre,
+  modo,
+  capacidad,
+  habilitado,
+  tipos,
+}) {
+  document.getElementById("pk-modal-icon").textContent = icon;
+  document.getElementById("pk-modal-title").textContent = title;
 
   // Normalizar tipos a minúsculas para comparación case-insensitive
-  const tiposNorm = (tipos || []).map(t => t.toLowerCase());
-  const tiposChecks = TIPOS_DISPONIBLES.map(t => `
+  const tiposNorm = (tipos || []).map((t) => t.toLowerCase());
+  const tiposChecks = TIPOS_DISPONIBLES.map(
+    (t) => `
     <label class="pk-check-item">
-      <input type="checkbox" value="${t}" ${tiposNorm.includes(t.toLowerCase()) ? 'checked' : ''}
+      <input type="checkbox" value="${t}" ${tiposNorm.includes(t.toLowerCase()) ? "checked" : ""}
              onchange="pkUpdateTiposAll()">
       <i class="bi ${TIPO_ICONS[t]}"></i> ${t}
-    </label>`).join('');
+    </label>`,
+  ).join("");
 
-  document.getElementById('pk-modal-body').innerHTML = `
+  document.getElementById("pk-modal-body").innerHTML = `
     <div class="pk-form-group">
       <label><i class="bi bi-tag-fill"></i> Nombre del lado</label>
-      <input type="text" id="pk-f-nombre" placeholder="Ej: Lado A, Parqueadero 1..." value="${nombre || ''}">
+      <input type="text" id="pk-f-nombre" placeholder="Ej: Lado A, Parqueadero 1..." value="${nombre || ""}">
     </div>
 
     <div class="pk-form-group">
       <label><i class="bi bi-sliders"></i> Modo de control</label>
       <select id="pk-f-modo" onchange="pkToggleCapacidadField()">
-        <option value="controlado" ${modo === 'controlado' ? 'selected' : ''}>Controlado — con límite de cupos</option>
-        <option value="libre"      ${modo === 'libre'      ? 'selected' : ''}>Espacio libre — sin límite de cupos</option>
+        <option value="controlado" ${modo === "controlado" ? "selected" : ""}>Controlado — con límite de cupos</option>
+        <option value="libre"      ${modo === "libre" ? "selected" : ""}>Espacio libre — sin límite de cupos</option>
       </select>
     </div>
 
-    <div class="pk-form-group" id="pk-f-cap-wrap" style="${modo === 'libre' ? 'display:none;' : ''}">
+    <div class="pk-form-group" id="pk-f-cap-wrap" style="${modo === "libre" ? "display:none;" : ""}">
       <label><i class="bi bi-grid-fill"></i> Capacidad total de espacios</label>
-      <input type="number" id="pk-f-capacidad" placeholder="Ej: 21" min="1" max="500" value="${capacidad || ''}">
+      <input type="number" id="pk-f-capacidad" placeholder="Ej: 21" min="1" max="500" value="${capacidad || ""}">
     </div>
 
     <div class="pk-form-group">
@@ -1388,85 +2164,116 @@ function pkOpenModal({ icon, title, nombre, modo, capacidad, habilitado, tipos }
     <div class="pk-form-group">
       <label><i class="bi bi-toggle2-on"></i> Estado inicial</label>
       <select id="pk-f-habilitado">
-        <option value="1" ${habilitado !== false ? 'selected' : ''}>Habilitado</option>
-        <option value="0" ${habilitado === false  ? 'selected' : ''}>Deshabilitado</option>
+        <option value="1" ${habilitado !== false ? "selected" : ""}>Habilitado</option>
+        <option value="0" ${habilitado === false ? "selected" : ""}>Deshabilitado</option>
       </select>
     </div>`;
 
-  document.getElementById('pk-modal').classList.add('visible');
+  document.getElementById("pk-modal").classList.add("visible");
 }
 
 function pkToggleCapacidadField() {
-  const modo = document.getElementById('pk-f-modo')?.value;
-  const wrap = document.getElementById('pk-f-cap-wrap');
-  if (wrap) wrap.style.display = modo === 'libre' ? 'none' : '';
+  const modo = document.getElementById("pk-f-modo")?.value;
+  const wrap = document.getElementById("pk-f-cap-wrap");
+  if (wrap) wrap.style.display = modo === "libre" ? "none" : "";
 }
 
-function pkUpdateTiposAll() { /* solo mantiene estado via checkboxes, no necesita acción */ }
+function pkUpdateTiposAll() {
+  /* solo mantiene estado via checkboxes, no necesita acción */
+}
 
 function pkCloseModal() {
-  document.getElementById('pk-modal').classList.remove('visible');
+  document.getElementById("pk-modal").classList.remove("visible");
   pkModalCtx = null;
 }
 
 async function pkModalSave() {
-  const nombre     = document.getElementById('pk-f-nombre')?.value.trim();
-  const modo       = document.getElementById('pk-f-modo')?.value;
-  const capVal     = document.getElementById('pk-f-capacidad')?.value;
-  const habVal     = document.getElementById('pk-f-habilitado')?.value;
-  const capacidad  = modo === 'controlado' ? (parseInt(capVal) || null) : null;
-  const habilitado = habVal !== '0';
+  const nombre = document.getElementById("pk-f-nombre")?.value.trim();
+  const modo = document.getElementById("pk-f-modo")?.value;
+  const capVal = document.getElementById("pk-f-capacidad")?.value;
+  const habVal = document.getElementById("pk-f-habilitado")?.value;
+  const capacidad = modo === "controlado" ? parseInt(capVal) || null : null;
+  const habilitado = habVal !== "0";
 
-  if (!nombre) { showToast('El nombre del lado es obligatorio.', 'error'); return; }
-  if (modo === 'controlado' && (!capacidad || capacidad < 1)) {
-    showToast('Ingresa una capacidad válida para el modo controlado.', 'error'); return;
+  if (!nombre) {
+    showToast("El nombre del lado es obligatorio.", "error");
+    return;
+  }
+  if (modo === "controlado" && (!capacidad || capacidad < 1)) {
+    showToast("Ingresa una capacidad válida para el modo controlado.", "error");
+    return;
   }
 
-  const checks = document.querySelectorAll('#pk-tipos-check input[type=checkbox]:checked');
-  const tipos  = Array.from(checks).map(c => c.value);
-  if (!tipos.length) { showToast('Selecciona al menos un tipo de vehículo.', 'error'); return; }
+  const checks = document.querySelectorAll(
+    "#pk-tipos-check input[type=checkbox]:checked",
+  );
+  const tipos = Array.from(checks).map((c) => c.value);
+  if (!tipos.length) {
+    showToast("Selecciona al menos un tipo de vehículo.", "error");
+    return;
+  }
 
   const body = JSON.stringify({ nombre, modo, capacidad, habilitado, tipos });
-  const hdrs = { 'Content-Type': 'application/json' };
+  const hdrs = { "Content-Type": "application/json" };
 
   try {
     let res;
-    if (pkModalCtx?.mode === 'add') {
-      res = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados`,
-                           { method: 'POST', headers: hdrs, body });
-    } else if (pkModalCtx?.mode === 'edit') {
-      res = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados/${pkModalCtx.ladoId}`,
-                           { method: 'PUT', headers: hdrs, body });
+    if (pkModalCtx?.mode === "add") {
+      res = await apiFetch(`/parqueadero/config/${pkConfig.id_centro}/lados`, {
+        method: "POST",
+        headers: hdrs,
+        body,
+      });
+    } else if (pkModalCtx?.mode === "edit") {
+      res = await apiFetch(
+        `/parqueadero/config/${pkConfig.id_centro}/lados/${pkModalCtx.ladoId}`,
+        { method: "PUT", headers: hdrs, body },
+      );
     }
-    if (!res) { showToast('Error de sesión. Vuelve a iniciar sesión.', 'error'); return; }
+    if (!res) {
+      showToast("Error de sesión. Vuelve a iniciar sesión.", "error");
+      return;
+    }
     const data = await res.json();
-    if (!data.ok) { showToast(data.message || 'Error al guardar', 'error'); return; }
+    if (!data.ok) {
+      showToast(data.message || "Error al guardar", "error");
+      return;
+    }
     const idCentro = pkConfig.id_centro;
     pkConfig = await pkApiGet(idCentro);
     pkCloseModal();
     pkRenderLados();
-    showToast(data.message || 'Guardado correctamente', 'success');
-  } catch (e) { console.error('pkModalSave error:', e); showToast('Error de conexión', 'error'); }
+    showToast(data.message || "Guardado correctamente", "success");
+  } catch (e) {
+    console.error("pkModalSave error:", e);
+    showToast("Error de conexión", "error");
+  }
 }
 
 // ─── Override showSection para incluir parqueadero ────────────────────
 // El showSection original ya está overrideado más arriba; solo añadimos el caso.
 const _showSectionPrevRef = showSection;
-showSection = function(name, btn) {
+showSection = function (name, btn) {
   _showSectionPrevRef(name, btn);
-  if (name === 'parqueadero') pkInit();
+  if (name === "parqueadero") pkInit();
 };
 // ════════════════════════════════════════════════════════════
 // ══ CARNET FLOTANTE DE USUARIO — SUPERADMIN ══
 // ════════════════════════════════════════════════════════════
 
 function showSAUserCard(qrId) {
-  const u = saUsuarios.find(x => x.id === qrId);
+  const u = saUsuarios.find((x) => x.id === qrId);
   if (!u) return;
 
   // ── Foto o iniciales ──
-  const photoWrap = document.getElementById('uc-photo-wrap');
-  const initials  = u.nombre.split(' ').filter(Boolean).map(w => w[0]).slice(0,2).join('').toUpperCase();
+  const photoWrap = document.getElementById("uc-photo-wrap");
+  const initials = u.nombre
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
   if (u.foto) {
     photoWrap.innerHTML = `<img src="${u.foto}" alt="Foto de ${u.nombre}">`;
   } else {
@@ -1474,80 +2281,99 @@ function showSAUserCard(qrId) {
   }
 
   // ── Nombre ──
-  document.getElementById('uc-user-name').textContent = u.nombre;
+  document.getElementById("uc-user-name").textContent = u.nombre;
 
   // ── Rol ──
   const rolLabels = {
-    aprendiz:'Aprendiz', funcionario:'Funcionario',
-    instructor:'Instructor', admin:'Operario',
-    guardia:'Operario', superadmin:'Super Admin',
+    aprendiz: "Aprendiz",
+    funcionario: "Funcionario",
+    instructor: "Instructor",
+    admin: "Operario",
+    guardia: "Operario",
+    superadmin: "Super Admin",
   };
   const rolIcons = {
-    aprendiz:'bi-mortarboard-fill', funcionario:'bi-briefcase-fill',
-    instructor:'bi-book-fill', admin:'bi-shield-fill',
-    guardia:'bi-shield-shaded', superadmin:'bi-shield-lock-fill',
+    aprendiz: "bi-mortarboard-fill",
+    funcionario: "bi-briefcase-fill",
+    instructor: "bi-book-fill",
+    admin: "bi-shield-fill",
+    guardia: "bi-shield-shaded",
+    superadmin: "bi-shield-lock-fill",
   };
-  const rol = u.rol || 'aprendiz';
-  const badge = document.getElementById('uc-role-badge');
-  badge.innerHTML = `<i class="bi ${rolIcons[rol] || 'bi-person-fill'}"></i> ${rolLabels[rol] || rol}`;
+  const rol = u.rol || "aprendiz";
+  const badge = document.getElementById("uc-role-badge");
+  badge.innerHTML = `<i class="bi ${rolIcons[rol] || "bi-person-fill"}"></i> ${rolLabels[rol] || rol}`;
   // Color especial para superadmin
-  badge.className = 'uc-role-badge' + (rol === 'superadmin' ? ' sa-badge' : '');
+  badge.className = "uc-role-badge" + (rol === "superadmin" ? " sa-badge" : "");
 
   // ── Identificación (últimos 4 visibles) ──
-  const numStr = String(u.numId || '');
-  const maskedNum = numStr.length > 4
-    ? `<span class="uc-masked">${'• '.repeat(numStr.length - 4).trim()}</span> ${numStr.slice(-4)}`
-    : numStr;
-  document.getElementById('uc-tipo-id').textContent = u.tipoId || 'ID';
-  document.getElementById('uc-num-id').innerHTML = maskedNum;
+  const numStr = String(u.numId || "");
+  const maskedNum =
+    numStr.length > 4
+      ? `<span class="uc-masked">${"• ".repeat(numStr.length - 4).trim()}</span> ${numStr.slice(-4)}`
+      : numStr;
+  document.getElementById("uc-tipo-id").textContent = u.tipoId || "ID";
+  document.getElementById("uc-num-id").innerHTML = maskedNum;
 
   // ── Centro ──
-  const centroEl = document.getElementById('uc-centro');
-  const centro = u.centro || 'No asignado';
-  centroEl.textContent = centro.length > 28 ? centro.slice(0, 26) + '…' : centro;
+  const centroEl = document.getElementById("uc-centro");
+  const centro = u.centro || "No asignado";
+  centroEl.textContent =
+    centro.length > 28 ? centro.slice(0, 26) + "…" : centro;
   centroEl.title = centro;
 
   // ── Email ──
-  const emailEl = document.getElementById('uc-email');
+  const emailEl = document.getElementById("uc-email");
   if (emailEl) {
-    emailEl.textContent = u.email ? (u.email.length > 26 ? u.email.slice(0,24)+'…' : u.email) : 'Sin correo';
-    emailEl.title = u.email || '';
+    emailEl.textContent = u.email
+      ? u.email.length > 26
+        ? u.email.slice(0, 24) + "…"
+        : u.email
+      : "Sin correo";
+    emailEl.title = u.email || "";
   }
 
   // ── Vehículos ──
-  const vehContent = document.getElementById('uc-vehicle-content');
+  const vehContent = document.getElementById("uc-vehicle-content");
   if (u.vehiculos && u.vehiculos.length > 0) {
-    const slides = u.vehiculos.map((v, i) => {
-      const t = (v.tipo || '').toLowerCase();
-      const vIcon = (t === 'auto' || t === 'carro' || t === 'furgoneta') ? 'bi-car-front-fill'
-                  : (t === 'motocicleta' || t === 'moto') ? 'bi-scooter'
-                  : 'bi-bicycle';
-      const detail = [v.color, v.descripcion].filter(Boolean).join(' · ');
-      const placa  = v.placa ? v.placa.toUpperCase() : (v.modelo || '');
-      const foto   = v.foto_url
-        ? `<div class="uc-veh-img-wrap">
+    const slides = u.vehiculos
+      .map((v, i) => {
+        const t = (v.tipo || "").toLowerCase();
+        const vIcon =
+          t === "auto" || t === "carro" || t === "furgoneta"
+            ? "bi-car-front-fill"
+            : t === "motocicleta" || t === "moto"
+              ? "bi-scooter"
+              : "bi-bicycle";
+        const detail = [v.color, v.descripcion].filter(Boolean).join(" · ");
+        const placa = v.placa ? v.placa.toUpperCase() : v.modelo || "";
+        const foto = v.foto_url
+          ? `<div class="uc-veh-img-wrap">
              <img src="${v.foto_url}" alt="Foto del vehículo" class="uc-veh-img" loading="lazy"
                onerror="this.parentElement.style.display='none'">
            </div>`
-        : '';
-      return `
+          : "";
+        return `
         <div class="uc-veh-slide" data-idx="${i}">
-          <div class="uc-vtag"><i class="bi ${vIcon}"></i> ${v.tipo}${placa ? ' · ' + placa : ''}</div>
-          ${detail ? `<span class="uc-placa">${detail}</span>` : ''}
+          <div class="uc-vtag"><i class="bi ${vIcon}"></i> ${v.tipo}${placa ? " · " + placa : ""}</div>
+          ${detail ? `<span class="uc-placa">${detail}</span>` : ""}
           ${foto}
         </div>`;
-    }).join('');
+      })
+      .join("");
 
     const total = u.vehiculos.length;
-    const dots  = total > 1
-      ? `<div class="uc-veh-dots">
-           ${u.vehiculos.map((_, i) => `<span class="uc-veh-dot${i === 0 ? ' active' : ''}" data-dot="${i}"></span>`).join('')}
+    const dots =
+      total > 1
+        ? `<div class="uc-veh-dots">
+           ${u.vehiculos.map((_, i) => `<span class="uc-veh-dot${i === 0 ? " active" : ""}" data-dot="${i}"></span>`).join("")}
          </div>`
-      : '';
-    const arrows = total > 1
-      ? `<button class="uc-veh-arrow uc-veh-prev" aria-label="Anterior"><i class="bi bi-chevron-left"></i></button>
+        : "";
+    const arrows =
+      total > 1
+        ? `<button class="uc-veh-arrow uc-veh-prev" aria-label="Anterior"><i class="bi bi-chevron-left"></i></button>
          <button class="uc-veh-arrow uc-veh-next" aria-label="Siguiente"><i class="bi bi-chevron-right"></i></button>`
-      : '';
+        : "";
 
     vehContent.innerHTML = `
       <div class="uc-veh-carousel" data-current="0" data-total="${total}">
@@ -1557,67 +2383,76 @@ function showSAUserCard(qrId) {
       </div>`;
 
     if (total > 1) {
-      const carousel = vehContent.querySelector('.uc-veh-carousel');
-      const track    = carousel.querySelector('.uc-veh-track');
+      const carousel = vehContent.querySelector(".uc-veh-carousel");
+      const track = carousel.querySelector(".uc-veh-track");
 
       function goToSlide(idx) {
         const n = parseInt(carousel.dataset.total);
         idx = ((idx % n) + n) % n;
         carousel.dataset.current = idx;
         track.style.transform = `translateX(-${idx * 100}%)`;
-        carousel.querySelectorAll('.uc-veh-dot').forEach((d, i) => {
-          d.classList.toggle('active', i === idx);
+        carousel.querySelectorAll(".uc-veh-dot").forEach((d, i) => {
+          d.classList.toggle("active", i === idx);
         });
       }
 
-      carousel.querySelector('.uc-veh-prev').addEventListener('click', () => {
+      carousel.querySelector(".uc-veh-prev").addEventListener("click", () => {
         goToSlide(parseInt(carousel.dataset.current) - 1);
       });
-      carousel.querySelector('.uc-veh-next').addEventListener('click', () => {
+      carousel.querySelector(".uc-veh-next").addEventListener("click", () => {
         goToSlide(parseInt(carousel.dataset.current) + 1);
       });
-      carousel.querySelectorAll('.uc-veh-dot').forEach(dot => {
-        dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.dot)));
+      carousel.querySelectorAll(".uc-veh-dot").forEach((dot) => {
+        dot.addEventListener("click", () =>
+          goToSlide(parseInt(dot.dataset.dot)),
+        );
       });
     }
   } else {
-    vehContent.innerHTML = '<span style="opacity:.45;font-size:12px;">Sin vehículo</span>';
+    vehContent.innerHTML =
+      '<span style="opacity:.45;font-size:12px;">Sin vehículo</span>';
   }
 
   // ── Estado de la CUENTA (activo/inactivo) — en SA no tenemos "dentro/fuera" directo ──
   const activo = u.activo;
-  const statusBadge = document.getElementById('uc-status-badge');
-  const statusDot   = document.getElementById('uc-status-dot');
-  statusBadge.className = `uc-status-badge ${activo ? 'st-in' : 'st-out'}`;
-  statusDot.className   = `uc-status-dot ${activo ? 'dot-in' : 'dot-out'}`;
-  document.getElementById('uc-status-text').textContent = activo ? 'Activo' : 'Inactivo';
-  document.getElementById('uc-last-seen').textContent   = activo ? 'Cuenta habilitada' : 'Cuenta deshabilitada';
+  const statusBadge = document.getElementById("uc-status-badge");
+  const statusDot = document.getElementById("uc-status-dot");
+  statusBadge.className = `uc-status-badge ${activo ? "st-in" : "st-out"}`;
+  statusDot.className = `uc-status-dot ${activo ? "dot-in" : "dot-out"}`;
+  document.getElementById("uc-status-text").textContent = activo
+    ? "Activo"
+    : "Inactivo";
+  document.getElementById("uc-last-seen").textContent = activo
+    ? "Cuenta habilitada"
+    : "Cuenta deshabilitada";
 
   // ── ID Code ──
-  const qrDisplay = qrId.length > 20 ? qrId.slice(0,8) + '…' + qrId.slice(-4) : qrId;
-  document.getElementById('uc-id-code').textContent = qrDisplay;
+  const qrDisplay =
+    qrId.length > 20 ? qrId.slice(0, 8) + "…" + qrId.slice(-4) : qrId;
+  document.getElementById("uc-id-code").textContent = qrDisplay;
 
   // ── Botón Ver QR — reutiliza el modal qr-modal existente ──
-  document.getElementById('uc-qr-btn').onclick = () => {
+  document.getElementById("uc-qr-btn").onclick = () => {
     closeSAUserCard();
-    if (typeof showUserQR === 'function') showUserQR(qrId, u.nombre);
+    if (typeof showUserQR === "function") showUserQR(qrId, u.nombre);
   };
 
   // ── Mostrar overlay ──
-  document.getElementById('user-card-overlay').classList.add('visible');
+  document.getElementById("user-card-overlay").classList.add("visible");
 }
 
 function closeSAUserCard() {
-  document.getElementById('user-card-overlay').classList.remove('visible');
+  document.getElementById("user-card-overlay").classList.remove("visible");
 }
 
 function handleUserCardOverlayClick(e) {
-  if (e.target === document.getElementById('user-card-overlay')) closeSAUserCard();
+  if (e.target === document.getElementById("user-card-overlay"))
+    closeSAUserCard();
 }
 
 // Cerrar con Escape
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeSAUserCard();
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") closeSAUserCard();
 });
 
 // ════════════════════════════════════════════════════════════
@@ -1627,10 +2462,10 @@ document.addEventListener('keydown', function(e) {
 let _buscarTimer = null;
 
 async function buscarGlobal(q) {
-  const cont = document.getElementById('busqueda-resultados');
+  const cont = document.getElementById("busqueda-resultados");
   if (!cont) return;
 
-  q = (q || '').trim();
+  q = (q || "").trim();
 
   if (q.length < 2) {
     cont.innerHTML = `
@@ -1650,43 +2485,45 @@ async function buscarGlobal(q) {
       </div>`;
 
     try {
-      const res  = await apiFetch(`/parqueadero/buscar?q=${encodeURIComponent(q)}`);
+      const res = await apiFetch(
+        `/parqueadero/buscar?q=${encodeURIComponent(q)}`,
+      );
       const data = await res.json();
 
       if (!data.ok) {
-        cont.innerHTML = `<div style="text-align:center;padding:40px;color:rgba(255,80,80,0.7);">${data.message || 'Error al buscar'}</div>`;
+        cont.innerHTML = `<div style="text-align:center;padding:40px;color:rgba(255,80,80,0.7);">${data.message || "Error al buscar"}</div>`;
         return;
       }
 
       // Unir usuarios directos + propietarios de vehículos (deduplicar por id_usuario)
-      const usuariosDirectos = data.data.usuarios  || [];
-      const vehiculos        = data.data.vehiculos  || [];
+      const usuariosDirectos = data.data.usuarios || [];
+      const vehiculos = data.data.vehiculos || [];
 
       // Construir mapa de vehículos por id_usuario
       const vehPorUsuario = {};
-      vehiculos.forEach(v => {
+      vehiculos.forEach((v) => {
         if (!vehPorUsuario[v.id_usuario]) vehPorUsuario[v.id_usuario] = [];
         vehPorUsuario[v.id_usuario].push(v);
       });
 
       // Usuarios que solo aparecen por vehículo (no están en usuariosDirectos)
-      const idsDirectos = new Set(usuariosDirectos.map(u => u.id_usuario));
+      const idsDirectos = new Set(usuariosDirectos.map((u) => u.id_usuario));
       const usuariosExtra = [];
-      vehiculos.forEach(v => {
+      vehiculos.forEach((v) => {
         if (!idsDirectos.has(v.id_usuario)) {
           idsDirectos.add(v.id_usuario);
           usuariosExtra.push({
-            id_usuario:     v.id_usuario,
+            id_usuario: v.id_usuario,
             nombre_completo: v.nombre_completo,
-            numero_id:      v.numero_id,
-            tipo_id:        null,
-            rol:            null,
-            activo:         true,
-            qr_code:        null,
-            email:          null,
-            centro_nombre:  null,
-            dentro:         false,
-            _soloVehiculo:  true,
+            numero_id: v.numero_id,
+            tipo_id: null,
+            rol: null,
+            activo: true,
+            qr_code: null,
+            email: null,
+            centro_nombre: null,
+            dentro: false,
+            _soloVehiculo: true,
           });
         }
       });
@@ -1706,12 +2543,11 @@ async function buscarGlobal(q) {
       cont.innerHTML = `
         <div style="font-size:11px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,0.35);
                     text-transform:uppercase;margin-bottom:14px;">
-          <i class="bi bi-people"></i> ${todos.length} resultado${todos.length !== 1 ? 's' : ''}
+          <i class="bi bi-people"></i> ${todos.length} resultado${todos.length !== 1 ? "s" : ""}
         </div>
         <div style="display:flex;flex-direction:column;gap:16px;">
-          ${todos.map(u => _renderCarnetBusqueda(u, vehPorUsuario[u.id_usuario] || [])).join('')}
+          ${todos.map((u) => _renderCarnetBusqueda(u, vehPorUsuario[u.id_usuario] || [])).join("")}
         </div>`;
-
     } catch (e) {
       cont.innerHTML = `<div style="text-align:center;padding:40px;color:rgba(255,80,80,0.7);">Error de conexión al buscar.</div>`;
     }
@@ -1720,23 +2556,33 @@ async function buscarGlobal(q) {
 
 // ── Renderiza un carnet completo inline para la búsqueda global ────────
 function _renderCarnetBusqueda(u, vehiculos) {
-  const nombre    = u.nombre_completo || 'Sin nombre';
-  const initials  = nombre.split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-  const rol       = u.rol || 'aprendiz';
-  const isSA      = rol === 'superadmin';
-  const activo    = u.activo !== false;
-  const numId     = u.numero_id || '';
-  const numMasked = numId.length > 4
-    ? `<span style="opacity:.45">${'•'.repeat(numId.length - 4)}</span>${numId.slice(-4)}`
-    : numId;
+  const nombre = u.nombre_completo || "Sin nombre";
+  const initials = nombre
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const rol = u.rol || "aprendiz";
+  const isSA = rol === "superadmin";
+  const activo = u.activo !== false;
+  const numId = u.numero_id || "";
+  const numMasked =
+    numId.length > 4
+      ? `<span style="opacity:.45">${"•".repeat(numId.length - 4)}</span>${numId.slice(-4)}`
+      : numId;
 
   const rolLabel = SA_ROL_LABELS[rol] || rol;
-  const rolColor = SA_ROL_COLORS[rol] || '#888';
+  const rolColor = SA_ROL_COLORS[rol] || "#888";
 
   const rolIcons = {
-    aprendiz:'bi-mortarboard-fill', funcionario:'bi-briefcase-fill',
-    instructor:'bi-book-fill', admin:'bi-shield-fill',
-    guardia:'bi-shield-shaded', superadmin:'bi-shield-lock-fill',
+    aprendiz: "bi-mortarboard-fill",
+    funcionario: "bi-briefcase-fill",
+    instructor: "bi-book-fill",
+    admin: "bi-shield-fill",
+    guardia: "bi-shield-shaded",
+    superadmin: "bi-shield-lock-fill",
   };
 
   // ── Foto o iniciales ──
@@ -1747,34 +2593,43 @@ function _renderCarnetBusqueda(u, vehiculos) {
     : `<span style="font-size:18px;font-weight:600;">${initials}</span>`;
 
   // ── Vehículos ──
-  let vehHtml = '<span style="opacity:.4;font-size:12px;">Sin vehículo registrado</span>';
+  let vehHtml =
+    '<span style="opacity:.4;font-size:12px;">Sin vehículo registrado</span>';
   if (vehiculos.length > 0) {
-    vehHtml = vehiculos.map(v => {
-      const t      = (v.tipo || v.modelo || '').toLowerCase();
-      const vIcon  = (t.includes('auto') || t.includes('carro') || t.includes('furgon')) ? 'bi-car-front-fill'
-                   : (t.includes('moto')) ? 'bi-scooter'
-                   : 'bi-bicycle';
-      const placa  = v.placa ? v.placa.toUpperCase() : (v.modelo || '—');
-      const detail = [v.color, v.descripcion].filter(Boolean).join(' · ');
-      const fotoV  = v.foto_url
-        ? `<img src="${v.foto_url}" style="width:100%;height:44px;object-fit:cover;border-radius:6px;margin-top:5px;"
+    vehHtml = vehiculos
+      .map((v) => {
+        const t = (v.tipo || v.modelo || "").toLowerCase();
+        const vIcon =
+          t.includes("auto") || t.includes("carro") || t.includes("furgon")
+            ? "bi-car-front-fill"
+            : t.includes("moto")
+              ? "bi-scooter"
+              : "bi-bicycle";
+        const placa = v.placa ? v.placa.toUpperCase() : v.modelo || "—";
+        const detail = [v.color, v.descripcion].filter(Boolean).join(" · ");
+        const fotoV = v.foto_url
+          ? `<img src="${v.foto_url}" style="width:100%;height:44px;object-fit:cover;border-radius:6px;margin-top:5px;"
                 onerror="this.style.display='none'">`
-        : '';
-      return `
+          : "";
+        return `
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
           <i class="bi ${vIcon}" style="font-size:15px;color:rgba(255,255,255,0.5);"></i>
           <div>
-            <div style="font-size:12px;font-weight:500;">${v.tipo || ''} · ${placa}</div>
-            ${detail ? `<div style="font-size:11px;opacity:.45;">${detail}</div>` : ''}
+            <div style="font-size:12px;font-weight:500;">${v.tipo || ""} · ${placa}</div>
+            ${detail ? `<div style="font-size:11px;opacity:.45;">${detail}</div>` : ""}
           </div>
         </div>${fotoV}`;
-    }).join('');
+      })
+      .join("");
   }
 
   // ── Controles de acción ──
-  const rolesOpts = ['aprendiz','funcionario','instructor','admin'].map(r =>
-    `<option value="${r}"${rol === r ? ' selected' : ''}>${SA_ROL_LABELS[r]}</option>`
-  ).join('');
+  const rolesOpts = ["aprendiz", "funcionario", "instructor", "admin"]
+    .map(
+      (r) =>
+        `<option value="${r}"${rol === r ? " selected" : ""}>${SA_ROL_LABELS[r]}</option>`,
+    )
+    .join("");
 
   const accionesHtml = isSA
     ? `<div style="font-size:11px;color:rgba(255,255,255,0.3);text-align:center;padding:8px 0;">— superadmin —</div>`
@@ -1783,11 +2638,11 @@ function _renderCarnetBusqueda(u, vehiculos) {
         <select class="sa-rol-select" onchange="cambiarRol(${u.id_usuario}, this.value)" style="flex:1;min-width:130px;">
           ${rolesOpts}
         </select>
-        <button class="sa-toggle-btn ${activo ? 'on' : 'off'}"
+        <button class="sa-toggle-btn ${activo ? "on" : "off"}"
                 onclick="_busquedaToggle(${u.id_usuario}, this)">
-          ${activo ? 'Desactivar' : 'Activar'}
+          ${activo ? "Desactivar" : "Activar"}
         </button>
-        <button onclick="_busquedaVerQR('${u.qr_code || ''}','${nombre.replace(/'/g, "\\'")}')"
+        <button onclick="_busquedaVerQR('${u.qr_code || ""}','${nombre.replace(/'/g, "\\'")}')"
                 style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.07);
                        border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:12px;cursor:pointer;">
           <i class="bi bi-qr-code"></i> Ver QR
@@ -1799,7 +2654,7 @@ function _renderCarnetBusqueda(u, vehiculos) {
     ? `<span style="font-size:10px;padding:2px 8px;border-radius:20px;
                     background:rgba(47,164,64,0.2);color:#2FA440;
                     border:1px solid rgba(47,164,64,0.3);">Dentro</span>`
-    : '';
+    : "";
 
   return `
     <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);
@@ -1816,19 +2671,19 @@ function _renderCarnetBusqueda(u, vehiculos) {
           <div style="font-size:15px;font-weight:600;color:#fff;
                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nombre}</div>
           <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:2px;">
-            ${u.tipo_id ? u.tipo_id + ' · ' : ''}${numMasked}
-            ${u.email ? ` · ${u.email.length > 22 ? u.email.slice(0,20)+'…' : u.email}` : ''}
+            ${u.tipo_id ? u.tipo_id + " · " : ""}${numMasked}
+            ${u.email ? ` · ${u.email.length > 22 ? u.email.slice(0, 20) + "…" : u.email}` : ""}
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center;">
             <span style="font-size:11px;padding:2px 10px;border-radius:20px;font-weight:500;
                          background:${rolColor}22;border:0.5px solid ${rolColor}55;color:${rolColor};">
-              <i class="bi ${rolIcons[rol] || 'bi-person-fill'}"></i> ${rolLabel}
+              <i class="bi ${rolIcons[rol] || "bi-person-fill"}"></i> ${rolLabel}
             </span>
             <span style="font-size:11px;padding:2px 10px;border-radius:20px;
-                         background:${activo ? 'rgba(47,164,64,0.15)' : 'rgba(255,80,80,0.12)'};
-                         color:${activo ? '#2FA440' : '#ff5050'};
-                         border:0.5px solid ${activo ? 'rgba(47,164,64,0.3)' : 'rgba(255,80,80,0.25)'};">
-              ${activo ? 'Activo' : 'Inactivo'}
+                         background:${activo ? "rgba(47,164,64,0.15)" : "rgba(255,80,80,0.12)"};
+                         color:${activo ? "#2FA440" : "#ff5050"};
+                         border:0.5px solid ${activo ? "rgba(47,164,64,0.3)" : "rgba(255,80,80,0.25)"};">
+              ${activo ? "Activo" : "Inactivo"}
             </span>
             ${dentroBadge}
           </div>
@@ -1842,7 +2697,7 @@ function _renderCarnetBusqueda(u, vehiculos) {
           <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;">
             <i class="bi bi-building"></i> Centro
           </div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.75);">${u.centro_nombre || 'No asignado'}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.75);">${u.centro_nombre || "No asignado"}</div>
         </div>
         <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;
                     border:1px solid rgba(255,255,255,0.06);">
@@ -1864,21 +2719,24 @@ function _renderCarnetBusqueda(u, vehiculos) {
 // ══ GESTIÓN DE CENTROS DE FORMACIÓN ══
 // ════════════════════════════════════════════════════════════════════
 
-let cfCentros    = [];
-let cfRegiones   = [];
+let cfCentros = [];
+let cfRegiones = [];
 let cfEditandoId = null;
 
 async function cfCargar() {
-  const wrap = document.getElementById('cf-tabla-wrap');
+  const wrap = document.getElementById("cf-tabla-wrap");
   if (!wrap) return;
   wrap.innerHTML = `<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);font-size:13px;">
     <i class="bi bi-arrow-repeat" style="font-size:22px;display:block;margin-bottom:8px;animation:spin 1s linear infinite;"></i>
     Cargando centros...</div>`;
   try {
-    const res  = await apiFetch('/parqueadero/config/centros-admin');
+    const res = await apiFetch("/parqueadero/config/centros-admin");
     if (!res) return;
     const data = await res.json();
-    if (!data.ok) { wrap.innerHTML = `<div style="padding:20px;color:#ef9a9a;font-size:13px;">Error: ${data.message}</div>`; return; }
+    if (!data.ok) {
+      wrap.innerHTML = `<div style="padding:20px;color:#ef9a9a;font-size:13px;">Error: ${data.message}</div>`;
+      return;
+    }
     cfCentros = data.data;
     cfRenderTabla();
   } catch (e) {
@@ -1887,7 +2745,7 @@ async function cfCargar() {
 }
 
 function cfRenderTabla() {
-  const wrap = document.getElementById('cf-tabla-wrap');
+  const wrap = document.getElementById("cf-tabla-wrap");
   if (!wrap) return;
   if (!cfCentros.length) {
     wrap.innerHTML = `<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.35);font-size:13px;">
@@ -1895,10 +2753,12 @@ function cfRenderTabla() {
       No hay centros registrados aún.</div>`;
     return;
   }
-  const filas = cfCentros.map(c => `
+  const filas = cfCentros
+    .map(
+      (c) => `
     <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
       <td style="padding:12px 14px;font-size:13px;color:#fff;font-weight:500;">${c.nombre}</td>
-      <td style="padding:12px 14px;font-size:12px;color:rgba(255,255,255,0.5);">${c.region_nombre || '—'}</td>
+      <td style="padding:12px 14px;font-size:12px;color:rgba(255,255,255,0.5);">${c.region_nombre || "—"}</td>
       <td style="padding:12px 14px;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;">${c.total_lados}</td>
       <td style="padding:12px 14px;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;">${c.total_usuarios}</td>
       <td style="padding:12px 14px;text-align:right;">
@@ -1907,7 +2767,9 @@ function cfRenderTabla() {
           <button class="pk-btn red" onclick="cfEliminar(${c.id_centro},'${c.nombre.replace(/'/g, "\\'")}',${c.total_usuarios},${c.total_lados})"><i class="bi bi-trash3-fill"></i></button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`,
+    )
+    .join("");
 
   wrap.innerHTML = `
     <div style="overflow-x:auto;">
@@ -1928,93 +2790,114 @@ function cfRenderTabla() {
 
 async function cfAbrirModal(id_centro = null) {
   cfEditandoId = id_centro;
-  const modal  = document.getElementById('cf-modal');
-  const icon   = document.getElementById('cf-modal-icon');
-  const title  = document.getElementById('cf-modal-title');
-  const btnG   = document.getElementById('cf-modal-btn-guardar');
-  const inp    = document.getElementById('cf-input-nombre');
-  const selReg = document.getElementById('cf-select-region');
+  const modal = document.getElementById("cf-modal");
+  const icon = document.getElementById("cf-modal-icon");
+  const title = document.getElementById("cf-modal-title");
+  const btnG = document.getElementById("cf-modal-btn-guardar");
+  const inp = document.getElementById("cf-input-nombre");
+  const selReg = document.getElementById("cf-select-region");
 
-  icon.textContent  = id_centro ? '✏️' : '🏫';
-  title.textContent = id_centro ? 'Editar centro de formación' : 'Nuevo centro de formación';
-  btnG.innerHTML    = id_centro
+  icon.textContent = id_centro ? "✏️" : "🏫";
+  title.textContent = id_centro
+    ? "Editar centro de formación"
+    : "Nuevo centro de formación";
+  btnG.innerHTML = id_centro
     ? '<i class="bi bi-check-lg"></i> Guardar cambios'
     : '<i class="bi bi-plus-lg"></i> Crear centro';
-  inp.value = '';
+  inp.value = "";
 
   if (!cfRegiones.length) {
     selReg.innerHTML = '<option value="">Cargando...</option>';
     try {
-      const res  = await apiFetch('/parqueadero/config/regiones-admin');
+      const res = await apiFetch("/parqueadero/config/regiones-admin");
       const data = await res.json();
       if (data.ok) cfRegiones = data.data;
-    } catch (e) { /* silencioso */ }
+    } catch (e) {
+      /* silencioso */
+    }
   }
-  selReg.innerHTML = '<option value="">— Selecciona una regional —</option>' +
-    cfRegiones.map(r => `<option value="${r.id_region}">${r.nombre}</option>`).join('');
+  selReg.innerHTML =
+    '<option value="">— Selecciona una regional —</option>' +
+    cfRegiones
+      .map((r) => `<option value="${r.id_region}">${r.nombre}</option>`)
+      .join("");
 
   if (id_centro) {
-    const centro = cfCentros.find(c => c.id_centro === id_centro);
-    if (centro) { inp.value = centro.nombre; selReg.value = centro.id_region; }
+    const centro = cfCentros.find((c) => c.id_centro === id_centro);
+    if (centro) {
+      inp.value = centro.nombre;
+      selReg.value = centro.id_region;
+    }
   }
 
-  modal.classList.add('visible');
+  modal.classList.add("visible");
   setTimeout(() => inp.focus(), 100);
 }
 
 function cfCerrarModal() {
-  document.getElementById('cf-modal')?.classList.remove('visible');
+  document.getElementById("cf-modal")?.classList.remove("visible");
   cfEditandoId = null;
 }
 
 async function cfGuardar() {
-  const nombre    = document.getElementById('cf-input-nombre')?.value.trim();
-  const id_region = document.getElementById('cf-select-region')?.value;
-  const btn       = document.getElementById('cf-modal-btn-guardar');
+  const nombre = document.getElementById("cf-input-nombre")?.value.trim();
+  const id_region = document.getElementById("cf-select-region")?.value;
+  const btn = document.getElementById("cf-modal-btn-guardar");
 
-  if (!nombre)    { showToast('Escribe el nombre del centro.', 'error'); return; }
-  if (!id_region) { showToast('Selecciona una regional.', 'error'); return; }
+  if (!nombre) {
+    showToast("Escribe el nombre del centro.", "error");
+    return;
+  }
+  if (!id_region) {
+    showToast("Selecciona una regional.", "error");
+    return;
+  }
 
   const oldHTML = btn.innerHTML;
-  btn.disabled  = true;
+  btn.disabled = true;
   btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
 
   try {
     const esEdicion = cfEditandoId !== null;
-    const url    = esEdicion
+    const url = esEdicion
       ? `/parqueadero/config/centros-admin/${cfEditandoId}`
-      : '/parqueadero/config/centros-admin';
-    const method = esEdicion ? 'PUT' : 'POST';
+      : "/parqueadero/config/centros-admin";
+    const method = esEdicion ? "PUT" : "POST";
 
-    const res  = await apiFetch(url, {
+    const res = await apiFetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nombre, id_region: parseInt(id_region) }),
     });
-    if (!res) { btn.disabled = false; btn.innerHTML = oldHTML; return; }
+    if (!res) {
+      btn.disabled = false;
+      btn.innerHTML = oldHTML;
+      return;
+    }
     const data = await res.json();
 
     if (!data.ok) {
-      showToast(data.message || 'Error al guardar.', 'error');
-      btn.disabled = false; btn.innerHTML = oldHTML;
+      showToast(data.message || "Error al guardar.", "error");
+      btn.disabled = false;
+      btn.innerHTML = oldHTML;
       return;
     }
 
-    showToast(data.message, 'success');
+    showToast(data.message, "success");
     cfCerrarModal();
     await cfCargar();
     await pkCargarSelectCentros();
-    if (typeof cargarCatalogos === 'function') await cargarCatalogos();
+    if (typeof cargarCatalogos === "function") await cargarCatalogos();
 
     // Si se acaba de CREAR un centro (no editar), seleccionarlo automáticamente
     // en el selector de parqueadero para que el usuario pueda agregar lados de inmediato.
     if (!esEdicion && data.data?.id_centro) {
-      const sel = document.getElementById('pk-centro-select');
+      const sel = document.getElementById("pk-centro-select");
       if (sel) {
         sel.value = data.data.id_centro;
         // Si el select aún no tiene la opción (caché de catalogos), agregarla
         if (sel.value !== String(data.data.id_centro)) {
-          const opt = document.createElement('option');
+          const opt = document.createElement("option");
           opt.value = data.data.id_centro;
           opt.textContent = nombre;
           sel.appendChild(opt);
@@ -2022,52 +2905,69 @@ async function cfGuardar() {
         }
         await pkCargarCentro();
         // Scroll suave hacia la sección del parqueadero
-        document.getElementById('pk-lados-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document
+          .getElementById("pk-lados-container")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
-
   } catch (e) {
-    showToast('Error de conexión.', 'error');
-    btn.disabled = false; btn.innerHTML = oldHTML;
+    showToast("Error de conexión.", "error");
+    btn.disabled = false;
+    btn.innerHTML = oldHTML;
   }
 }
 
 function cfEliminar(id_centro, nombre, totalUsuarios, totalLados) {
   if (totalUsuarios > 0) {
-    showToast(`No se puede eliminar "${nombre}": tiene ${totalUsuarios} usuario(s) registrado(s).`, 'error');
+    showToast(
+      `No se puede eliminar "${nombre}": tiene ${totalUsuarios} usuario(s) registrado(s).`,
+      "error",
+    );
     return;
   }
   openSAModal({
-    icon: '🗑️',
+    icon: "🗑️",
     title: `Eliminar "${nombre}"`,
     desc: `¿Confirmas que deseas eliminar este centro de formación?
-           ${Number(totalLados) > 0
-             ? `<br><small style="color:rgba(255,255,255,0.4);">Se eliminarán también sus ${totalLados} lado(s) de parqueadero configurado(s).</small>`
-             : '<br><small style="color:rgba(255,255,255,0.4);">Este centro no tiene lados configurados.</small>'}`,
-    btnClass: 'danger',
-    btnLabel: 'Eliminar',
+           ${
+             Number(totalLados) > 0
+               ? `<br><small style="color:rgba(255,255,255,0.4);">Se eliminarán también sus ${totalLados} lado(s) de parqueadero configurado(s).</small>`
+               : '<br><small style="color:rgba(255,255,255,0.4);">Este centro no tiene lados configurados.</small>'
+           }`,
+    btnClass: "danger",
+    btnLabel: "Eliminar",
     onConfirm: async () => {
       try {
-        const res  = await apiFetch(`/parqueadero/config/centros-admin/${id_centro}`, { method: 'DELETE' });
+        const res = await apiFetch(
+          `/parqueadero/config/centros-admin/${id_centro}`,
+          { method: "DELETE" },
+        );
         if (!res) return;
         const data = await res.json();
-        if (!data.ok) { showToast(data.message || 'Error al eliminar.', 'error'); return; }
-        showToast(data.message, 'success');
+        if (!data.ok) {
+          showToast(data.message || "Error al eliminar.", "error");
+          return;
+        }
+        showToast(data.message, "success");
         await cfCargar();
         await pkCargarSelectCentros();
-        if (typeof cargarCatalogos === 'function') await cargarCatalogos();
-        const sel = document.getElementById('pk-centro-select');
+        if (typeof cargarCatalogos === "function") await cargarCatalogos();
+        const sel = document.getElementById("pk-centro-select");
         if (sel && String(sel.value) === String(id_centro)) {
-          sel.value = ''; pkConfig = null; pkRenderLados();
+          sel.value = "";
+          pkConfig = null;
+          pkRenderLados();
         }
-      } catch (e) { showToast('Error de conexión.', 'error'); }
+      } catch (e) {
+        showToast("Error de conexión.", "error");
+      }
     },
   });
 }
 
 // Integrar cfCargar con pkInit para que cargue al entrar a la sección
 const _cfPkInit = pkInit;
-pkInit = async function() {
+pkInit = async function () {
   await _cfPkInit();
   await cfCargar();
 };
@@ -2075,21 +2975,35 @@ pkInit = async function() {
 async function _busquedaToggle(id, btn) {
   if (btn) btn.disabled = true;
   try {
-    const res  = await apiFetch('/parqueadero/usuarios/' + id + '/toggle', { method: 'PUT' });
-    if (!res) { if (btn) btn.disabled = false; return; }
+    const res = await apiFetch("/parqueadero/usuarios/" + id + "/toggle", {
+      method: "PUT",
+    });
+    if (!res) {
+      if (btn) btn.disabled = false;
+      return;
+    }
     const data = await res.json();
-    if (!data.ok) { showToast(data.message || 'Error.', 'error'); if (btn) btn.disabled = false; return; }
-    showToast(data.message, data.activo ? 'success' : 'info');
+    if (!data.ok) {
+      showToast(data.message || "Error.", "error");
+      if (btn) btn.disabled = false;
+      return;
+    }
+    showToast(data.message, data.activo ? "success" : "info");
     // Actualizar caché global y re-lanzar la búsqueda actual
     await cargarUsuariosSA();
-    const q = document.getElementById('global-search-input')?.value || '';
+    const q = document.getElementById("global-search-input")?.value || "";
     buscarGlobal(q);
-  } catch { showToast('Error de conexión.', 'error'); }
+  } catch {
+    showToast("Error de conexión.", "error");
+  }
   if (btn) btn.disabled = false;
 }
 
 // ── Ver QR desde búsqueda global ──────────────────────────────────────
 function _busquedaVerQR(qrCode, nombre) {
-  if (!qrCode) { showToast('Este usuario no tiene QR asignado.', 'error'); return; }
-  if (typeof showUserQR === 'function') showUserQR(qrCode, nombre);
+  if (!qrCode) {
+    showToast("Este usuario no tiene QR asignado.", "error");
+    return;
+  }
+  if (typeof showUserQR === "function") showUserQR(qrCode, nombre);
 }

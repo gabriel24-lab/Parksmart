@@ -1,6 +1,6 @@
 // src/config/db.js  —  Conexión a Supabase (PostgreSQL) con pg
-require('dotenv').config();
-const { Pool } = require('pg');
+require("dotenv").config();
+const { Pool } = require("pg");
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -12,15 +12,15 @@ const pool = new Pool({
 // El evento 'connect' se dispara por cada conexión nueva del pool.
 // Solo logeamos la primera para no llenar los logs de Render.
 let _primeraConexion = true;
-pool.on('connect', () => {
+pool.on("connect", () => {
   if (_primeraConexion) {
-    console.log('✅ Conectado a Supabase (PostgreSQL)');
+    console.log("✅ Conectado a Supabase (PostgreSQL)");
     _primeraConexion = false;
   }
 });
 
-pool.on('error', (err) => {
-  console.error('❌ Error inesperado en el pool de PostgreSQL:', err);
+pool.on("error", (err) => {
+  console.error("❌ Error inesperado en el pool de PostgreSQL:", err);
 });
 
 /**
@@ -66,7 +66,7 @@ async function getClient() {
  * Verifica que la conexión esté activa (usada al arrancar el servidor).
  */
 async function getPool() {
-  await pool.query('SELECT 1');
+  await pool.query("SELECT 1");
   return pool;
 }
 

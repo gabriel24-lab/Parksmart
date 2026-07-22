@@ -1,12 +1,13 @@
 // src/config/mailer.js — Configuración de SendGrid
-const sgMail = require('@sendgrid/mail');
+const sgMail = require("@sendgrid/mail");
 
 // Inicializar SendGrid con la API Key
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // IMPORTANTE: Usar un email verificado en SendGrid o uno que venga en el plan gratuito
-const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'noreply@parksmart.sena.edu.co';
-const FROM_NAME = 'SENA Parksmart';
+const FROM_EMAIL =
+  process.env.SENDGRID_FROM_EMAIL || "noreply@parksmart.sena.edu.co";
+const FROM_NAME = "SENA Parksmart";
 
 /**
  * Envía el código de recuperación de contraseña.
@@ -15,7 +16,7 @@ async function enviarCodigoRecuperacion(destino, codigo, nombre) {
   const msg = {
     to: destino,
     from: { email: FROM_EMAIL, name: FROM_NAME },
-    subject: 'Código de recuperación de contraseña — Parksmart',
+    subject: "Código de recuperación de contraseña — Parksmart",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #0a0a0c; color: #fff; border-radius: 12px; overflow: hidden;">
         <div style="background: #2FA440; padding: 28px 32px;">
@@ -47,9 +48,12 @@ async function enviarCodigoRecuperacion(destino, codigo, nombre) {
   try {
     await sgMail.send(msg);
   } catch (error) {
-    console.error('Error enviando correo de recuperación:', error);
+    console.error("Error enviando correo de recuperación:", error);
     if (error.response?.body?.errors) {
-      console.error('SendGrid errors:', JSON.stringify(error.response.body.errors));
+      console.error(
+        "SendGrid errors:",
+        JSON.stringify(error.response.body.errors),
+      );
     }
     throw error;
   }
@@ -58,13 +62,19 @@ async function enviarCodigoRecuperacion(destino, codigo, nombre) {
 /**
  * Envía correo de bienvenida al usuario registrado manualmente por un admin.
  */
-async function enviarBienvenidaAdmin(destino, nombre, numero_id, rol, urlLogin) {
+async function enviarBienvenidaAdmin(
+  destino,
+  nombre,
+  numero_id,
+  rol,
+  urlLogin,
+) {
   const rolCapitalizado = rol.charAt(0).toUpperCase() + rol.slice(1);
 
   const msg = {
     to: destino,
     from: { email: FROM_EMAIL, name: FROM_NAME },
-    subject: '¡Bienvenido/a a Parksmart! — Tu cuenta ha sido creada',
+    subject: "¡Bienvenido/a a Parksmart! — Tu cuenta ha sido creada",
     html: `
       <!DOCTYPE html>
       <html lang="es">
@@ -117,7 +127,7 @@ async function enviarBienvenidaAdmin(destino, nombre, numero_id, rol, urlLogin) 
   try {
     await sgMail.send(msg);
   } catch (error) {
-    console.error('Error enviando correo de bienvenida admin:', error);
+    console.error("Error enviando correo de bienvenida admin:", error);
     throw error;
   }
 }
@@ -129,7 +139,7 @@ async function enviarBienvenidaAprendiz(destino, nombre, urlLogin) {
   const msg = {
     to: destino,
     from: { email: FROM_EMAIL, name: FROM_NAME },
-    subject: '¡Bienvenido/a a Parksmart! — Tu cuenta está lista',
+    subject: "¡Bienvenido/a a Parksmart! — Tu cuenta está lista",
     html: `
       <!DOCTYPE html>
       <html lang="es">
@@ -166,9 +176,13 @@ async function enviarBienvenidaAprendiz(destino, nombre, urlLogin) {
   try {
     await sgMail.send(msg);
   } catch (error) {
-    console.error('Error enviando correo de bienvenida aprendiz:', error);
+    console.error("Error enviando correo de bienvenida aprendiz:", error);
     throw error;
   }
 }
 
-module.exports = { enviarCodigoRecuperacion, enviarBienvenidaAdmin, enviarBienvenidaAprendiz };
+module.exports = {
+  enviarCodigoRecuperacion,
+  enviarBienvenidaAdmin,
+  enviarBienvenidaAprendiz,
+};
